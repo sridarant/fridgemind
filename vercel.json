@@ -9,10 +9,15 @@
     {
       "src": "api/suggest.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "api/planner.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/api/suggest.js" },
+    { "src": "/api/suggest", "dest": "/api/suggest.js" },
+    { "src": "/api/planner", "dest": "/api/planner.js" },
     { "src": "/(.*)", "dest": "/$1" }
   ]
 }

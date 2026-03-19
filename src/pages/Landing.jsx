@@ -128,11 +128,14 @@ export default function Landing() {
         <div style={s.navLogo} onClick={() => navigate('/')}>
           <span style={s.navSpark}>⚡</span>Jiff
         </div>
-        <button style={s.navCta} onClick={() => navigate('/app')}
-          onMouseEnter={e => Object.assign(e.target.style, { background: C.jiffDark, transform: 'translateY(-1px)' })}
-          onMouseLeave={e => Object.assign(e.target.style, { background: C.jiff, transform: 'none' })}>
-          Cook something →
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => navigate('/planner')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
+            📅 Week plan
+          </button>
+          <button style={s.navCta} onClick={() => navigate('/app')} onMouseEnter={e => Object.assign(e.target.style, { background: C.jiffDark, transform: 'translateY(-1px)' })} onMouseLeave={e => Object.assign(e.target.style, { background: C.jiff, transform: 'none' })}>
+            ⚡ Quick meal
+          </button>
+        </div>
       </nav>
 
       {/* Hero */}
