@@ -92,7 +92,7 @@ const STEPS = [
   { icon: '🥦', n: '01', title: 'Dump your fridge', desc: 'Type whatever you have. Eggs, half an onion, leftover rice — anything goes. No measuring, no precision.' },
   { icon: '🍱', n: '02', title: 'Pick your vibe', desc: 'Choose a cuisine and how much time you have. Indian? 15 minutes? Done.' },
   { icon: '⚡', n: '03', title: 'Jiff it', desc: 'AI cooks up 3 real meals instantly. Full recipes, ingredients, steps, nutrition — the works.' },
-  { icon: '🍽️', n: '04', title: 'Actually eat well', desc: 'No food waste. No sad takeout. No 40-minute recipe searches. Just dinner, sorted.' },
+  { icon: '🍽️', n: '04', title: 'Actually eat well', desc: 'No food waste. No sad takeout. No 40-minute recipe searches. Just meals, sorted.' },
 ];
 
 const PROBLEMS = [
@@ -145,7 +145,7 @@ export default function Landing() {
           <span style={s.heroPillText}>AI-powered · Free · No sign-up</span>
         </div>
         <h1 style={s.h1}>
-          Dinner.<br />
+          Any meal.
           <span style={s.h1Accent}>In a Jiff.</span>
         </h1>
         <p style={s.heroSub}>
@@ -154,7 +154,7 @@ export default function Landing() {
         <div style={s.heroBtns}>
           <button style={s.primaryBtn} onClick={() => navigate('/app')}
             onMouseEnter={e => hoverJiff(true, e)} onMouseLeave={e => hoverJiff(false, e)}>
-            <span>⚡</span> Jiff my dinner
+            <span>⚡</span> Jiff a meal
           </button>
           <button style={s.secondaryBtn} onClick={() => document.getElementById('how').scrollIntoView({ behavior: 'smooth' })}
             onMouseEnter={e => Object.assign(e.target.style, { borderColor: C.jiff, color: C.jiff })}
@@ -214,7 +214,7 @@ export default function Landing() {
       {/* How it works */}
       <section id="how" style={s.howSection}>
         <div style={s.sectionEye}>How Jiff works</div>
-        <h2 style={s.sectionH2}>Four steps.<br />Dinner sorted.</h2>
+        <h2 style={s.sectionH2}>Four steps.<br />Any meal sorted.</h2>
         <div style={s.stepsGrid}>
           {STEPS.map((step, i) => (
             <div key={i} style={s.stepCard}>
@@ -244,7 +244,7 @@ export default function Landing() {
 
       {/* Final CTA */}
       <section style={s.ctaSection}>
-        <h2 style={s.ctaH2}>What's in<br />your fridge?</h2>
+        <h2 style={s.ctaH2}>Any meal.<br />Right now.</h2>
         <p style={s.ctaSub}>Find out what you can make right now. Takes 10 seconds.</p>
         <button style={s.ctaBtn} onClick={() => navigate('/app')}
           onMouseEnter={e => Object.assign(e.currentTarget.style, { transform: 'translateY(-2px)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' })}

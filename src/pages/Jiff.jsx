@@ -1,13 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
-const STORAGE_KEY = 'jiff-favourites';
-function loadFavourites() {
-  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
-}
-function saveFavourites(favs) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(favs)); } catch {}
-}
+// Favourites managed by AuthContext
 
 // ── Serving scaler ────────────────────────────────────
 const FRACTIONS = { '¼':0.25,'½':0.5,'¾':0.75,'⅓':1/3,'⅔':2/3,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875 };
@@ -735,6 +730,8 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
 // ── Main ──────────────────────────────────────────────
 export default function Jiff() {
   const navigate = useNavigate();
+  const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, isAuthDismissed, dismissAuth, supabaseEnabled } = useAuth();
+
   const [ingredients,setIngredients]=useState([]);
   const [inputVal,setInputVal]=useState('');
   const [time,setTime]=useState('30 min');
@@ -745,11 +742,21 @@ export default function Jiff() {
   const [factIdx,setFactIdx]=useState(0);
   const [errorMsg,setErrorMsg]=useState('');
   const [showFavs,setShowFavs]=useState(false);
-  const [favourites,setFavourites]=useState(()=>loadFavourites());
+  const [showAuthPrompt,setShowAuthPrompt]=useState(false);
+  const [emailInput,setEmailInput]=useState('');
+  const [emailSent,setEmailSent]=useState(false);
+  const [pantryLoaded,setPantryLoaded]=useState(false);
   const inputRef=useRef(null);
   const timerRef=useRef(null);
 
-  useEffect(()=>{saveFavourites(favourites);},[favourites]);
+  // Pre-fill pantry ingredients on first load
+  useEffect(()=>{
+    if(!pantryLoaded && pantry?.length) {
+      setIngredients(pantry);
+      setPantryLoaded(true);
+    }
+  },[pantry, pantryLoaded]);
+
   useEffect(()=>{
     if(view==='loading') timerRef.current=setInterval(()=>setFactIdx(f=>(f+1)%FACTS.length),1400);
     return ()=>clearInterval(timerRef.current);
@@ -757,21 +764,43 @@ export default function Jiff() {
 
   const addIng=val=>{const v=val.trim().replace(/,$/,'');if(v&&!ingredients.includes(v))setIngredients(p=>[...p,v]);setInputVal('');};
   const onKey=e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addIng(inputVal);}else if(e.key==='Backspace'&&!inputVal&&ingredients.length)setIngredients(p=>p.slice(0,-1));};
-  const toggleFav=meal=>{const key=mealKey(meal);setFavourites(prev=>{const exists=prev.some(f=>mealKey(f)===key);return exists?prev.filter(f=>mealKey(f)!==key):[{...meal,savedAt:Date.now()},...prev];});};
-  const isFav=meal=>favourites.some(f=>mealKey(f)===mealKey(meal));
 
   const handleSubmit=async()=>{
     if(!ingredients.length)return;
     setView('loading');setFactIdx(0);setShowFavs(false);
     try{
-      const res=await fetch('/api/suggest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ingredients,time,diet,cuisine})});
+      const res=await fetch('/api/suggest',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          ingredients, time, diet, cuisine,
+          tasteProfile: profile ? {
+            spice_level: profile.spice_level,
+            allergies: profile.allergies,
+            preferred_cuisines: profile.preferred_cuisines,
+            skill_level: profile.skill_level,
+          } : null,
+        }),
+      });
       const data=await res.json();
-      if(data.meals?.length>0){setMeals(data.meals);setView('results');}
+      if(data.meals?.length>0){
+        setMeals(data.meals);
+        setView('results');
+        // Show auth prompt after first generation for guests
+        if(!user && !isAuthDismissed() && supabaseEnabled) {
+          setTimeout(()=>setShowAuthPrompt(true), 1500);
+        }
+      }
       else{setErrorMsg(data.error||'Could not generate suggestions.');setView('error');}
     }catch{setErrorMsg('Connection error. Please try again.');setView('error');}
   };
 
-  const reset=()=>{setView('input');setMeals([]);setIngredients([]);setInputVal('');setShowFavs(false);};
+  const handleEmailSignIn = async () => {
+    const {error} = await signInWithEmail(emailInput);
+    if (!error) setEmailSent(true);
+  };
+
+  const reset=()=>{setView('input');setMeals([]);setIngredients(pantry||[]);setInputVal('');setShowFavs(false);setShowAuthPrompt(false);setPantryLoaded(true);};
   const activeCuisine=CUISINE_OPTIONS.find(c=>c.id===cuisine);
 
   return (
@@ -785,6 +814,15 @@ export default function Jiff() {
               <IconHeart filled={favourites.length>0}/>Favourites{favourites.length>0&&<span className="fav-badge">{favourites.length}</span>}
             </button>
             <button onClick={()=>navigate('/planner')} style={{fontSize:12,fontWeight:500,color:'var(--muted)',background:'none',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>📅 Week plan</button>
+            {user ? (
+              <button onClick={()=>navigate('/profile')} style={{fontSize:12,fontWeight:500,color:'var(--jiff)',background:'rgba(255,69,0,0.08)',border:'1.5px solid rgba(255,69,0,0.2)',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif",display:'flex',alignItems:'center',gap:5}}>
+                👤 {profile?.name?.split(' ')[0] || 'Profile'}
+              </button>
+            ) : supabaseEnabled ? (
+              <button onClick={signInWithGoogle} style={{fontSize:12,fontWeight:500,color:'var(--ink)',background:'white',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
+                Sign in
+              </button>
+            ) : null}
             <div className="header-tag">AI-Powered</div>
           </div>
         </header>
@@ -798,15 +836,49 @@ export default function Jiff() {
             {favourites.length===0?(
               <div className="favs-empty"><div className="favs-empty-icon">🤍</div><div className="favs-empty-title">Nothing saved yet</div><div className="favs-empty-sub">Tap the ♥ on any meal card to save it here.</div></div>
             ):(
-              <div className="favs-grid">{favourites.map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFav} fridgeIngredients={[]} showFavTag animDelay={i*0.06}/>)}</div>
+              <div className="favs-grid">{favourites.map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} fridgeIngredients={[]} showFavTag animDelay={i*0.06}/>)}</div>
             )}
+          </div>
+        )}
+
+        {/* ── Auth prompt banner ── */}
+        {showAuthPrompt && !user && supabaseEnabled && (
+          <div style={{background:'white',borderBottom:'1px solid var(--border)',padding:'14px 24px',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap',position:'sticky',top:70,zIndex:15,boxShadow:'0 4px 20px rgba(28,10,0,0.08)'}}>
+            <span style={{fontSize:16}}>☁️</span>
+            <div style={{flex:1,minWidth:200}}>
+              <div style={{fontSize:13,fontWeight:500,color:'var(--ink)'}}>Save your favourites across all devices</div>
+              <div style={{fontSize:12,color:'var(--muted)',fontWeight:300}}>Sign in to sync recipes, pantry & preferences</div>
+            </div>
+            {emailSent ? (
+              <div style={{fontSize:13,color:'var(--timer-done)',fontWeight:500}}>✓ Check your email for the magic link!</div>
+            ) : (
+              <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                <button onClick={signInWithGoogle} style={{background:'var(--jiff)',color:'white',border:'none',borderRadius:8,padding:'8px 16px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif",whiteSpace:'nowrap'}}>
+                  Sign in with Google
+                </button>
+                <div style={{display:'flex',gap:0,border:'1.5px solid var(--border-mid)',borderRadius:8,overflow:'hidden'}}>
+                  <input value={emailInput} onChange={e=>setEmailInput(e.target.value)} placeholder="or email" style={{border:'none',outline:'none',padding:'6px 10px',fontSize:12,fontFamily:"'DM Sans', sans-serif",width:140,color:'var(--ink)',background:'white'}}/>
+                  <button onClick={handleEmailSignIn} style={{background:'var(--warm)',border:'none',padding:'6px 10px',fontSize:12,fontWeight:500,cursor:'pointer',color:'var(--ink)',fontFamily:"'DM Sans', sans-serif",borderLeft:'1px solid var(--border-mid)'}}>Go</button>
+                </div>
+              </div>
+            )}
+            <button onClick={()=>{setShowAuthPrompt(false);dismissAuth();}} style={{background:'none',border:'none',color:'var(--muted)',cursor:'pointer',fontSize:18,padding:'0 4px',lineHeight:1}}>×</button>
+          </div>
+        )}
+
+        {/* ── Pantry pre-fill notice ── */}
+        {view==='input' && pantry?.length>0 && !user && (
+          <div style={{maxWidth:720,margin:'16px auto 0',padding:'0 24px'}}>
+            <div style={{background:'rgba(255,69,0,0.06)',border:'1px solid rgba(255,69,0,0.15)',borderRadius:10,padding:'10px 14px',fontSize:12,color:'var(--jiff)',display:'flex',alignItems:'center',gap:8}}>
+              🧂 Pantry ingredients pre-filled — <button onClick={()=>navigate('/profile')} style={{background:'none',border:'none',color:'var(--jiff)',cursor:'pointer',fontWeight:500,fontSize:12,padding:0,textDecoration:'underline'}}>manage your pantry</button>
+            </div>
           </div>
         )}
 
         {view==='input'&&(
           <>
             <div className="hero">
-              <div className="hero-eyebrow">Open fridge → get dinner → done</div>
+              <div className="hero-eyebrow">Breakfast, lunch or dinner — sorted</div>
               <h1 className="hero-title">What can I make <em>right now?</em></h1>
               <p className="hero-sub">Type what's in your fridge. Pick a cuisine. Get 3 real meals with full recipes — in a jiff.</p>
             </div>
@@ -835,7 +907,7 @@ export default function Jiff() {
               </div>
               <div className="cta-wrap">
                 <button className="cta-btn" onClick={handleSubmit} disabled={!ingredients.length}>
-                  <span>⚡</span><span>{cuisine==='any'?'Jiff my dinner!':`Jiff me ${cuisine} meals`}</span>
+                  <span>⚡</span><span>{cuisine==='any'?'Jiff a meal!':`Jiff me ${cuisine} meals`}</span>
                 </button>
                 {!ingredients.length&&<p className="cta-note">Add at least one ingredient to get started</p>}
               </div>
@@ -846,7 +918,7 @@ export default function Jiff() {
         {view==='loading'&&(
           <div className="loading-wrap">
             <div className="spinner"/>
-            <div className="loading-title">{cuisine!=='any'?`Finding ${cuisine} recipes…`:'Jiffing your dinner…'}</div>
+            <div className="loading-title">{cuisine!=='any'?`Finding ${cuisine} recipes…`:'Jiffing your meal…'}</div>
             <div className="loading-sub">Matching {ingredients.length} ingredient{ingredients.length>1?'s':''}{cuisine!=='any'?` to ${cuisine} cuisine`:' to the best meals'}</div>
             <div className="loading-fact">{FACTS[factIdx]}</div>
           </div>
@@ -856,7 +928,10 @@ export default function Jiff() {
           <>
             <div className="results-header">
               <div className="results-title">Jiffed. ⚡ Here's your menu.</div>
-              <div className="results-sub">Tap ♥ to save · expand for recipe + timers · use scaler to adjust servings</div>
+              <div className="results-sub">
+                Tap ♥ to save · expand for recipe + timers · use scaler to adjust servings
+                {profile && <span style={{marginLeft:8,fontSize:12,color:'var(--jiff)',fontWeight:500}}>· personalised for {profile.name?.split(' ')[0]}</span>}
+              </div>
             </div>
             <div className="result-filters">
               {cuisine!=='any'&&<span className="filter-pill">{activeCuisine?.flag} {cuisine}</span>}
@@ -865,7 +940,7 @@ export default function Jiff() {
               <span className="filter-pill">🥦 {ingredients.length} ingredient{ingredients.length>1?'s':''}</span>
             </div>
             <div className="meals-grid">
-              {meals.map((meal,i)=><MealCard key={mealKey(meal)+i} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFav} fridgeIngredients={ingredients} animDelay={i*0.07}/>)}
+              {meals.map((meal,i)=><MealCard key={mealKey(meal)+i} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} fridgeIngredients={ingredients} animDelay={i*0.07}/>)}
             </div>
             <div className="reset-wrap"><button className="reset-btn" onClick={reset}>← Try different ingredients</button></div>
           </>

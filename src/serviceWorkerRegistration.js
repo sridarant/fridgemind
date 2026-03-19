@@ -4,13 +4,13 @@ export function registerSW() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((reg) => {
-          console.log('FridgeMind SW registered:', reg.scope);
+          console.log('Jiff SW registered:', reg.scope);
           setInterval(() => reg.update(), 60 * 1000);
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('FridgeMind updated — reload for latest version.');
+                console.log('Jiff updated — reload for latest version.');
               }
             });
           });

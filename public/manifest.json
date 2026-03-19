@@ -22,7 +22,7 @@
   ],
   "shortcuts": [
     {
-      "name": "What's for dinner?",
+      "name": "Jiff a meal now",
       "short_name": "Cook now",
       "url": "/app",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
