@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
-import FridgeMind from './pages/FridgeMind';
+import Jiff from './pages/Jiff';
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/app" element={<FridgeMind />} />
+        <Route path="/app" element={<Jiff />} />
       </Routes>
     </BrowserRouter>
   );
