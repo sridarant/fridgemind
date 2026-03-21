@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale }  from '../contexts/LocaleContext';
+import JiffLogo from '../components/JiffLogo';
 
 // ── localStorage helpers (favourites for guest fallback) ─────────
 const STORAGE_KEY = 'jiff-favourites';
@@ -67,7 +68,7 @@ const MEAL_TYPE_OPTIONS = [
   { id:'breakfast', label:'Breakfast', emoji:'🌅' },
   { id:'lunch',     label:'Lunch',     emoji:'☀️' },
   { id:'dinner',    label:'Dinner',    emoji:'🌙' },
-  { id:'snack',     label:'Snack',     emoji:'🍎' },
+  { id:'snack',     label:'Snacks',    emoji:'🍎' },
 ];
 
 const FACTS = [
@@ -577,6 +578,50 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
 }
 
 // ── Main ──────────────────────────────────────────────────────────
+// ── LoadingView — shows latency warning after 10s ─────────────────
+function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CAP, factIdx }) {
+  const [slow, setSlow]       = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const t = setInterval(() => {
+      const s = Math.floor((Date.now() - start) / 1000);
+      setElapsed(s);
+      if (s >= 10) setSlow(true);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const titleText = cuisine !== 'any'
+    ? 'Finding ' + cuisine + (mealType !== 'any' ? ' ' + mealType : '') + ' recipes…'
+    : 'Jiffing your ' + (mealType !== 'any' ? mealType : 'meal') + '…';
+
+  const subText = 'Matching ' + ingredients.length + ' ingredient' + (ingredients.length > 1 ? 's' : '')
+    + ' · ' + (isPremium ? PAID_RECIPE_CAP : 1) + ' recipe' + (isPremium && PAID_RECIPE_CAP > 1 ? 's' : '') + ' coming up';
+
+  return (
+    <div className="loading-wrap">
+      <div className="spinner"/>
+      <div className="loading-title">{titleText}</div>
+      <div className="loading-sub">{subText}</div>
+      {slow && (
+        <div style={{
+          marginTop:16, padding:'10px 16px',
+          background:'rgba(255,69,0,0.07)',
+          border:'1px solid rgba(255,69,0,0.2)',
+          borderRadius:10, fontSize:13, color:'#CC3700',
+          fontWeight:300, lineHeight:1.6,
+        }}>
+          ⏳ Taking a little longer than usual ({elapsed}s) — the AI is working hard on your recipes…
+        </div>
+      )}
+      <div className="loading-fact">{FACTS[factIdx]}</div>
+    </div>
+  );
+}
+
+
 export default function Jiff() {
   const navigate = useNavigate();
   const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, supabaseEnabled, authLoading } = useAuth();
@@ -651,6 +696,9 @@ export default function Jiff() {
         setMeals(data.meals);
         setView('results');
         recordUsage();
+        if (typeof window !== 'undefined' && window._jiffGA) {
+          window._jiffGA('meal_generated', { cuisine, mealType, ingredient_count: ingredients.length, is_premium: isPremium });
+        }
         // Auto-save to meal history
         if (user) {
           fetch('/api/meal-history', {
@@ -688,10 +736,10 @@ export default function Jiff() {
 
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
-    { key: 'Spice', val: profile.spice_level || 'Medium' },
-    { key: 'Diet', val: profile.allergies?.length ? profile.allergies.join(', ') : 'None' },
-    { key: 'Skill', val: profile.skill_level || 'Intermediate' },
-    { key: 'Units', val: units === 'imperial' ? 'Imperial' : 'Metric' },
+    { key: 'Spice',     val: profile.spice_level || 'Medium' },
+    { key: 'Allergies', val: profile.allergies?.length ? profile.allergies.join(', ') : 'None' },
+    { key: 'Cuisines',  val: profile.preferred_cuisines?.length ? profile.preferred_cuisines.slice(0,2).join(', ') : 'Any' },
+    { key: 'Skill',     val: profile.skill_level || 'Intermediate' },
   ] : [];
 
   // Show mandatory sign-in gate
@@ -769,7 +817,7 @@ export default function Jiff() {
 
         {/* ── Header ── */}
         <header className="header">
-          <div className="logo" onClick={()=>navigate('/')}><span style={{fontSize:22}}>⚡</span><span className="logo-name"><span>J</span>iff</span></div>
+          <JiffLogo size="md" spinning={view==='loading'} onClick={()=>navigate('/')} />
           <div className="header-right">
             {trialActive && <div className="trial-badge">⏳ Trial: {trialDaysLeft}d left</div>}
             {user && (
@@ -778,6 +826,7 @@ export default function Jiff() {
               </button>
             )}
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 Week plan</button>
+            {isPremium && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 Goal plans</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 History</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ Go Premium</button>}
             {user && <button className="hdr-btn profile" onClick={()=>navigate('/profile')}>👤 {profile?.name?.split(' ')[0]||'Profile'}</button>}
@@ -912,12 +961,7 @@ export default function Jiff() {
                       <span className="sidebar-pref-val" style={{textTransform:'capitalize'}}>{p.val}</span>
                     </div>
                   ))}
-                  {profile.preferred_cuisines?.length > 0 && (
-                    <div className="sidebar-pref">
-                      <span className="sidebar-pref-key">Cuisine</span>
-                      <span className="sidebar-pref-val">{profile.preferred_cuisines.slice(0,2).join(', ')}{profile.preferred_cuisines.length>2?'…':''}</span>
-                    </div>
-                  )}
+
                   <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>Edit preferences →</button>
                 </div>
               )}
@@ -956,12 +1000,11 @@ export default function Jiff() {
 
         {/* ── Loading ── */}
         {view === 'loading' && (
-          <div className="loading-wrap">
-            <div className="spinner"/>
-            <div className="loading-title">{cuisine!=='any'?`Finding ${cuisine} ${mealType!=='any'?mealType:''} recipes…`:`Jiffing your ${mealType!=='any'?mealType:'meal'}…`}</div>
-            <div className="loading-sub">Matching {ingredients.length} ingredient{ingredients.length>1?'s':''} · {isPremium?PAID_RECIPE_CAP:1} recipe{isPremium&&PAID_RECIPE_CAP>1?'s':''} coming up</div>
-            <div className="loading-fact">{FACTS[factIdx]}</div>
-          </div>
+          <LoadingView
+            cuisine={cuisine} mealType={mealType}
+            ingredients={ingredients} isPremium={isPremium}
+            PAID_RECIPE_CAP={PAID_RECIPE_CAP} factIdx={factIdx}
+          />
         )}
 
         {/* ── Results ── */}

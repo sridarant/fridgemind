@@ -3,6 +3,32 @@
 AI-powered meal suggester. Built entirely through conversation with Claude.
 Live at: https://jiff-ecru.vercel.app
 
+> **Release rule:** Every release must update CHANGELOG.md, SUPABASE_SETUP.md, and SETUP.md before shipping. Never overwrite — always append new versions at the top.
+
+---
+
+## v15 — Privacy, Analytics, Goal Plans, Cookie Consent, Logo Animation
+**Date:** March 2026
+**Files changed:** `src/components/JiffLogo.jsx` (new), `src/components/CookieBanner.jsx` (new), `src/pages/Privacy.jsx` (new), `src/pages/Plans.jsx` (new), `src/pages/Jiff.jsx`, `src/pages/Landing.jsx`, `src/pages/Planner.jsx`, `src/App.jsx`, `public/index.html`, `MAILCHIMP_SETUP.md` (new), `SETUP.md`, `SUPABASE_SETUP.md`, `CHANGELOG.md`
+
+### New features
+- **Cookie consent banner** (`CookieBanner.jsx`) — GDPR-compliant, appears on first visit, Accept/Decline with expandable detail, stores choice in localStorage, initialises GA4 on accept, links to Privacy Policy
+- **Privacy Policy page** (`/privacy`) — full policy: data collection, cookies, third parties (Supabase, Anthropic, Razorpay, GA4, Mailchimp), user rights, children, changes
+- **Google Analytics GA4** — script in `public/index.html` with `G-XXXXXXXXXX` placeholder. Replace with real ID from analytics.google.com. Events: `meal_generated`, `email_capture`
+- **Goal-based Premium Meal Plans** (`/plans`) — 6 curated plans: Weight Loss, Muscle Gain, Family Friendly, Budget Meals, Vegetarian Week, 15-Minute Meals. Each generates AI-optimised 7-day plan via planner API with goal-specific prompt. Premium-gated
+- **Animated Jiff logo** (`JiffLogo.jsx`) — pulsing lightning bolt, optional spinning ring (activates during loading). Sizes: sm/md/lg. Used in Jiff.jsx (spins while generating) and Landing
+- **Latency warning** — `LoadingView` component: after 10 seconds shows "Taking a little longer than usual (Ns)…"
+
+### Fixes
+- **Snack → Snacks** — corrected in `MEAL_TYPE_OPTIONS` in Jiff.jsx, Planner.jsx, and all 4 i18n files (en/hi/ta/es)
+- **Sidebar preferences** — removed "Units" row, added "Allergies" and "Cuisines" from user profile
+- Privacy link added to Landing footer
+- Plans nav link added to Landing and Jiff header (premium users only)
+- GA4 `meal_generated` event fired after each successful generation
+
+### New documents
+- `MAILCHIMP_SETUP.md` — Mailchimp account setup, 3-email automation, API endpoint code, troubleshooting
+
 ---
 
 ## v14 — Meal History, Email Capture, Global Payments Messaging
@@ -281,3 +307,31 @@ Once live keys are in Vercel and redeployed, the "Coming soon" block on `/pricin
 | `RAZORPAY_KEY_SECRET` | `api/create-order.js`, `api/verify-payment.js` | For payments |
 | `REACT_APP_RAZORPAY_KEY_ID` | `src/contexts/PremiumContext.jsx` | For payments |
 | `PLAYWRIGHT_BASE_URL` | GitHub Actions E2E tests | For CI |
+
+---
+
+## Release checklist — mandatory for every version
+
+Before zipping and shipping any release, verify all three doc files are updated:
+
+**CHANGELOG.md** (this file)
+- New version section at the top
+- Files changed listed
+- New features described
+- Fixes listed
+- E2E test count and new tests named
+
+**SUPABASE_SETUP.md**
+- Phase 1 SQL always present (profiles, pantry, favourites)
+- Phase 2 SQL always present (meal_history)
+- Troubleshooting table current
+- Environment variable reference current
+
+**SETUP.md**
+- Prerequisites current
+- All environment variables listed with sources
+- Project structure reflects actual file tree
+- Razorpay pending steps current
+- CI/GitHub Actions instructions current
+
+> These three files ship in every zip. A release is not complete without them.

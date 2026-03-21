@@ -10,7 +10,7 @@ const MEAL_TYPE_OPTIONS = [
   { id:'breakfast', label:'Breakfast', emoji:'🌅', color:'#FF9800', bg:'#FFF3E0', dark:'#E65100' },
   { id:'lunch',     label:'Lunch',     emoji:'☀️', color:'#4CAF50', bg:'#E8F5E9', dark:'#1B5E20' },
   { id:'dinner',    label:'Dinner',    emoji:'🌙', color:'#673AB7', bg:'#EDE7F6', dark:'#311B92' },
-  { id:'snack',     label:'Snack',     emoji:'🍎', color:'#E91E63', bg:'#FCE4EC', dark:'#880E4F' },
+  { id:'snack',     label:'Snacks',    emoji:'🍎', color:'#E91E63', bg:'#FCE4EC', dark:'#880E4F' },
 ];
 
 const CUISINE_OPTIONS = [

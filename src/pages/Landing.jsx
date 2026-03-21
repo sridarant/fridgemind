@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import JiffLogo from '../components/JiffLogo';
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 
@@ -126,6 +127,7 @@ export default function Landing() {
     subs.push({ email, ts: Date.now() });
     localStorage.setItem('jiff-email-subs', JSON.stringify(subs));
     setEmailDone(true);
+    if (typeof window !== 'undefined' && window._jiffGA) window._jiffGA('email_capture', { source: 'landing' });
   };
 
   const hoverJiff = (on, e) => {
@@ -143,6 +145,7 @@ export default function Landing() {
           <span style={s.navSpark}>⚡</span>Jiff
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => navigate('/plans')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>🎯 Goal Plans</button>
           <button onClick={() => navigate('/planner')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
             📅 Week plan
           </button>
@@ -345,7 +348,7 @@ export default function Landing() {
       {/* Footer */}
       <footer style={s.footer}>
         <div style={s.footerLogo}><span style={{ color: C.jiff }}>⚡</span> Jiff</div>
-        <div style={s.footerNote}>Powered by Claude AI · <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>navigate('/pricing')}>Pricing</span> · No sign-up to start</div>
+        <div style={s.footerNote}>Powered by Claude AI · <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>navigate('/pricing')}>Pricing</span> · <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>navigate('/privacy')}>Privacy policy</span> · © 2026 Jiff</div>
       </footer>
 
     </div>

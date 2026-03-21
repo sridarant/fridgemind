@@ -29,7 +29,19 @@
 
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-128x128.png" />
     <title>Jiff — Meals in a Jiff</title>
-  </head>
+    <!-- Google Analytics GA4 — replace G-XXXXXXXXXX with your Measurement ID -->
+  <!-- Get from: analytics.google.com → Admin → Data Streams → your stream → Measurement ID -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+    window._jiffGA = function(event, params) {
+      if (typeof gtag !== 'undefined') gtag('event', event, params || {});
+    };
+  </script>
+</head>
   <body>
     <noscript>You need to enable JavaScript to run Jiff.</noscript>
     <div id="root"></div>
