@@ -7,6 +7,7 @@ import Jiff     from './pages/Jiff';
 import Planner  from './pages/Planner';
 import Profile  from './pages/Profile';
 import Pricing  from './pages/Pricing';
+import History  from './pages/History';
 
 export default function App() {
   return (
@@ -15,11 +16,12 @@ export default function App() {
         <PremiumProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/"        element={<Landing />} />
-              <Route path="/app"     element={<Jiff />} />
-              <Route path="/planner" element={<Planner />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/"         element={<Landing />} />
+              <Route path="/app"      element={<Jiff />} />
+              <Route path="/planner"  element={<Planner />} />
+              <Route path="/profile"  element={<Profile />} />
+              <Route path="/pricing"  element={<Pricing />} />
+              <Route path="/history"  element={<History />} />
             </Routes>
           </BrowserRouter>
         </PremiumProvider>

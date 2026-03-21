@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 
@@ -116,6 +117,16 @@ const FEATURES = [
 export default function Landing() {
   const navigate = useNavigate();
   const { currency } = useLocale();
+  const [email, setEmail]     = useState('');
+  const [emailDone, setEmailDone] = useState(false);
+  const handleEmailCapture = async () => {
+    if (!email || !email.includes('@')) return;
+    // Store in localStorage as fallback; Mailchimp webhook handled externally
+    const subs = JSON.parse(localStorage.getItem('jiff-email-subs') || '[]');
+    subs.push({ email, ts: Date.now() });
+    localStorage.setItem('jiff-email-subs', JSON.stringify(subs));
+    setEmailDone(true);
+  };
 
   const hoverJiff = (on, e) => {
     e.currentTarget.style.background = on ? C.jiffDark : C.jiff;
@@ -282,6 +293,44 @@ export default function Landing() {
         </div>
       </section>
 
+
+
+      {/* Email capture */}
+      <section style={{ background: C.ink, padding: '72px 24px' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', color: 'rgba(255,250,245,0.5)', fontWeight: 500, marginBottom: 16 }}>
+            Stay in the loop
+          </div>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 'clamp(26px,4vw,40px)', fontWeight: 900, color: 'white', letterSpacing: '-1px', lineHeight: 1.1, marginBottom: 12 }}>
+            New recipes. New features.<br />First to know.
+          </h2>
+          <p style={{ fontSize: 15, color: 'rgba(255,250,245,0.6)', fontWeight: 300, lineHeight: 1.7, marginBottom: 28 }}>
+            Join home cooks from India and around the world. No spam — just occasional updates when something worth sharing ships.
+          </p>
+          {emailDone ? (
+            <div style={{ background: 'rgba(29,158,117,0.15)', border: '1px solid rgba(29,158,117,0.3)', borderRadius: 12, padding: '14px 20px', color: '#5DCAA5', fontWeight: 500, fontSize: 15 }}>
+              ✓ You're in! We'll be in touch.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 0, maxWidth: 420, margin: '0 auto', border: '1.5px solid rgba(255,250,245,0.15)', borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,0.07)' }}>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleEmailCapture()}
+                style={{ flex: 1, border: 'none', outline: 'none', padding: '14px 16px', fontSize: 14, fontFamily: "'DM Sans', sans-serif", background: 'transparent', color: 'white' }}
+              />
+              <button onClick={handleEmailCapture} style={{ background: C.jiff, color: 'white', border: 'none', padding: '14px 22px', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap', transition: 'background 0.18s' }}
+                onMouseEnter={e => e.target.style.background = C.jiffDark}
+                onMouseLeave={e => e.target.style.background = C.jiff}>
+                Notify me ⚡
+              </button>
+            </div>
+          )}
+          <p style={{ fontSize: 12, color: 'rgba(255,250,245,0.3)', marginTop: 12, fontWeight: 300 }}>No spam. Unsubscribe anytime.</p>
+        </div>
+      </section>
 
       <section style={s.ctaSection}>
         <h2 style={s.ctaH2}>Any meal.<br />Right now.</h2>

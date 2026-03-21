@@ -647,7 +647,26 @@ export default function Jiff() {
         }),
       });
       const data = await res.json();
-      if (data.meals?.length > 0) { setMeals(data.meals); setView('results'); recordUsage(); }
+      if (data.meals?.length > 0) {
+        setMeals(data.meals);
+        setView('results');
+        recordUsage();
+        // Auto-save to meal history
+        if (user) {
+          fetch('/api/meal-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              meals: data.meals,
+              mealType,
+              cuisine,
+              servings: defaultServings,
+              ingredients,
+            }),
+          }).catch(() => {}); // non-critical — ignore failures
+        }
+      }
       else { setErrorMsg(data.error||'Could not generate suggestions.'); setView('error'); }
     } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
   };
@@ -759,6 +778,7 @@ export default function Jiff() {
               </button>
             )}
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 Week plan</button>
+            {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 History</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ Go Premium</button>}
             {user && <button className="hdr-btn profile" onClick={()=>navigate('/profile')}>👤 {profile?.name?.split(' ')[0]||'Profile'}</button>}
             <div className="header-tag">AI</div>

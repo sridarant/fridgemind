@@ -37,7 +37,9 @@ export default function Pricing() {
   const { isPremium, premium, plans, openCheckout, handleStripeSuccess, activateTestPremium, razorpayEnabled, stripeEnabled, clearPremium } = usePremium();
   const { currency, country, setCountry } = useLocale();
 
-  const [loading,  setLoading]  = useState(null);
+  const [loading,          setLoading]         = useState(null);
+  const [comingSoonEmail,  setComingSoonEmail]  = useState('');
+  const [comingSoonDone,   setComingSoonDone]   = useState(false);
   const [success,  setSuccess]  = useState(false);
   const [error,    setError]    = useState('');
   const [selected, setSelected] = useState('annual');
@@ -54,6 +56,14 @@ export default function Pricing() {
   }, [handleStripeSuccess]);
 
   const planList = Object.values(plans);
+
+  const handleComingSoon = () => {
+    if (!comingSoonEmail || !comingSoonEmail.includes('@')) return;
+    const subs = JSON.parse(localStorage.getItem('jiff-global-waitlist') || '[]');
+    subs.push({ email: comingSoonEmail, country, ts: Date.now() });
+    localStorage.setItem('jiff-global-waitlist', JSON.stringify(subs));
+    setComingSoonDone(true);
+  };
 
   const handleUpgrade = async (planId) => {
     const isTestMode = !razorpayEnabled && !stripeEnabled;
@@ -169,31 +179,58 @@ export default function Pricing() {
               })}
             </div>
 
-            {/* Gateway badge */}
-            <div style={{textAlign:'center',marginBottom:16}}>
-              <span style={{fontSize:12,color:C.muted,background:C.warm,borderRadius:20,padding:'4px 12px'}}>
-                {currency.gateway === 'razorpay'
-                  ? '🇮🇳 Paying in ₹ INR via Razorpay'
-                  : `🌍 Paying in ${currency.code} via Stripe — change country above`}
-              </span>
-            </div>
-
-            {/* CTA */}
-            {error && <div style={{textAlign:'center',color:'#E53E3E',fontSize:13,marginBottom:10}}>{error}</div>}
-            <div style={{textAlign:'center',marginBottom:10}}>
-              <button onClick={()=>handleUpgrade(selected)} disabled={!!loading}
-                style={{background:C.jiff,color:'white',border:'none',borderRadius:14,padding:'18px 56px',fontSize:17,fontWeight:500,cursor:loading?'not-allowed':'pointer',opacity:loading?0.7:1,fontFamily:"'DM Sans', sans-serif",transition:'all 0.2s',display:'inline-flex',alignItems:'center',gap:10}}>
-                {loading?'⏳ Processing…':`⚡ Upgrade to ${plans[selected]?.label||'Premium'} — ${currency.plans[selected]||''}`}
-              </button>
-            </div>
-            {!razorpayEnabled && !stripeEnabled && (
-              <div style={{textAlign:'center',fontSize:12,color:C.muted,marginBottom:12}}>
-                ℹ️ No payment gateway configured — clicking upgrade activates free test premium.
+            {/* Payments coming soon — Razorpay onboarding in progress */}
+            <div style={{textAlign:'center',marginBottom:52}}>
+              <div style={{display:'inline-block',background:C.warm,border:`1px solid rgba(28,10,0,0.1)`,borderRadius:20,padding:'48px 40px',maxWidth:480,width:'100%'}}>
+                <div style={{fontSize:48,marginBottom:16}}>⚡</div>
+                <div style={{display:'inline-flex',alignItems:'center',gap:7,background:'rgba(255,69,0,0.08)',border:'1px solid rgba(255,69,0,0.2)',borderRadius:20,padding:'5px 14px',marginBottom:16}}>
+                  <span style={{width:8,height:8,borderRadius:'50%',background:C.jiff,display:'inline-block',animation:'pulse 1.5s ease-in-out infinite'}}/>
+                  <span style={{fontSize:12,fontWeight:500,color:C.jiff}}>Payments onboarding in progress</span>
+                </div>
+                <h3 style={{fontFamily:"'Fraunces', serif",fontSize:24,fontWeight:900,color:C.ink,letterSpacing:'-0.5px',marginBottom:10,lineHeight:1.1}}>
+                  Paid plans launching soon
+                </h3>
+                <p style={{fontSize:14,color:C.muted,fontWeight:300,lineHeight:1.75,marginBottom:8}}>
+                  We're completing Razorpay onboarding for India payments and setting up global payment infrastructure. Full paid plans will be live very soon.
+                </p>
+                <p style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.7,marginBottom:24}}>
+                  In the meantime — enjoy <strong style={{color:C.ink,fontWeight:500}}>7 days of full free access</strong>. No card needed, no commitment.
+                </p>
+                {comingSoonDone ? (
+                  <div style={{background:C.greenBg,border:'1px solid rgba(29,158,117,0.25)',borderRadius:12,padding:'14px 18px',color:C.green,fontWeight:500,fontSize:14,marginBottom:16}}>
+                    ✓ We'll email you the moment payments go live!
+                  </div>
+                ) : (
+                  <>
+                    <div style={{display:'flex',border:`1.5px solid ${C.borderMid}`,borderRadius:12,overflow:'hidden',marginBottom:10}}>
+                      <input
+                        type="email"
+                        placeholder="your@email.com"
+                        value={comingSoonEmail}
+                        onChange={e=>setComingSoonEmail(e.target.value)}
+                        onKeyDown={e=>e.key==='Enter'&&handleComingSoon()}
+                        style={{flex:1,border:'none',outline:'none',padding:'13px 16px',fontSize:14,fontFamily:"'DM Sans', sans-serif",color:C.ink,background:'white'}}
+                      />
+                      <button onClick={handleComingSoon}
+                        style={{background:C.jiff,color:'white',border:'none',padding:'13px 22px',fontSize:14,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif",whiteSpace:'nowrap',transition:'background 0.15s'}}
+                        onMouseEnter={e=>e.target.style.background=C.jiffDark}
+                        onMouseLeave={e=>e.target.style.background=C.jiff}>
+                        Notify me ⚡
+                      </button>
+                    </div>
+                    <p style={{fontSize:12,color:C.muted,fontWeight:300}}>No spam. Just one email when payments go live.</p>
+                  </>
+                )}
+                <div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${C.border}`,display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
+                  {['Razorpay for India','Global cards soon','Cancel anytime'].map(t=>(
+                    <span key={t} style={{fontSize:12,color:C.muted,display:'flex',alignItems:'center',gap:5}}>
+                      <span style={{color:C.jiff}}>✓</span>{t}
+                    </span>
+                  ))}
+                </div>
               </div>
-            )}
-            <div style={{textAlign:'center',fontSize:12,color:C.muted,marginBottom:52,fontWeight:300}}>
-              Cancel anytime · Secure checkout · No hidden fees
             </div>
+            <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
             {/* Feature comparison */}
             <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,overflow:'hidden',boxShadow:C.shadow}}>
