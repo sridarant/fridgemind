@@ -132,6 +132,9 @@ export default function Landing() {
           <button onClick={() => navigate('/planner')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
             📅 Week plan
           </button>
+          <button onClick={() => navigate('/pricing')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
+            💳 Pricing
+          </button>
           <button style={s.navCta} onClick={() => navigate('/app')} onMouseEnter={e => Object.assign(e.target.style, { background: C.jiffDark, transform: 'translateY(-1px)' })} onMouseLeave={e => Object.assign(e.target.style, { background: C.jiff, transform: 'none' })}>
             ⚡ Quick meal
           </button>
@@ -163,7 +166,7 @@ export default function Landing() {
           </button>
         </div>
         <div style={s.heroBadges}>
-          {['Free forever', null, 'No sign-up needed', null, 'Works on any phone', null, 'Results in 5 seconds'].map((item, i) =>
+          {['5 free meals daily', null, '5 free meals daily', null, 'Works on any phone', null, 'Results in 5 seconds'].map((item, i) =>
             item === null
               ? <div key={i} style={s.heroBadgeLine} />
               : <span key={i} style={s.heroBadgeItem}>⚡ {item}</span>
@@ -243,6 +246,40 @@ export default function Landing() {
       </section>
 
       {/* Final CTA */}
+
+      {/* ── Pricing ── */}
+      <section style={{ background: C.warm, padding: '100px 24px' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <div style={s.sectionEyebrow}>Simple pricing</div>
+          <h2 style={{ ...s.sectionH2, marginBottom: 12 }}>Start free. Upgrade when ready.</h2>
+          <p style={{ fontSize: 16, color: '#6B6458', textAlign: 'center', marginBottom: 56, fontWeight: 300, lineHeight: 1.7 }}>
+            5 free meal suggestions every day — no card needed. Upgrade for unlimited everything.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
+            {[
+              { name: 'Free', price: '₹0', period: 'forever', color: '#6B6458', features: ['5 meals / day', '1 weekly plan / month', 'All basic features', 'Device-only sync'], cta: 'Start free', onClick: () => navigate('/app'), outline: true },
+              { name: 'Monthly', price: '₹99', period: '/month', color: C.jiff, features: ['Unlimited meals', 'Unlimited weekly plans', 'Cloud sync across devices', 'Taste profile + pantry'], cta: 'Get Premium', onClick: () => navigate('/pricing'), outline: false },
+              { name: 'Lifetime', price: '₹2,999', period: 'one time', color: '#854F0B', features: ['Everything in Premium', 'Pay once, use forever', 'All future features', 'Priority support'], cta: 'Best value', onClick: () => navigate('/pricing'), outline: false },
+            ].map((plan, i) => (
+              <div key={i} style={{ background: 'white', border: `2px solid ${plan.outline ? 'rgba(28,10,0,0.12)' : plan.color}`, borderRadius: 20, padding: '28px 24px', boxShadow: plan.outline ? 'none' : `0 8px 32px ${plan.color}33` }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: plan.color, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 10 }}>{plan.name}</div>
+                <div style={{ fontFamily: "'Fraunces', serif", fontSize: 36, fontWeight: 900, color: C.ink, letterSpacing: '-1px', lineHeight: 1, marginBottom: 4 }}>{plan.price}</div>
+                <div style={{ fontSize: 13, color: '#6B6458', marginBottom: 20, fontWeight: 300 }}>{plan.period}</div>
+                {plan.features.map((f, j) => (
+                  <div key={j} style={{ fontSize: 13, color: C.ink, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 300 }}>
+                    <span style={{ color: plan.color, fontWeight: 700, fontSize: 14 }}>✓</span>{f}
+                  </div>
+                ))}
+                <button onClick={plan.onClick} style={{ marginTop: 20, width: '100%', background: plan.outline ? 'transparent' : plan.color, color: plan.outline ? C.ink : 'white', border: `2px solid ${plan.outline ? 'rgba(28,10,0,0.18)' : plan.color}`, borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' }}>
+                  {plan.cta}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+
       <section style={s.ctaSection}>
         <h2 style={s.ctaH2}>Any meal.<br />Right now.</h2>
         <p style={s.ctaSub}>Find out what you can make right now. Takes 10 seconds.</p>
@@ -256,7 +293,7 @@ export default function Landing() {
       {/* Footer */}
       <footer style={s.footer}>
         <div style={s.footerLogo}><span style={{ color: C.jiff }}>⚡</span> Jiff</div>
-        <div style={s.footerNote}>Powered by Claude AI · Meals in a Jiff · No sign-up ever</div>
+        <div style={s.footerNote}>Powered by Claude AI · <span style={{cursor:'pointer',textDecoration:'underline'}} onClick={()=>navigate('/pricing')}>Pricing</span> · No sign-up to start</div>
       </footer>
 
     </div>

@@ -22,9 +22,7 @@ export default async function handler(req, res) {
     if (tp.allergies?.length) profileLines.push(`NEVER include: ${tp.allergies.join(', ')}.`);
     if (tp.skill_level === 'beginner') profileLines.push('Keep techniques simple — beginner cook.');
     if (tp.skill_level === 'advanced') profileLines.push('Advanced cook — can handle complex techniques.');
-    const profileInstruction = profileLines.length
-      ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}`
-      : '';
+    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l=>`- ${l}`).join('\n')}` : '';
 
     const prompt = `You are a professional meal planner. Create a complete 7-day meal plan.
 
@@ -72,7 +70,6 @@ Generate all 7 days (Monday through Sunday).`;
     } catch { return res.status(500).json({ error: 'Could not parse meal plan.' }); }
 
     if (!plan || plan.length < 7) return res.status(500).json({ error: 'Incomplete plan generated. Please try again.' });
-
     return res.status(200).json({ plan });
   } catch (err) {
     console.error('Planner error:', err);

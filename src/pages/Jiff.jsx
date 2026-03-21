@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { usePremium } from '../contexts/PremiumContext';
 
 // Favourites managed by AuthContext
 
@@ -516,7 +517,54 @@ const styles = `
     .share-actions { flex-direction: column; }
     .favs-panel { padding: 0 18px; }
     .scaler-orig { display: none; }
+    .gate-plans { grid-template-columns: 1fr; }
+    .gate-card { padding: 28px 20px; }
   }
+
+  /* ── Premium styles ── */
+  .usage-bar {
+    max-width: 780px; margin: 12px auto 0; padding: 0 24px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .usage-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: white; border: 1px solid var(--border-mid);
+    border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--muted);
+  }
+  .usage-pill.low { border-color: rgba(255,69,0,0.3); color: var(--jiff); background: rgba(255,69,0,0.05); }
+  .usage-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--jiff); }
+  .usage-pip.empty { background: var(--border-mid); }
+  .premium-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.25);
+    border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; color: #854F0B;
+  }
+  /* Upgrade gate modal */
+  .gate-overlay {
+    position: fixed; inset: 0; background: rgba(28,10,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px; animation: fadeIn 0.2s ease;
+  }
+  .gate-card {
+    background: white; border-radius: 24px; padding: 36px 32px;
+    max-width: 440px; width: 100%; text-align: center;
+    box-shadow: 0 24px 64px rgba(28,10,0,0.2);
+    animation: slideUp 0.25s ease;
+  }
+  .gate-icon { font-size: 44px; margin-bottom: 14px; }
+  .gate-title { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 900; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.5px; }
+  .gate-sub { font-size: 15px; color: var(--muted); font-weight: 300; line-height: 1.65; margin-bottom: 28px; }
+  .gate-plans { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
+  .gate-plan { border: 1.5px solid var(--border-mid); border-radius: 12px; padding: 14px 10px; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .gate-plan:hover { border-color: var(--jiff); }
+  .gate-plan.selected { border-color: var(--jiff); background: rgba(255,69,0,0.05); }
+  .gate-plan-price { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 900; color: var(--ink); }
+  .gate-plan-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .gate-plan-saving { font-size: 10px; font-weight: 600; color: var(--jiff); margin-top: 3px; }
+  .gate-cta { background: var(--jiff); color: white; border: none; border-radius: 12px; padding: 15px 32px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; font-family: 'DM Sans', sans-serif; margin-bottom: 10px; transition: all 0.18s; }
+  .gate-cta:hover { background: var(--jiff-dark); }
+  .gate-skip { background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 4px; }
+  .gate-skip:hover { color: var(--ink); }
 `;
 
 const TIME_OPTIONS = [
@@ -731,7 +779,9 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
 export default function Jiff() {
   const navigate = useNavigate();
   const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, isAuthDismissed, dismissAuth, supabaseEnabled } = useAuth();
-
+  const { isPremium, plans, suggestionsLeft, freeDailyLimit, canSuggest, recordSuggestion, showGate, setShowGate, gateReason, openCheckout, activateTestPremium, razorpayEnabled } = usePremium();
+  const [gatePlan, setGatePlan] = useState('annual');
+  const [gateLoading, setGateLoading] = useState(false);
   const [ingredients,setIngredients]=useState([]);
   const [inputVal,setInputVal]=useState('');
   const [time,setTime]=useState('30 min');
@@ -767,6 +817,8 @@ export default function Jiff() {
 
   const handleSubmit=async()=>{
     if(!ingredients.length)return;
+    // Check free tier limit
+    if(!recordSuggestion()) return; // recordSuggestion shows gate if over limit
     setView('loading');setFactIdx(0);setShowFavs(false);
     try{
       const res=await fetch('/api/suggest',{
@@ -807,6 +859,43 @@ export default function Jiff() {
     <>
       <style>{styles}</style>
       <div className="app">
+        {/* ── Upgrade gate modal ── */}
+        {showGate && (
+          <div className="gate-overlay" onClick={()=>setShowGate(false)}>
+            <div className="gate-card" onClick={e=>e.stopPropagation()}>
+              <div className="gate-icon">⚡</div>
+              <div className="gate-title">
+                {gateReason==='suggestions' ? "You've used today's free meals" : "Weekly planner limit reached"}
+              </div>
+              <div className="gate-sub">
+                {gateReason==='suggestions'
+                  ? `Free users get ${freeDailyLimit} meal suggestions per day. Upgrade for unlimited — any meal, any time.`
+                  : 'Free users get 1 weekly plan per month. Upgrade for unlimited planning.'}
+              </div>
+              <div className="gate-plans">
+                {Object.values(plans).map(plan=>(
+                  <div key={plan.id} className={`gate-plan ${gatePlan===plan.id?'selected':''}`} onClick={()=>setGatePlan(plan.id)}>
+                    <div className="gate-plan-price">{plan.price}</div>
+                    <div className="gate-plan-label">{plan.label}<br/>{plan.period}</div>
+                    {plan.saving&&<div className="gate-plan-saving">{plan.saving}</div>}
+                  </div>
+                ))}
+              </div>
+              <button className="gate-cta" disabled={gateLoading} onClick={async()=>{
+                if(!razorpayEnabled){activateTestPremium();return;}
+                setGateLoading(true);
+                try{await openCheckout(gatePlan);setShowGate(false);}
+                catch(e){if(e.message!=='dismissed')alert('Payment failed — please try again.');}
+                finally{setGateLoading(false);}
+              }}>
+                {gateLoading?'⏳ Processing…':'⚡ Upgrade to Premium'}
+              </button>
+              <button className="gate-skip" onClick={()=>setShowGate(false)}>Maybe later</button>
+              {!razorpayEnabled&&<div style={{fontSize:11,color:'var(--muted)',marginTop:8}}>Test mode — click to activate free premium</div>}
+            </div>
+          </div>
+        )}
+
         <header className="header">
           <div className="logo" onClick={()=>navigate('/')}><span style={{fontSize:22}}>⚡</span><span className="logo-name"><span>J</span>iff</span></div>
           <div className="header-right">
@@ -814,6 +903,11 @@ export default function Jiff() {
               <IconHeart filled={favourites.length>0}/>Favourites{favourites.length>0&&<span className="fav-badge">{favourites.length}</span>}
             </button>
             <button onClick={()=>navigate('/planner')} style={{fontSize:12,fontWeight:500,color:'var(--muted)',background:'none',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>📅 Week plan</button>
+            {!isPremium && (
+              <button onClick={()=>navigate('/pricing')} style={{fontSize:12,fontWeight:600,color:'#854F0B',background:'rgba(255,184,0,0.1)',border:'1px solid rgba(255,184,0,0.25)',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif",whiteSpace:'nowrap'}}>
+                ⚡ Go Premium
+              </button>
+            )}
             {user ? (
               <button onClick={()=>navigate('/profile')} style={{fontSize:12,fontWeight:500,color:'var(--jiff)',background:'rgba(255,69,0,0.08)',border:'1.5px solid rgba(255,69,0,0.2)',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif",display:'flex',alignItems:'center',gap:5}}>
                 👤 {profile?.name?.split(' ')[0] || 'Profile'}
@@ -926,6 +1020,26 @@ export default function Jiff() {
 
         {view==='results'&&(
           <>
+            {/* Usage bar */}
+            {!isPremium && (
+              <div className="usage-bar">
+                <div className={`usage-pill ${suggestionsLeft <= 1 ? 'low' : ''}`}>
+                  {[...Array(freeDailyLimit)].map((_,i)=>(
+                    <div key={i} className={`usage-pip ${i < suggestionsLeft ? '' : 'empty'}`}/>
+                  ))}
+                  <span>{suggestionsLeft} of {freeDailyLimit} free meals left today</span>
+                </div>
+                <button onClick={()=>navigate('/pricing')} style={{fontSize:11,fontWeight:500,color:'var(--jiff)',background:'rgba(255,69,0,0.07)',border:'1px solid rgba(255,69,0,0.2)',borderRadius:20,padding:'4px 12px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
+                  Upgrade for unlimited →
+                </button>
+              </div>
+            )}
+            {isPremium && (
+              <div className="usage-bar">
+                <div className="premium-badge">⚡ Premium — unlimited meals</div>
+              </div>
+            )}
+
             <div className="results-header">
               <div className="results-title">Jiffed. ⚡ Here's your menu.</div>
               <div className="results-sub">

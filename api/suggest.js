@@ -8,7 +8,6 @@ export default async function handler(req, res) {
 
   try {
     const { ingredients, time, diet, cuisine, tasteProfile } = req.body;
-
     if (!ingredients?.length) return res.status(400).json({ error: 'Please provide at least one ingredient.' });
 
     const dietLabel    = (!diet || diet === 'none') ? 'no dietary restrictions' : diet;
@@ -17,18 +16,14 @@ export default async function handler(req, res) {
       ? `All 3 meals MUST be authentic ${cuisineLabel} cuisine. Do not suggest dishes from other cuisines.`
       : 'Suggest the 3 most practical meals regardless of cuisine.';
 
-    // Build taste profile instructions
     const tp = tasteProfile || {};
     const profileLines = [];
     if (tp.spice_level && tp.spice_level !== 'medium') profileLines.push(`Spice level: ${tp.spice_level} — adjust heat accordingly.`);
     if (tp.allergies?.length) profileLines.push(`Allergies — NEVER include: ${tp.allergies.join(', ')}.`);
     if (tp.preferred_cuisines?.length && !cuisineLabel) profileLines.push(`User prefers: ${tp.preferred_cuisines.join(', ')} — favour these styles.`);
-    if (tp.skill_level === 'beginner') profileLines.push('User is a beginner cook — keep techniques simple, steps clear, avoid complex methods.');
-    if (tp.skill_level === 'advanced') profileLines.push('User is an advanced cook — feel free to suggest sophisticated techniques and bold flavours.');
-
-    const profileInstruction = profileLines.length
-      ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}`
-      : '';
+    if (tp.skill_level === 'beginner') profileLines.push('User is a beginner cook — keep techniques simple.');
+    if (tp.skill_level === 'advanced') profileLines.push('User is an advanced cook — feel free to use sophisticated techniques.');
+    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l=>`- ${l}`).join('\n')}` : '';
 
     const prompt = `You are a creative, practical chef with deep knowledge of world cuisines.
 
