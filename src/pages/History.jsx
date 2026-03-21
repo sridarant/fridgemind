@@ -23,9 +23,9 @@ function timeAgo(iso) {
   const mins  = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days  = Math.floor(diff / 86400000);
-  if (mins  < 60)  return `${mins}m ago`;
-  if (hours < 24)  return `${hours}h ago`;
-  if (days  < 7)   return `${days}d ago`;
+  if (mins  < 60)  return `${mins}m ago';
+  if (hours < 24)  return '${hours}h ago';
+  if (days  < 7)   return '${days}d ago`;
   return new Date(iso).toLocaleDateString('en-IN', { day:'numeric', month:'short' });
 }
 
@@ -82,26 +82,26 @@ export default function History() {
 
   const s = {
     page:    { minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans', sans-serif", color:C.ink },
-    header:  { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 28px', borderBottom:`1px solid ${C.border}`, position:'sticky', top:0, zIndex:10, background:'rgba(255,250,245,0.95)', backdropFilter:'blur(12px)' },
+    header:  { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 28px', borderBottom:'1px solid ' + C.border, position:'sticky', top:0, zIndex:10, background:'rgba(255,250,245,0.95)', backdropFilter:'blur(12px)' },
     logo:    { display:'flex', alignItems:'center', gap:8, cursor:'pointer' },
     logoName:{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink, letterSpacing:'-0.5px' },
-    backBtn: { fontSize:13, fontWeight:500, color:C.muted, background:'none', border:`1.5px solid ${C.borderMid}`, borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" },
+    backBtn: { fontSize:13, fontWeight:500, color:C.muted, background:'none', border:'1.5px solid ' + C.borderMid, borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" },
     wrap:    { maxWidth:780, margin:'0 auto', padding:'32px 24px 60px' },
     title:   { fontFamily:"'Fraunces', serif", fontSize:'clamp(26px,4vw,38px)', fontWeight:900, color:C.ink, letterSpacing:'-1px', marginBottom:4 },
     sub:     { fontSize:13, color:C.muted, fontWeight:300, marginBottom:24 },
     toolbar: { display:'flex', gap:10, marginBottom:20, flexWrap:'wrap', alignItems:'center' },
-    search:  { flex:1, minWidth:180, border:`1.5px solid ${C.borderMid}`, borderRadius:10, padding:'9px 14px', fontSize:13, fontFamily:"'DM Sans', sans-serif", color:C.ink, outline:'none', background:'white' },
-    filterPill: (active) => ({ border:`1.5px solid ${active ? C.jiff : C.borderMid}`, background: active ? C.jiff : 'white', color: active ? 'white' : C.muted, borderRadius:20, padding:'6px 14px', fontSize:12, cursor:'pointer', fontWeight: active ? 500 : 400, fontFamily:"'DM Sans', sans-serif", transition:'all 0.15s' }),
-    emptyBox:{ textAlign:'center', padding:'56px 24px', border:`2px dashed ${C.borderMid}`, borderRadius:18 },
-    card:    { background:'white', border:`1px solid ${C.border}`, borderRadius:16, overflow:'hidden', marginBottom:10, boxShadow:C.shadow },
+    search:  { flex:1, minWidth:180, border:'1.5px solid ' + C.borderMid, borderRadius:10, padding:'9px 14px', fontSize:13, fontFamily:"'DM Sans', sans-serif", color:C.ink, outline:'none', background:'white' },
+    filterPill: (active) => ({ border:'1.5px solid ' + (active ? C.jiff : C.borderMid), background: active ? C.jiff : 'white', color: active ? 'white' : C.muted, borderRadius:20, padding:'6px 14px', fontSize:12, cursor:'pointer', fontWeight: active ? 500 : 400, fontFamily:"'DM Sans', sans-serif", transition:'all 0.15s' }),
+    emptyBox:{ textAlign:'center', padding:'56px 24px', border:'2px dashed ' + C.borderMid, borderRadius:18 },
+    card:    { background:'white', border:'1px solid ' + C.border, borderRadius:16, overflow:'hidden', marginBottom:10, boxShadow:C.shadow },
     cardHdr: { padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12 },
-    cardBody:{ padding:'0 16px 14px', borderTop:`1px solid ${C.border}` },
-    meal:    { padding:'10px 0', borderBottom:`1px solid rgba(0,0,0,0.05)', display:'flex', alignItems:'center', gap:10 },
+    cardBody:{ padding:'0 16px 14px', borderTop:'1px solid ' + C.border },
+    meal:    { padding:'10px 0', borderBottom:'1px solid rgba(0,0,0,0.05)', display:'flex', alignItems:'center', gap:10 },
     mealName:{ fontSize:14, fontWeight:500, color:C.ink },
     mealMeta:{ fontSize:12, color:C.muted, fontWeight:300, marginTop:2 },
     chip:    (color) => ({ display:'inline-block', fontSize:10, fontWeight:500, padding:'2px 8px', borderRadius:20, background:color.bg, color:color.text }),
     actions: { display:'flex', gap:8, marginTop:12, flexWrap:'wrap' },
-    actBtn:  { fontSize:12, fontWeight:500, padding:'7px 14px', borderRadius:8, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", border:`1.5px solid ${C.borderMid}`, background:'white', color:C.ink, transition:'all 0.15s' },
+    actBtn:  { fontSize:12, fontWeight:500, padding:'7px 14px', borderRadius:8, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", border:'1.5px solid ' + C.borderMid, background:'white', color:C.ink, transition:'all 0.15s' },
     delBtn:  { fontSize:12, fontWeight:500, padding:'7px 14px', borderRadius:8, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", border:'1.5px solid rgba(229,62,62,0.3)', background:'#FFF5F5', color:'#E53E3E', transition:'all 0.15s' },
     ingList: { display:'flex', flexWrap:'wrap', gap:5, marginTop:8 },
     ingTag:  { background:C.warm, borderRadius:20, padding:'3px 10px', fontSize:11, color:C.muted },
@@ -224,7 +224,7 @@ export default function History() {
                 <div style={s.cardBody}>
                   {/* Meal list */}
                   {meals.map((meal, i) => (
-                    <div key={i} style={{...s.meal, borderBottom: i < meals.length-1 ? `1px solid rgba(0,0,0,0.05)` : 'none'}}>
+                    <div key={i} style={{...s.meal, borderBottom: i < meals.length-1 ? '1px solid rgba(0,0,0,0.05)' : 'none'}}>
                       <span style={{fontSize:20}}>{meal.emoji}</span>
                       <div>
                         <div style={s.mealName}>{meal.name}</div>

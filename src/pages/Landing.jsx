@@ -20,14 +20,14 @@ const s = {
   page: { minHeight: '100vh', background: C.cream, fontFamily: "'DM Sans', sans-serif", overflowX: 'hidden' },
 
   // Nav
-  nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 48px', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 100, background: 'rgba(255,250,245,0.94)', backdropFilter: 'blur(12px)' },
+  nav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 48px', borderBottom: '1px solid ' + C.border, position: 'sticky', top: 0, zIndex: 100, background: 'rgba(255,250,245,0.94)', backdropFilter: 'blur(12px)' },
   navLogo: { display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 900, color: C.ink, letterSpacing: '-0.5px', cursor: 'pointer' },
   navSpark: { color: C.jiff, marginRight: 2 },
   navCta: { background: C.jiff, color: 'white', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 14, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer', transition: 'all 0.18s', letterSpacing: '0.2px' },
 
   // Hero
   hero: { maxWidth: 880, margin: '0 auto', padding: '96px 24px 80px', textAlign: 'center' },
-  heroPill: { display: 'inline-flex', alignItems: 'center', gap: 7, background: `rgba(255,69,0,0.1)`, border: `1px solid rgba(255,69,0,0.2)`, borderRadius: 20, padding: '5px 14px 5px 10px', marginBottom: 28 },
+  heroPill: { display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,69,0,0.1)', border: `1px solid rgba(255,69,0,0.2)`, borderRadius: 20, padding: '5px 14px 5px 10px', marginBottom: 28 },
   heroPillDot: { width: 7, height: 7, borderRadius: '50%', background: C.jiff },
   heroPillText: { fontSize: 12, fontWeight: 500, color: C.jiff, letterSpacing: '0.5px' },
   h1: { fontFamily: "'Fraunces', serif", fontSize: 'clamp(48px, 8vw, 88px)', fontWeight: 900, lineHeight: 1.0, color: C.ink, marginBottom: 24, letterSpacing: '-2.5px' },
@@ -35,7 +35,7 @@ const s = {
   heroSub: { fontSize: 18, color: C.muted, lineHeight: 1.7, fontWeight: 300, maxWidth: 500, margin: '0 auto 44px' },
   heroBtns: { display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' },
   primaryBtn: { background: C.jiff, color: 'white', border: 'none', borderRadius: 14, padding: '18px 40px', fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s', letterSpacing: '0.2px' },
-  secondaryBtn: { background: 'transparent', color: C.ink, border: `1.5px solid ${C.borderMid}`, borderRadius: 14, padding: '18px 32px', fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 400, cursor: 'pointer', transition: 'all 0.2s' },
+  secondaryBtn: { background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 14, padding: '18px 32px', fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 400, cursor: 'pointer', transition: 'all 0.2s' },
   heroBadges: { display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap', marginTop: 36 },
   heroBadgeItem: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: C.muted, fontWeight: 300 },
   heroBadgeLine: { width: 1, height: 14, background: C.border },
@@ -52,8 +52,8 @@ const s = {
   sectionEye: { fontSize: 11, letterSpacing: '2.5px', textTransform: 'uppercase', fontWeight: 500, color: C.jiff, marginBottom: 16, textAlign: 'center' },
   sectionH2: { fontFamily: "'Fraunces', serif", fontSize: 'clamp(30px, 4.5vw, 48px)', fontWeight: 900, color: C.ink, textAlign: 'center', marginBottom: 56, letterSpacing: '-1.5px', lineHeight: 1.1 },
   stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 },
-  stepCard: { background: C.warm, border: `1px solid ${C.border}`, borderRadius: 20, padding: '28px 24px', position: 'relative', overflow: 'hidden' },
-  stepNumBg: { fontFamily: "'Fraunces', serif", fontSize: 80, fontWeight: 900, color: `rgba(255,69,0,0.07)`, lineHeight: 1, position: 'absolute', top: 12, right: 16 },
+  stepCard: { background: C.warm, border: '1px solid ' + C.border, borderRadius: 20, padding: '28px 24px', position: 'relative', overflow: 'hidden' },
+  stepNumBg: { fontFamily: "'Fraunces', serif", fontSize: 80, fontWeight: 900, color: 'rgba(255,69,0,0.07)', lineHeight: 1, position: 'absolute', top: 12, right: 16 },
   stepIcon: { fontSize: 28, marginBottom: 14 },
   stepTitle: { fontFamily: "'Fraunces', serif", fontSize: 19, fontWeight: 700, color: C.ink, marginBottom: 8, letterSpacing: '-0.3px' },
   stepDesc: { fontSize: 13.5, color: C.muted, lineHeight: 1.65, fontWeight: 300 },
@@ -65,7 +65,7 @@ const s = {
   problemQAccent: { color: C.jiff, fontStyle: 'italic' },
   problemP: { fontSize: 17, color: C.muted, lineHeight: 1.8, fontWeight: 300, maxWidth: 560, margin: '0 auto 48px' },
   problemCards: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 },
-  problemCard: { background: C.cream, border: `1px solid ${C.border}`, borderRadius: 16, padding: '20px 18px', textAlign: 'left' },
+  problemCard: { background: C.cream, border: '1px solid ' + C.border, borderRadius: 16, padding: '20px 18px', textAlign: 'left' },
   problemCardIcon: { fontSize: 22, marginBottom: 10 },
   problemCardTitle: { fontSize: 14, fontWeight: 500, color: C.ink, marginBottom: 5 },
   problemCardDesc: { fontSize: 13, color: C.muted, lineHeight: 1.55, fontWeight: 300 },
@@ -73,7 +73,7 @@ const s = {
   // Features
   featSection: { padding: '100px 24px', maxWidth: 1000, margin: '0 auto' },
   featGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 16 },
-  featCard: { border: `1px solid ${C.border}`, borderRadius: 16, padding: '24px 20px' },
+  featCard: { border: '1px solid ' + C.border, borderRadius: 16, padding: '24px 20px' },
   featIcon: { fontSize: 24, marginBottom: 12 },
   featTitle: { fontSize: 14, fontWeight: 500, color: C.ink, marginBottom: 6 },
   featDesc: { fontSize: 13, color: C.muted, lineHeight: 1.6, fontWeight: 300 },
@@ -85,7 +85,7 @@ const s = {
   ctaBtn: { background: C.cream, color: C.jiff, border: 'none', borderRadius: 14, padding: '18px 44px', fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 10, transition: 'all 0.18s' },
 
   // Footer
-  footer: { borderTop: `1px solid ${C.border}`, padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
+  footer: { borderTop: '1px solid ' + C.border, padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
   footerLogo: { fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 900, color: C.ink, display: 'flex', alignItems: 'center', gap: 6 },
   footerNote: { fontSize: 13, color: C.muted, fontWeight: 300 },
 };
@@ -275,7 +275,7 @@ export default function Landing() {
               { name: 'Monthly', price: currency.plans.monthly, period: '/month', color: C.jiff, features: ['Unlimited meals', 'Unlimited weekly plans', 'Cloud sync across devices', 'Taste profile + pantry'], cta: 'Get Premium', onClick: () => navigate('/pricing'), outline: false },
               { name: 'Lifetime', price: currency.plans.lifetime, period: 'one time', color: '#854F0B', features: ['Everything in Premium', 'Pay once, use forever', 'All future features', 'Priority support'], cta: 'Best value', onClick: () => navigate('/pricing'), outline: false },
             ].map((plan, i) => (
-              <div key={i} style={{ background: 'white', border: `2px solid ${plan.outline ? 'rgba(28,10,0,0.12)' : plan.color}`, borderRadius: 20, padding: '28px 24px', boxShadow: plan.outline ? 'none' : `0 8px 32px ${plan.color}33` }}>
+              <div key={i} style={{ background: 'white', border: '2px solid ' + plan.outline ? 'rgba(28,10,0,0.12)' : plan.color, borderRadius: 20, padding: '28px 24px', boxShadow: plan.outline ? 'none' : `0 8px 32px ${plan.color}33` }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: plan.color, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 10 }}>{plan.name}</div>
                 <div style={{ fontFamily: "'Fraunces', serif", fontSize: 36, fontWeight: 900, color: C.ink, letterSpacing: '-1px', lineHeight: 1, marginBottom: 4 }}>{plan.price}</div>
                 <div style={{ fontSize: 13, color: '#6B6458', marginBottom: 20, fontWeight: 300 }}>{plan.period}</div>
@@ -284,7 +284,7 @@ export default function Landing() {
                     <span style={{ color: plan.color, fontWeight: 700, fontSize: 14 }}>✓</span>{f}
                   </div>
                 ))}
-                <button onClick={plan.onClick} style={{ marginTop: 20, width: '100%', background: plan.outline ? 'transparent' : plan.color, color: plan.outline ? C.ink : 'white', border: `2px solid ${plan.outline ? 'rgba(28,10,0,0.18)' : plan.color}`, borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' }}>
+                <button onClick={plan.onClick} style={{ marginTop: 20, width: '100%', background: plan.outline ? 'transparent' : plan.color, color: plan.outline ? C.ink : 'white', border: '2px solid ' + plan.outline ? 'rgba(28,10,0,0.18)' : plan.color, borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' }}>
                   {plan.cta}
                 </button>
               </div>

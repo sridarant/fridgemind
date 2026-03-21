@@ -78,7 +78,7 @@ export default function Pricing() {
     } finally { setLoading(null); }
   };
 
-  const hdr = { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 36px', borderBottom:`1px solid ${C.border}`, background:'rgba(255,250,245,0.95)', backdropFilter:'blur(12px)', position:'sticky', top:0, zIndex:10 };
+  const hdr = { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 36px', borderBottom:'1px solid ' + C.border, background:'rgba(255,250,245,0.95)', backdropFilter:'blur(12px)', position:'sticky', top:0, zIndex:10 };
 
   return (
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans', sans-serif", color:C.ink }}>
@@ -93,10 +93,10 @@ export default function Pricing() {
         <div style={{display:'flex', gap:8, alignItems:'center'}}>
           {/* Country selector for currency override */}
           <select value={country} onChange={e=>setCountry(e.target.value)}
-            style={{ fontSize:12, color:C.muted, background:'white', border:`1px solid ${C.borderMid}`, borderRadius:8, padding:'5px 8px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
+            style={{ fontSize:12, color:C.muted, background:'white', border:'1px solid ' + C.borderMid, borderRadius:8, padding:'5px 8px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
             {COUNTRY_OPTIONS.map(c=><option key={c.code} value={c.code}>{c.label}</option>)}
           </select>
-          <button onClick={()=>navigate('/app')} style={{ fontSize:13, color:C.muted, background:'none', border:`1.5px solid ${C.borderMid}`, borderRadius:8, padding:'7px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:500 }}>
+          <button onClick={()=>navigate('/app')} style={{ fontSize:13, color:C.muted, background:'none', border:'1.5px solid ' + C.borderMid, borderRadius:8, padding:'7px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:500 }}>
             ← Back to app
           </button>
         </div>
@@ -120,7 +120,7 @@ export default function Pricing() {
             <button onClick={()=>navigate('/app')} style={{background:C.jiff,color:'white',border:'none',borderRadius:12,padding:'14px 32px',fontSize:15,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif",marginRight:10}}>
               ⚡ Go cook something →
             </button>
-            <button onClick={clearPremium} style={{fontSize:12,color:C.muted,background:'none',border:`1px solid ${C.border}`,borderRadius:8,padding:'8px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
+            <button onClick={clearPremium} style={{fontSize:12,color:C.muted,background:'none',border:'1px solid ' + C.border,borderRadius:8,padding:'8px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
               Cancel subscription
             </button>
           </div>
@@ -169,7 +169,7 @@ export default function Pricing() {
                 const price = currency.plans[plan.id];
                 return (
                   <div key={plan.id} onClick={()=>setSelected(plan.id)}
-                    style={{background:sel?C.jiff:'white',border:`2px solid ${sel?C.jiff:C.borderMid}`,borderRadius:18,padding:'22px 20px',cursor:'pointer',transition:'all 0.18s',position:'relative',boxShadow:sel?'0 8px 28px rgba(255,69,0,0.25)':C.shadow}}>
+                    style={{background:sel?C.jiff:'white',border:'2px solid ' + sel?C.jiff:C.borderMid,borderRadius:18,padding:'22px 20px',cursor:'pointer',transition:'all 0.18s',position:'relative',boxShadow:sel?'0 8px 28px rgba(255,69,0,0.25)':C.shadow}}>
                     {popular && <div style={{position:'absolute',top:-12,left:'50%',transform:'translateX(-50%)',background:C.gold,color:C.ink,fontSize:10,fontWeight:700,padding:'3px 12px',borderRadius:20,whiteSpace:'nowrap'}}>MOST POPULAR</div>}
                     {plan.saving && <div style={{fontSize:10,fontWeight:600,color:sel?'rgba(255,255,255,0.8)':C.jiff,letterSpacing:'1px',textTransform:'uppercase',marginBottom:8}}>{plan.saving}</div>}
                     <div style={{fontFamily:"'Fraunces', serif",fontSize:30,fontWeight:900,color:sel?'white':C.ink,letterSpacing:'-1px',marginBottom:4}}>{price}</div>
@@ -202,7 +202,7 @@ export default function Pricing() {
                   </div>
                 ) : (
                   <>
-                    <div style={{display:'flex',border:`1.5px solid ${C.borderMid}`,borderRadius:12,overflow:'hidden',marginBottom:10}}>
+                    <div style={{display:'flex',border:'1.5px solid ' + C.borderMid,borderRadius:12,overflow:'hidden',marginBottom:10}}>
                       <input
                         type="email"
                         placeholder="your@email.com"
@@ -221,7 +221,7 @@ export default function Pricing() {
                     <p style={{fontSize:12,color:C.muted,fontWeight:300}}>No spam. Just one email when payments go live.</p>
                   </>
                 )}
-                <div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${C.border}`,display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
+                <div style={{marginTop:20,paddingTop:16,borderTop:'1px solid ' + C.border,display:'flex',gap:16,justifyContent:'center',flexWrap:'wrap'}}>
                   {['Razorpay for India','Global cards soon','Cancel anytime'].map(t=>(
                     <span key={t} style={{fontSize:12,color:C.muted,display:'flex',alignItems:'center',gap:5}}>
                       <span style={{color:C.jiff}}>✓</span>{t}
@@ -233,14 +233,14 @@ export default function Pricing() {
             <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
             {/* Feature comparison */}
-            <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,overflow:'hidden',boxShadow:C.shadow}}>
+            <div style={{background:'white',border:'1px solid ' + C.border,borderRadius:20,overflow:'hidden',boxShadow:C.shadow}}>
               <div style={{display:'grid',gridTemplateColumns:'1fr 110px 110px',background:C.ink,padding:'14px 20px'}}>
                 <div style={{fontSize:12,fontWeight:500,color:'rgba(255,250,245,0.6)',textTransform:'uppercase',letterSpacing:'1px'}}>Feature</div>
                 <div style={{fontSize:12,fontWeight:500,color:'rgba(255,250,245,0.6)',textTransform:'uppercase',letterSpacing:'1px',textAlign:'center'}}>Free</div>
                 <div style={{fontSize:12,fontWeight:600,color:C.gold,textTransform:'uppercase',letterSpacing:'1px',textAlign:'center'}}>Premium</div>
               </div>
               {FEATURES.map((f,i)=>(
-                <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 110px 110px',padding:'12px 20px',borderBottom:i<FEATURES.length-1?`1px solid ${C.border}`:'none',background:i%2===0?'white':C.cream}}>
+                <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 110px 110px',padding:'12px 20px',borderBottom:i<FEATURES.length-1?'1px solid ' + C.border:'none',background:i%2===0?'white':C.cream}}>
                   <div style={{fontSize:13,color:C.ink,fontWeight:300}}>{f.label}</div>
                   <div style={{fontSize:13,color:f.free==='—'?'#CBD5E0':C.muted,textAlign:'center'}}>{f.free}</div>
                   <div style={{fontSize:13,color:C.jiff,textAlign:'center',fontWeight:500}}>{f.premium}</div>
