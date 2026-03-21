@@ -1,4 +1,4 @@
-// api/planner.js — Jiff weekly meal planner
+// api/planner.js — Jiff weekly meal planner with meal type selection
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -7,14 +7,23 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
 
   try {
-    const { ingredients, diet, cuisine, tasteProfile, language, units } = req.body;
+    const {
+      ingredients, diet, cuisine,
+      mealTypes = ['breakfast', 'lunch', 'dinner'], // which meals to plan
+      servings = 2,
+      tasteProfile,
+      language = 'en',
+      units = 'metric',
+    } = req.body;
+
     if (!ingredients?.length) return res.status(400).json({ error: 'Please provide at least one ingredient.' });
+    if (!mealTypes?.length)   return res.status(400).json({ error: 'Select at least one meal type.' });
 
     const dietLabel    = (!diet || diet === 'none') ? 'no dietary restrictions' : diet;
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
     const cuisineRule  = cuisineLabel
       ? `All meals should follow ${cuisineLabel} cuisine.`
-      : 'Mix cuisines freely — variety across the week is encouraged.';
+      : 'Mix cuisines freely — variety is encouraged.';
 
     const unitsRule = units === 'imperial'
       ? 'Use imperial measurements only: oz, lbs, cups, tbsp, tsp.'
@@ -23,7 +32,7 @@ export default async function handler(req, res) {
     const langMap = { en: 'English', hi: 'Hindi', ta: 'Tamil', es: 'Spanish' };
     const langName = langMap[language] || 'English';
     const langRule = langName !== 'English'
-      ? `IMPORTANT: Respond ENTIRELY in ${langName}. All meal names, descriptions, ingredients, and steps must be in ${langName}.`
+      ? `IMPORTANT: Respond ENTIRELY in ${langName}.`
       : '';
 
     const tp = tasteProfile || {};
@@ -31,42 +40,62 @@ export default async function handler(req, res) {
     if (tp.spice_level && tp.spice_level !== 'medium') profileLines.push(`Spice level: ${tp.spice_level}.`);
     if (tp.allergies?.length) profileLines.push(`NEVER include: ${tp.allergies.join(', ')}.`);
     if (tp.skill_level === 'beginner') profileLines.push('Keep techniques simple — beginner cook.');
-    if (tp.skill_level === 'advanced') profileLines.push('Advanced cook — can handle complex techniques.');
-    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}` : '';
+    if (tp.skill_level === 'advanced') profileLines.push('Advanced cook — complex techniques welcome.');
+    const profileInstruction = profileLines.length
+      ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}`
+      : '';
+
+    // Build meal type slots
+    const mealSlotExamples = mealTypes.map(type => {
+      const emojis = { breakfast: '🍳', lunch: '🥗', dinner: '🍲', snack: '🍎' };
+      const times  = { breakfast: '15 min', lunch: '25 min', dinner: '35 min', snack: '10 min' };
+      const cals   = { breakfast: '320', lunch: '450', dinner: '580', snack: '180' };
+      return `      "${type}": { "name": "...", "emoji": "${emojis[type]||'🍽️'}", "time": "${times[type]||'20 min'}", "description": "...", "ingredients": [], "steps": [], "calories": "${cals[type]||'400'}", "protein": "15g" }`;
+    }).join(',\n');
+
+    const mealTypeDesc = {
+      breakfast: 'energising breakfast (under 20 min)',
+      lunch:     'satisfying practical lunch',
+      dinner:    'complete dinner',
+      snack:     'light snack or bite (under 10 min, small portion)',
+    };
+    const mealTypeRules = mealTypes.map(t => `- ${t}: ${mealTypeDesc[t] || t}`).join('\n');
 
     const prompt = `You are a professional meal planner. Create a complete 7-day meal plan.
 
 Available ingredients: ${ingredients.join(', ')}.
 Dietary preference: ${dietLabel}.
 Cuisine style: ${cuisineRule}
+Servings: Each recipe should serve ${servings} people.
 Measurements: ${unitsRule}
+Meal types to include each day: ${mealTypes.join(', ')}
+${mealTypeRules}
 ${langRule}${profileInstruction}
 
 Rules:
-- 7 days, each with breakfast, lunch, and dinner (21 meals total)
-- No meal repeats across the week
-- Breakfast under 20 min, lunch practical, dinner more complete
+- Generate exactly 7 days (Monday through Sunday)
+- Each day must include ONLY these meal types: ${mealTypes.join(', ')}
+- No meal repeats across the entire week
+- Vary proteins, textures, and cooking methods throughout
 - Mark pantry extras with *
 
-Respond ONLY with a valid JSON array — no markdown:
+Respond ONLY with a valid JSON array — no markdown, no explanation:
 
 [
   {
     "day": "Monday",
     "meals": {
-      "breakfast": { "name": "...", "emoji": "🍳", "time": "10 min", "description": "...", "ingredients": [], "steps": [], "calories": "320", "protein": "12g" },
-      "lunch":     { "name": "...", "emoji": "🥗", "time": "20 min", "description": "...", "ingredients": [], "steps": [], "calories": "450", "protein": "18g" },
-      "dinner":    { "name": "...", "emoji": "🍲", "time": "35 min", "description": "...", "ingredients": [], "steps": [], "calories": "580", "protein": "24g" }
+${mealSlotExamples}
     }
   }
 ]
 
-Generate all 7 days (Monday through Sunday).`;
+Generate all 7 days.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 9000, messages: [{ role: 'user', content: prompt }] }),
     });
 
     const data = await response.json();

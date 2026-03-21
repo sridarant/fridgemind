@@ -1,4 +1,4 @@
-// api/suggest.js — Jiff secure server-side proxy
+// api/suggest.js — Jiff secure server-side proxy — returns 5 meal suggestions
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -7,54 +7,74 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
 
   try {
-    const { ingredients, time, diet, cuisine, tasteProfile, language, units } = req.body;
+    const {
+      ingredients, time, diet, cuisine,
+      mealType = 'any',        // breakfast | lunch | dinner | snack | any
+      defaultServings = 2,     // used in recipe scaling hint
+      tasteProfile,
+      language = 'en',
+      units = 'metric',
+      count = 5,               // number of meals to return (free tier sends 1)
+    } = req.body;
+
     if (!ingredients?.length) return res.status(400).json({ error: 'Please provide at least one ingredient.' });
 
     const dietLabel    = (!diet || diet === 'none') ? 'no dietary restrictions' : diet;
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
     const cuisineRule  = cuisineLabel
-      ? `All 3 meals MUST be authentic ${cuisineLabel} cuisine. Do not suggest dishes from other cuisines.`
-      : 'Suggest the 3 most practical meals regardless of cuisine.';
+      ? `All ${count} meals MUST be authentic ${cuisineLabel} cuisine.`
+      : `Suggest the ${count} most practical meals regardless of cuisine.`;
 
-    // Units instruction
+    // Meal type instruction
+    const mealTypeMap = {
+      breakfast: 'breakfast dishes — quick to prepare (under 20 min), energising, and appropriate for the morning',
+      lunch:     'lunch dishes — satisfying, practical, and suitable for midday',
+      dinner:    'dinner dishes — more complete meals suitable for the evening',
+      snack:     'snack or light bite recipes — small portions, quick to prepare, suitable as between-meal snacks',
+      any:       'meals suitable for any time of day — vary the meal types across the suggestions',
+    };
+    const mealTypeRule = `All suggestions must be ${mealTypeMap[mealType] || mealTypeMap.any}.`;
+
     const unitsRule = units === 'imperial'
       ? 'Use imperial measurements only: oz, lbs, cups, tbsp, tsp, fl oz. Never use grams or ml.'
       : 'Use metric measurements only: g, kg, ml, l, tbsp, tsp.';
 
-    // Language instruction
     const langMap = { en: 'English', hi: 'Hindi', ta: 'Tamil', es: 'Spanish' };
     const langName = langMap[language] || 'English';
     const langRule = langName !== 'English'
       ? `IMPORTANT: Respond ENTIRELY in ${langName}. All meal names, descriptions, ingredients, and steps must be in ${langName}.`
       : '';
 
-    // Taste profile
     const tp = tasteProfile || {};
     const profileLines = [];
     if (tp.spice_level && tp.spice_level !== 'medium') profileLines.push(`Spice level: ${tp.spice_level} — adjust heat accordingly.`);
     if (tp.allergies?.length) profileLines.push(`Allergies — NEVER include: ${tp.allergies.join(', ')}.`);
     if (tp.preferred_cuisines?.length && !cuisineLabel) profileLines.push(`User prefers: ${tp.preferred_cuisines.join(', ')} — favour these styles.`);
     if (tp.skill_level === 'beginner') profileLines.push('User is a beginner cook — keep techniques simple.');
-    if (tp.skill_level === 'advanced') profileLines.push('User is an advanced cook — feel free to use sophisticated techniques.');
-    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}` : '';
+    if (tp.skill_level === 'advanced') profileLines.push('Advanced cook — feel free to use sophisticated techniques.');
+    const profileInstruction = profileLines.length
+      ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}`
+      : '';
 
     const prompt = `You are a creative, practical chef with deep knowledge of world cuisines.
 
 Available ingredients: ${ingredients.join(', ')}.
 Time available: ${time}.
 Dietary preference: ${dietLabel}.
+Meal type: ${mealTypeRule}
 Cuisine requirement: ${cuisineRule}
+Serving size: Each recipe should serve ${defaultServings} people.
 Measurements: ${unitsRule}
 ${langRule}${profileInstruction}
 
-Suggest exactly 3 meals. Respond ONLY with a valid JSON array — no markdown, no explanation, no backticks:
+Suggest exactly ${count} meal${count > 1 ? 's' : ''}. Respond ONLY with a valid JSON array — no markdown, no explanation, no backticks:
 
 [
   {
     "name": "Meal Name",
     "emoji": "🍝",
     "time": "25 min",
-    "servings": "2",
+    "servings": "${defaultServings}",
     "difficulty": "Easy",
     "description": "One enticing sentence describing this dish.",
     "ingredients": ["200g pasta", "2 cloves garlic", "olive oil*"],
@@ -71,7 +91,7 @@ Rules: use given ingredients as base; mark pantry staples with *; keep steps con
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 1500, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] }),
     });
 
     const data = await response.json();

@@ -92,8 +92,8 @@ const s = {
 const STEPS = [
   { icon: '🥦', n: '01', title: 'Dump your fridge', desc: 'Type whatever you have. Eggs, half an onion, leftover rice — anything goes. No measuring, no precision.' },
   { icon: '🍱', n: '02', title: 'Pick your vibe', desc: 'Choose a cuisine and how much time you have. Indian? 15 minutes? Done.' },
-  { icon: '⚡', n: '03', title: 'Jiff it', desc: 'AI cooks up 3 real meals instantly. Full recipes, ingredients, steps, nutrition — the works.' },
-  { icon: '🍽️', n: '04', title: 'Actually eat well', desc: 'No food waste. No sad takeout. No 40-minute recipe searches. Just meals, sorted.' },
+  { icon: '⚡', n: '03', title: 'Jiff it', desc: 'AI cooks up 5 real meals instantly. Full recipes, ingredients, steps, nutrition — the works.' },
+  { icon: '🍽️', n: '04', title: 'Actually eat well', desc: 'No food waste. No sad takeout. No endless recipe searches. Five options ready in seconds.' },
 ];
 
 const PROBLEMS = [
@@ -155,7 +155,7 @@ export default function Landing() {
           <span style={s.h1Accent}>In a Jiff.</span>
         </h1>
         <p style={s.heroSub}>
-          Open your fridge. Type what's inside. Get 3 real meals — with full recipes — in under 5 seconds. No faff.
+          Open your fridge. Type what's inside. Get 5 real meals — with full recipes — in under 5 seconds. No faff.
         </p>
         <div style={s.heroBtns}>
           <button style={s.primaryBtn} onClick={() => navigate('/app')}
@@ -169,7 +169,7 @@ export default function Landing() {
           </button>
         </div>
         <div style={s.heroBadges}>
-          {['5 free meals daily', null, '13 cuisines', null, '4 languages', null, 'Results in 5 seconds'].map((item, i) =>
+          {['5 free meals daily', null, '13 cuisines', null, '4 languages', null, 'Works globally'].map((item, i) =>
             item === null
               ? <div key={i} style={s.heroBadgeLine} />
               : <span key={i} style={s.heroBadgeItem}>⚡ {item}</span>
