@@ -928,7 +928,7 @@ export default function Jiff() {
                 <div style={{fontSize:28,marginBottom:6}}>📅</div>
                 <div style={{fontSize:13,fontWeight:500,color:'var(--ink)',marginBottom:4}}>Plan your whole week</div>
                 <div style={{fontSize:12,color:'var(--muted)',fontWeight:300,marginBottom:12}}>21 meals in one shot — breakfast, lunch, dinner & snacks</div>
-                <button onClick={()=>navigate('/planner')} style={{width:'100%',background:'var(--jiff)',color:'white',border:'none',borderRadius:9px,padding:'10px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",borderRadius:9}}>Go to Week Planner →</button>
+                <button onClick={()=>navigate('/planner')} style={{width:'100%',background:'var(--jiff)',color:'white',border:'none',borderRadius:9,padding:'10px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>Go to Week Planner →</button>
               </div>
             </div>
           </div>
