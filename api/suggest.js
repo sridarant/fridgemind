@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
 
   try {
-    const { ingredients, time, diet, cuisine, tasteProfile } = req.body;
+    const { ingredients, time, diet, cuisine, tasteProfile, language, units } = req.body;
     if (!ingredients?.length) return res.status(400).json({ error: 'Please provide at least one ingredient.' });
 
     const dietLabel    = (!diet || diet === 'none') ? 'no dietary restrictions' : diet;
@@ -16,6 +16,19 @@ export default async function handler(req, res) {
       ? `All 3 meals MUST be authentic ${cuisineLabel} cuisine. Do not suggest dishes from other cuisines.`
       : 'Suggest the 3 most practical meals regardless of cuisine.';
 
+    // Units instruction
+    const unitsRule = units === 'imperial'
+      ? 'Use imperial measurements only: oz, lbs, cups, tbsp, tsp, fl oz. Never use grams or ml.'
+      : 'Use metric measurements only: g, kg, ml, l, tbsp, tsp.';
+
+    // Language instruction
+    const langMap = { en: 'English', hi: 'Hindi', ta: 'Tamil', es: 'Spanish' };
+    const langName = langMap[language] || 'English';
+    const langRule = langName !== 'English'
+      ? `IMPORTANT: Respond ENTIRELY in ${langName}. All meal names, descriptions, ingredients, and steps must be in ${langName}.`
+      : '';
+
+    // Taste profile
     const tp = tasteProfile || {};
     const profileLines = [];
     if (tp.spice_level && tp.spice_level !== 'medium') profileLines.push(`Spice level: ${tp.spice_level} — adjust heat accordingly.`);
@@ -23,14 +36,16 @@ export default async function handler(req, res) {
     if (tp.preferred_cuisines?.length && !cuisineLabel) profileLines.push(`User prefers: ${tp.preferred_cuisines.join(', ')} — favour these styles.`);
     if (tp.skill_level === 'beginner') profileLines.push('User is a beginner cook — keep techniques simple.');
     if (tp.skill_level === 'advanced') profileLines.push('User is an advanced cook — feel free to use sophisticated techniques.');
-    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l=>`- ${l}`).join('\n')}` : '';
+    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}` : '';
 
     const prompt = `You are a creative, practical chef with deep knowledge of world cuisines.
 
 Available ingredients: ${ingredients.join(', ')}.
 Time available: ${time}.
 Dietary preference: ${dietLabel}.
-Cuisine requirement: ${cuisineRule}${profileInstruction}
+Cuisine requirement: ${cuisineRule}
+Measurements: ${unitsRule}
+${langRule}${profileInstruction}
 
 Suggest exactly 3 meals. Respond ONLY with a valid JSON array — no markdown, no explanation, no backticks:
 

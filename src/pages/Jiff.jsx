@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
+import { useLocale }  from '../contexts/LocaleContext';
 
 // Favourites managed by AuthContext
 
@@ -508,6 +509,14 @@ const styles = `
   .error-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
   .error-msg { font-size: 14px; color: var(--muted); margin-bottom: 24px; font-weight: 300; }
 
+
+  /* Units toggle */
+  .units-toggle { display:flex; border:1.5px solid var(--border-mid); border-radius:10px; overflow:hidden; }
+  .units-opt { flex:1; padding:7px 12px; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; background:white; color:var(--muted); border:none; transition:all 0.15s; }
+  .units-opt.active { background:var(--ink); color:white; font-weight:500; }
+  /* Language selector */
+  .lang-select { border:1.5px solid var(--border-mid); border-radius:10px; padding:7px 12px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--ink); background:white; cursor:pointer; }
+  .lang-select:focus { outline:none; border-color:var(--jiff); }
   @media (max-width: 600px) {
     .header { padding: 16px 18px; }
     .hero { padding: 36px 18px 0; }
@@ -567,29 +576,7 @@ const styles = `
   .gate-skip:hover { color: var(--ink); }
 `;
 
-const TIME_OPTIONS = [
-  { id: '15 min', label: '⚡ 15 min' },
-  { id: '30 min', label: '🍳 30 min' },
-  { id: '1 hour', label: '🥘 1 hour' },
-  { id: 'no time limit', label: '🌿 No limit' },
-];
-const DIET_OPTIONS = [
-  { id: 'none', label: 'No restrictions' },
-  { id: 'vegetarian', label: 'Vegetarian' },
-  { id: 'vegan', label: 'Vegan' },
-  { id: 'gluten-free', label: 'Gluten-free' },
-  { id: 'dairy-free', label: 'Dairy-free' },
-  { id: 'low-carb', label: 'Low-carb' },
-];
-const CUISINE_OPTIONS = [
-  { id: 'any', label: 'Any cuisine', flag: '🌍' },
-  { id: 'Indian', label: 'Indian', flag: '🇮🇳' },
-  { id: 'Italian', label: 'Italian', flag: '🇮🇹' },
-  { id: 'Chinese', label: 'Chinese', flag: '🇨🇳' },
-  { id: 'Mexican', label: 'Mexican', flag: '🇲🇽' },
-  { id: 'Mediterranean', label: 'Mediterranean', flag: '🫒' },
-  { id: 'Thai', label: 'Thai', flag: '🇹🇭' },
-];
+// TIME_OPTIONS, DIET_OPTIONS, CUISINE_OPTIONS — now from LocaleContext
 const FACTS = [
   'Raiding your fridge…',
   'Cross-referencing 10,000+ recipes…',
@@ -780,6 +767,7 @@ export default function Jiff() {
   const navigate = useNavigate();
   const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, isAuthDismissed, dismissAuth, supabaseEnabled } = useAuth();
   const { isPremium, plans, suggestionsLeft, freeDailyLimit, canSuggest, recordSuggestion, showGate, setShowGate, gateReason, openCheckout, activateTestPremium, razorpayEnabled } = usePremium();
+  const { t, lang, units, setUnits, currency, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, supportedLanguages, setLang } = useLocale();
   const [gatePlan, setGatePlan] = useState('annual');
   const [gateLoading, setGateLoading] = useState(false);
   const [ingredients,setIngredients]=useState([]);
@@ -826,6 +814,8 @@ export default function Jiff() {
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           ingredients, time, diet, cuisine,
+          language: lang,
+          units,
           tasteProfile: profile ? {
             spice_level: profile.spice_level,
             allergies: profile.allergies,
@@ -978,32 +968,51 @@ export default function Jiff() {
             </div>
             <div className="card" style={{marginTop:28}}>
               <div className="section">
-                <div className="section-label">What's in your fridge?</div>
+                <div className="section-label">{t('label_ingredients')}</div>
                 <div className="ingredient-box" onClick={()=>inputRef.current?.focus()}>
                   {ingredients.map(ing=>(
                     <span key={ing} className="tag">{ing}<button className="tag-remove" onClick={e=>{e.stopPropagation();setIngredients(p=>p.filter(i=>i!==ing));}}>×</button></span>
                   ))}
-                  <input ref={inputRef} className="tag-input" value={inputVal} onChange={e=>setInputVal(e.target.value)} onKeyDown={onKey} onBlur={()=>{if(inputVal.trim())addIng(inputVal);}} placeholder={ingredients.length===0?'eggs, onions, rice, tomatoes… press Enter after each':'add more…'}/>
+                  <input ref={inputRef} className="tag-input" value={inputVal} onChange={e=>setInputVal(e.target.value)} onKeyDown={onKey} onBlur={()=>{if(inputVal.trim())addIng(inputVal);}} placeholder={ingredients.length===0?t('ingPlaceholder'):'...'}/>
                 </div>
-                <p className="tag-hint">Enter or comma to add · Backspace to remove last</p>
+                <p className="tag-hint">{t('ingHint')}</p>
               </div>
               <div className="section">
-                <div className="section-label">Cuisine</div>
+                <div className="section-label">{t('label_cuisine')}</div>
                 <div className="cuisine-chips">{CUISINE_OPTIONS.map(o=><button key={o.id} className={`cuisine-chip ${cuisine===o.id?(o.id==='any'?'active-any':'active'):''}`} onClick={()=>setCuisine(o.id)}><span className="cuisine-flag">{o.flag}</span><span>{o.label}</span></button>)}</div>
               </div>
               <div className="section">
-                <div className="section-label">Time available</div>
+                <div className="section-label">{t('label_time')}</div>
                 <div className="chips">{TIME_OPTIONS.map(o=><button key={o.id} className={`chip ${time===o.id?'active':''}`} onClick={()=>setTime(o.id)}>{o.label}</button>)}</div>
               </div>
               <div className="section">
-                <div className="section-label">Dietary preference</div>
+                <div className="section-label">{t('label_diet')}</div>
                 <div className="chips">{DIET_OPTIONS.map(o=><button key={o.id} className={`chip diet ${diet===o.id?'active':''}`} onClick={()=>setDiet(o.id)}>{o.label}</button>)}</div>
               </div>
+              {/* Units toggle */}
+              <div className="section">
+                <div className="section-label">{t('label_units')}</div>
+                <div className="units-toggle">
+                  <button className={`units-opt ${units==='metric'?'active':''}`} onClick={()=>setUnits('metric')}>{t('units_metric')}</button>
+                  <button className={`units-opt ${units==='imperial'?'active':''}`} onClick={()=>setUnits('imperial')}>{t('units_imperial')}</button>
+                </div>
+              </div>
+
+              {/* Language selector */}
+              <div className="section" style={{marginBottom:16}}>
+                <div className="section-label">Language</div>
+                <select className="lang-select" value={lang} onChange={e=>setLang(e.target.value)}>
+                  {supportedLanguages.map(l=>(
+                    <option key={l.id} value={l.id}>{l.flag} {l.label}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="cta-wrap">
                 <button className="cta-btn" onClick={handleSubmit} disabled={!ingredients.length}>
-                  <span>⚡</span><span>{cuisine==='any'?'Jiff a meal!':`Jiff me ${cuisine} meals`}</span>
+                  <span>⚡</span><span>{cuisine==='any'?t('cta_jiff'):t('cta_jiffCuisine',{cuisine})}</span>
                 </button>
-                {!ingredients.length&&<p className="cta-note">Add at least one ingredient to get started</p>}
+                {!ingredients.length&&<p className="cta-note">{t('cta_addIng')}</p>}
               </div>
             </div>
           </>
@@ -1012,9 +1021,9 @@ export default function Jiff() {
         {view==='loading'&&(
           <div className="loading-wrap">
             <div className="spinner"/>
-            <div className="loading-title">{cuisine!=='any'?`Finding ${cuisine} recipes…`:'Jiffing your meal…'}</div>
-            <div className="loading-sub">Matching {ingredients.length} ingredient{ingredients.length>1?'s':''}{cuisine!=='any'?` to ${cuisine} cuisine`:' to the best meals'}</div>
-            <div className="loading-fact">{FACTS[factIdx]}</div>
+            <div className="loading-title">{cuisine!=='any'?t('loading_cuisine',{cuisine}):t('loading_title')}</div>
+            <div className="loading-sub">{t(cuisine!=='any'?'loading_sub_c':'loading_sub',{count:ingredients.length,plural:ingredients.length>1?'s':'',cuisine})}</div>
+            <div className="loading-fact">{(t('facts')||[])[factIdx]||'...'}</div>
           </div>
         )}
 
@@ -1041,7 +1050,7 @@ export default function Jiff() {
             )}
 
             <div className="results-header">
-              <div className="results-title">Jiffed. ⚡ Here's your menu.</div>
+              <div className="results-title">{t('results_title')}</div>
               <div className="results-sub">
                 Tap ♥ to save · expand for recipe + timers · use scaler to adjust servings
                 {profile && <span style={{marginLeft:8,fontSize:12,color:'var(--jiff)',fontWeight:500}}>· personalised for {profile.name?.split(' ')[0]}</span>}

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useLocale } from '../contexts/LocaleContext';
 
 const C = {
   jiff: '#FF4500',
@@ -105,7 +106,8 @@ const PROBLEMS = [
 const FEATURES = [
   { icon: '🔒', title: 'Secure by design', desc: 'Your API key lives server-side only. Never exposed to the browser.' },
   { icon: '⚡', title: 'Under 5 seconds', desc: 'Faster than opening a recipe app. Faster than thinking about it.' },
-  { icon: '🍱', title: '7 world cuisines', desc: 'Indian, Italian, Chinese, Mexican, Mediterranean, Thai — or anything.' },
+  { icon: '🍱', title: '13 world cuisines', desc: 'Indian, Italian, Japanese, Korean, Mexican, Mediterranean, Thai, French, American, Brazilian and more.' },
+  { icon: '🌍', title: '4 languages', desc: 'Use Jiff in English, हिन्दी, தமிழ் or Español. Recipes generated in your language.' },
   { icon: '🥗', title: 'Diet-aware', desc: 'Vegetarian, vegan, gluten-free, dairy-free, low-carb — all handled.' },
   { icon: '🛒', title: 'Grocery list', desc: 'Instantly know what you need to buy vs what you already have.' },
   { icon: '📱', title: 'Installs like an app', desc: 'Add to home screen on any phone. No app store. No updates. Just Jiff.' },
@@ -113,6 +115,7 @@ const FEATURES = [
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { currency } = useLocale();
 
   const hoverJiff = (on, e) => {
     e.currentTarget.style.background = on ? C.jiffDark : C.jiff;
@@ -166,7 +169,7 @@ export default function Landing() {
           </button>
         </div>
         <div style={s.heroBadges}>
-          {['5 free meals daily', null, '5 free meals daily', null, 'Works on any phone', null, 'Results in 5 seconds'].map((item, i) =>
+          {['5 free meals daily', null, '13 cuisines', null, '4 languages', null, 'Results in 5 seconds'].map((item, i) =>
             item === null
               ? <div key={i} style={s.heroBadgeLine} />
               : <span key={i} style={s.heroBadgeItem}>⚡ {item}</span>
@@ -258,8 +261,8 @@ export default function Landing() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 32 }}>
             {[
               { name: 'Free', price: '₹0', period: 'forever', color: '#6B6458', features: ['5 meals / day', '1 weekly plan / month', 'All basic features', 'Device-only sync'], cta: 'Start free', onClick: () => navigate('/app'), outline: true },
-              { name: 'Monthly', price: '₹99', period: '/month', color: C.jiff, features: ['Unlimited meals', 'Unlimited weekly plans', 'Cloud sync across devices', 'Taste profile + pantry'], cta: 'Get Premium', onClick: () => navigate('/pricing'), outline: false },
-              { name: 'Lifetime', price: '₹2,999', period: 'one time', color: '#854F0B', features: ['Everything in Premium', 'Pay once, use forever', 'All future features', 'Priority support'], cta: 'Best value', onClick: () => navigate('/pricing'), outline: false },
+              { name: 'Monthly', price: currency.plans.monthly, period: '/month', color: C.jiff, features: ['Unlimited meals', 'Unlimited weekly plans', 'Cloud sync across devices', 'Taste profile + pantry'], cta: 'Get Premium', onClick: () => navigate('/pricing'), outline: false },
+              { name: 'Lifetime', price: currency.plans.lifetime, period: 'one time', color: '#854F0B', features: ['Everything in Premium', 'Pay once, use forever', 'All future features', 'Priority support'], cta: 'Best value', onClick: () => navigate('/pricing'), outline: false },
             ].map((plan, i) => (
               <div key={i} style={{ background: 'white', border: `2px solid ${plan.outline ? 'rgba(28,10,0,0.12)' : plan.color}`, borderRadius: 20, padding: '28px 24px', boxShadow: plan.outline ? 'none' : `0 8px 32px ${plan.color}33` }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: plan.color, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 10 }}>{plan.name}</div>

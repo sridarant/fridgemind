@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocale } from '../contexts/LocaleContext';
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap');
@@ -209,7 +210,7 @@ const DIET_OPTIONS = [
   { id: 'low-carb', label: 'Low-carb' },
 ];
 
-const CUISINE_OPTIONS = [
+const PLANNER_PLANNER_CUISINE_OPTIONS = [
   { id: 'any', label: 'Mix it up', flag: '🌍' },
   { id: 'Indian', label: 'Indian', flag: '🇮🇳' },
   { id: 'Italian', label: 'Italian', flag: '🇮🇹' },
@@ -217,6 +218,12 @@ const CUISINE_OPTIONS = [
   { id: 'Mexican', label: 'Mexican', flag: '🇲🇽' },
   { id: 'Mediterranean', label: 'Mediterranean', flag: '🫒' },
   { id: 'Thai', label: 'Thai', flag: '🇹🇭' },
+  { id: 'Japanese', label: 'Japanese', flag: '🇯🇵' },
+  { id: 'Korean', label: 'Korean', flag: '🇰🇷' },
+  { id: 'American', label: 'American', flag: '🇺🇸' },
+  { id: 'Middle Eastern', label: 'Middle Eastern', flag: '🌙' },
+  { id: 'French', label: 'French', flag: '🇫🇷' },
+  { id: 'Brazilian', label: 'Brazilian', flag: '🇧🇷' },
 ];
 
 const LOADING_STEPS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
@@ -398,6 +405,7 @@ function MealSlot({ meal, type }) {
 // ── Main component ────────────────────────────────────
 export default function Planner() {
   const navigate = useNavigate();
+  const { lang, units, PLANNER_CUISINE_OPTIONS, t } = useLocale();
   const [ingredients, setIngredients] = useState([]);
   const [inputVal, setInputVal] = useState('');
   const [diet, setDiet] = useState('none');
@@ -441,7 +449,7 @@ export default function Planner() {
       const res = await fetch('/api/planner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients, diet, cuisine }),
+        body: JSON.stringify({ ingredients, diet, cuisine, language: lang, units }),
       });
       const data = await res.json();
       if (data.plan?.length >= 7) {
@@ -511,7 +519,7 @@ export default function Planner() {
               <div className="section">
                 <div className="section-label">Cuisine style</div>
                 <div className="cuisine-chips">
-                  {CUISINE_OPTIONS.map(o => (
+                  {PLANNER_CUISINE_OPTIONS.map(o => (
                     <button key={o.id} className={`cuisine-chip ${cuisine===o.id?(o.id==='any'?'active-any':'active'):''}`} onClick={() => setCuisine(o.id)}>
                       <span className="cuisine-flag">{o.flag}</span><span>{o.label}</span>
                     </button>

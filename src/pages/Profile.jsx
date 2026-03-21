@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth }   from '../contexts/AuthContext';
+import { useLocale } from '../contexts/LocaleContext';
 
 const C = {
   jiff: '#FF4500', jiffDark: '#CC3700', ink: '#1C0A00',
@@ -70,6 +71,7 @@ const s = {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, profile, pantry, updateProfile, savePantry, signOut, supabaseEnabled } = useAuth();
+  const { lang, setLang, units, setUnits, supportedLanguages } = useLocale();
 
   const [local, setLocal]       = useState(profile || { spice_level:'medium', allergies:[], preferred_cuisines:[], skill_level:'intermediate' });
   const [pantryLocal, setPantryLocal] = useState(pantry || []);
@@ -230,6 +232,32 @@ export default function Profile() {
               <button key={o} style={s.pill(local.skill_level===o)} onClick={() => setLocal(p=>({...p,skill_level:o}))}>
                 {o==='beginner'?'🌱 Beginner':o==='intermediate'?'🍳 Intermediate':'👨‍🍳 Advanced'}
               </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Language */}
+        <div style={s.card}>
+          <div style={s.cardTitle}>🌍 Language</div>
+          <div style={s.cardSub}>Jiff will display the UI and generate recipes in your chosen language.</div>
+          <span style={s.label}>Display language</span>
+          <div style={s.row}>
+            {supportedLanguages.map(l => (
+              <button key={l.id} style={s.pill(lang===l.id)} onClick={()=>setLang(l.id)}>
+                {l.flag} {l.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Units */}
+        <div style={s.card}>
+          <div style={s.cardTitle}>📏 Measurement units</div>
+          <div style={s.cardSub}>Ingredient quantities in all recipes will use your preferred system.</div>
+          <span style={s.label}>Units</span>
+          <div style={s.row}>
+            {[{id:'metric',label:'⚖️ Metric (g, ml, kg)'},{id:'imperial',label:'🥛 Imperial (oz, cups, lbs)'}].map(o=>(
+              <button key={o.id} style={s.pill(units===o.id)} onClick={()=>setUnits(o.id)}>{o.label}</button>
             ))}
           </div>
         </div>

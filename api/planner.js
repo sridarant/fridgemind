@@ -1,4 +1,4 @@
-// api/planner.js — Jiff weekly meal planner endpoint
+// api/planner.js — Jiff weekly meal planner
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
 
   try {
-    const { ingredients, diet, cuisine, tasteProfile } = req.body;
+    const { ingredients, diet, cuisine, tasteProfile, language, units } = req.body;
     if (!ingredients?.length) return res.status(400).json({ error: 'Please provide at least one ingredient.' });
 
     const dietLabel    = (!diet || diet === 'none') ? 'no dietary restrictions' : diet;
@@ -16,28 +16,39 @@ export default async function handler(req, res) {
       ? `All meals should follow ${cuisineLabel} cuisine.`
       : 'Mix cuisines freely — variety across the week is encouraged.';
 
+    const unitsRule = units === 'imperial'
+      ? 'Use imperial measurements only: oz, lbs, cups, tbsp, tsp.'
+      : 'Use metric measurements only: g, kg, ml, l.';
+
+    const langMap = { en: 'English', hi: 'Hindi', ta: 'Tamil', es: 'Spanish' };
+    const langName = langMap[language] || 'English';
+    const langRule = langName !== 'English'
+      ? `IMPORTANT: Respond ENTIRELY in ${langName}. All meal names, descriptions, ingredients, and steps must be in ${langName}.`
+      : '';
+
     const tp = tasteProfile || {};
     const profileLines = [];
     if (tp.spice_level && tp.spice_level !== 'medium') profileLines.push(`Spice level: ${tp.spice_level}.`);
     if (tp.allergies?.length) profileLines.push(`NEVER include: ${tp.allergies.join(', ')}.`);
     if (tp.skill_level === 'beginner') profileLines.push('Keep techniques simple — beginner cook.');
     if (tp.skill_level === 'advanced') profileLines.push('Advanced cook — can handle complex techniques.');
-    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l=>`- ${l}`).join('\n')}` : '';
+    const profileInstruction = profileLines.length ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}` : '';
 
     const prompt = `You are a professional meal planner. Create a complete 7-day meal plan.
 
 Available ingredients: ${ingredients.join(', ')}.
 Dietary preference: ${dietLabel}.
-Cuisine style: ${cuisineRule}${profileInstruction}
+Cuisine style: ${cuisineRule}
+Measurements: ${unitsRule}
+${langRule}${profileInstruction}
 
 Rules:
 - 7 days, each with breakfast, lunch, and dinner (21 meals total)
-- No meal repeats across the entire week
+- No meal repeats across the week
 - Breakfast under 20 min, lunch practical, dinner more complete
-- Vary proteins, textures, cooking methods throughout
 - Mark pantry extras with *
 
-Respond ONLY with a valid JSON array — no markdown, no explanation:
+Respond ONLY with a valid JSON array — no markdown:
 
 [
   {
@@ -69,7 +80,7 @@ Generate all 7 days (Monday through Sunday).`;
       if (match) plan = JSON.parse(match[0]);
     } catch { return res.status(500).json({ error: 'Could not parse meal plan.' }); }
 
-    if (!plan || plan.length < 7) return res.status(500).json({ error: 'Incomplete plan generated. Please try again.' });
+    if (!plan || plan.length < 7) return res.status(500).json({ error: 'Incomplete plan. Please try again.' });
     return res.status(200).json({ plan });
   } catch (err) {
     console.error('Planner error:', err);

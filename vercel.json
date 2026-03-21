@@ -1,17 +1,19 @@
 {
   "version": 2,
   "builds": [
-    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "build" } },
-    { "src": "api/suggest.js",       "use": "@vercel/node" },
-    { "src": "api/planner.js",       "use": "@vercel/node" },
-    { "src": "api/create-order.js",  "use": "@vercel/node" },
-    { "src": "api/verify-payment.js","use": "@vercel/node" }
+    { "src": "package.json",             "use": "@vercel/static-build", "config": { "distDir": "build" } },
+    { "src": "api/suggest.js",           "use": "@vercel/node" },
+    { "src": "api/planner.js",           "use": "@vercel/node" },
+    { "src": "api/create-order.js",      "use": "@vercel/node" },
+    { "src": "api/verify-payment.js",    "use": "@vercel/node" },
+    { "src": "api/stripe-session.js",    "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/suggest",        "dest": "/api/suggest.js" },
-    { "src": "/api/planner",        "dest": "/api/planner.js" },
-    { "src": "/api/create-order",   "dest": "/api/create-order.js" },
-    { "src": "/api/verify-payment", "dest": "/api/verify-payment.js" },
+    { "src": "/api/suggest",          "dest": "/api/suggest.js" },
+    { "src": "/api/planner",          "dest": "/api/planner.js" },
+    { "src": "/api/create-order",     "dest": "/api/create-order.js" },
+    { "src": "/api/verify-payment",   "dest": "/api/verify-payment.js" },
+    { "src": "/api/stripe-session",   "dest": "/api/stripe-session.js" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
