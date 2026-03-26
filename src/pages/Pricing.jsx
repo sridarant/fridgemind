@@ -181,7 +181,7 @@ export default function Pricing() {
 
             {/* Payments coming soon — Razorpay onboarding in progress */}
             <div style={{textAlign:'center',marginBottom:52}}>
-              <div style={{display:'inline-block',background:C.warm,border:'1px solid rgba(28,10,0,0.1)',borderRadius:20,padding:'48px 40px',maxWidth:480,width:'100%'}}>
+              <div style={{display:'inline-block',background:C.warm,border:`1px solid rgba(28,10,0,0.1)`,borderRadius:20,padding:'48px 40px',maxWidth:480,width:'100%'}}>
                 <div style={{fontSize:48,marginBottom:16}}>⚡</div>
                 <div style={{display:'inline-flex',alignItems:'center',gap:7,background:'rgba(255,69,0,0.08)',border:'1px solid rgba(255,69,0,0.2)',borderRadius:20,padding:'5px 14px',marginBottom:16}}>
                   <span style={{width:8,height:8,borderRadius:'50%',background:C.jiff,display:'inline-block',animation:'pulse 1.5s ease-in-out infinite'}}/>
