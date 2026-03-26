@@ -226,7 +226,6 @@ export default function Landing() {
                 <div style={s.problemCardTitle}>{p.title}</div>
                 <div style={s.problemCardDesc}>{p.desc}</div>
               </div>
-              );
             })}
           </div>
         </div>
