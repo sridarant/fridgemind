@@ -124,6 +124,33 @@ const fr = {
   error_retry:      '← Recommencer',
   error_connection: 'Erreur de connexion. Veuillez réessayer.',
   error_generate:   'Impossible de générer des suggestions. Veuillez réessayer.',
+  // Meal types
+  mealtype_any:  'N\'importe quel repas',
+  mealtype_breakfast:  'Petit-déjeuner',
+  mealtype_lunch:  'Déjeuner',
+  mealtype_dinner:  'Dîner',
+  mealtype_snack:  'Collation',
+
+  // Nav & sections
+  week_plan: 'Plan semaine',
+  goal_plans: 'Plans par objectif',
+  history_nav: 'Historique',
+  go_premium: '⚡ Passer Premium',
+  profile_nav: 'Profil',
+  or_enter: 'ou saisissez les ingrédients',
+  section_meal_type: 'Type de repas',
+  section_ingredients: 'Ingrédients disponibles',
+  section_servings: 'Portions',
+  section_cuisine: 'Cuisine',
+  section_time: 'Temps disponible',
+  section_diet: 'Préférence alimentaire',
+  pantry_prepopulated: 'Pré-rempli depuis votre garde-manger',
+  no_prefs_msg: 'Configurez vos préférences dans le Profil pour personnaliser chaque suggestion.',
+  go_to_profile: 'Aller au Profil →',
+  back_to_cuisines: '← Toutes les cuisines',
+  veg_disabled_msg: 'Végétarien désactivé — ingrédient non végétarien détecté',
+  cuisine_indian_sub: 'Cuisines indiennes',
+
 };
 
 export default fr;

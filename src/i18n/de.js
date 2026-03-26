@@ -124,6 +124,33 @@ const de = {
   error_retry:      '← Neu starten',
   error_connection: 'Verbindungsfehler. Bitte erneut versuchen.',
   error_generate:   'Vorschläge konnten nicht erstellt werden.',
+  // Meal types
+  mealtype_any:  'Beliebige Mahlzeit',
+  mealtype_breakfast:  'Frühstück',
+  mealtype_lunch:  'Mittagessen',
+  mealtype_dinner:  'Abendessen',
+  mealtype_snack:  'Snacks',
+
+  // Nav & sections
+  week_plan: 'Wochenplan',
+  goal_plans: 'Zielpläne',
+  history_nav: 'Verlauf',
+  go_premium: '⚡ Premium werden',
+  profile_nav: 'Profil',
+  or_enter: 'oder Zutaten eingeben',
+  section_meal_type: 'Mahlzeitentyp',
+  section_ingredients: 'Verfügbare Zutaten',
+  section_servings: 'Portionen',
+  section_cuisine: 'Küche',
+  section_time: 'Verfügbare Zeit',
+  section_diet: 'Ernährungsvorliebe',
+  pantry_prepopulated: 'Aus Vorrat vorausgefüllt',
+  no_prefs_msg: 'Stellen Sie Ihre Präferenzen im Profil ein, um jede Empfehlung zu personalisieren.',
+  go_to_profile: 'Zum Profil →',
+  back_to_cuisines: '← Alle Küchen',
+  veg_disabled_msg: 'Vegetarisch deaktiviert — nicht-vegetarische Zutat erkannt',
+  cuisine_indian_sub: 'Indische Küchen',
+
 };
 
 export default de;

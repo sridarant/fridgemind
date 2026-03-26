@@ -124,6 +124,33 @@ const ta = {
   error_retry:      '← மீண்டும் தொடங்கு',
   error_connection: 'இணைப்பு பிழை. மீண்டும் முயற்சிக்கவும்.',
   error_generate:   'பரிந்துரைகள் உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+  section_meal_type:     'உணவு வகை',
+  section_ingredients:   'கிடைக்கும் பொருட்கள்',
+  section_servings:      'பரிமாறல்கள்',
+  section_cuisine:       'சமையல் வகை',
+  section_time:          'கிடைக்கும் நேரம்',
+  section_diet:          'உணவு விருப்பம்',
+  or_enter:              'அல்லது கீழே தட்டச்சு செய்யுங்கள்',
+  pantry_prepopulated:   'உங்கள் பாண்ட்ரியிலிருந்து முன்கூட்டியே நிரப்பப்பட்டது',
+  no_prefs_msg:          'ஒவ்வொரு பரிந்துரையையும் தனிப்பயனாக்க சுயவிவரத்தில் உங்கள் விருப்பங்களை அமைக்கவும்.',
+  go_to_profile:         'சுயவிவரத்திற்கு செல்க →',
+  week_plan:             'வார திட்டம்',
+  goal_plans:            'இலக்கு திட்டங்கள்',
+  history_nav:           'வரலாறு',
+  go_premium:            '⚡ பிரீமியம் பெறுக',
+  favourites_nav:        'பிடித்தவை',
+  profile_nav:           'சுயவிவரம்',
+  cuisine_indian_sub:    'இந்திய உணவு வகைகள்',
+  back_to_cuisines:      '← அனைத்து உணவு வகைகள்',
+  veg_disabled_msg:      'சைவம் முடக்கப்பட்டது — அசைவ பொருள் தேர்ந்தெடுக்கப்பட்டது',
+
+  // Meal types
+  mealtype_any:  'எந்த உணவும்',
+  mealtype_breakfast:  'காலை உணவு',
+  mealtype_lunch:  'மதிய உணவு',
+  mealtype_dinner:  'இரவு உணவு',
+  mealtype_snack:  'சிற்றுண்டி',
+
 };
 
 export default ta;

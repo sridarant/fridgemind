@@ -109,7 +109,7 @@ const FEATURES = [
   { icon: '🔒', title: 'Secure by design', desc: 'Your API key lives server-side only. Never exposed to the browser.' },
   { icon: '⚡', title: 'Under 5 seconds', desc: 'Faster than opening a recipe app. Faster than thinking about it.' },
   { icon: '🍱', title: '13 world cuisines', desc: 'Indian, Italian, Japanese, Korean, Mexican, Mediterranean, Thai, French, American, Brazilian and more.' },
-  { icon: '🌍', title: '4 languages', desc: 'Use Jiff in English, हिन्दी, தமிழ் or Español. Recipes generated in your language.' },
+  { icon: '🌍', title: '10 languages', desc: 'Use Jiff in English, हिन्दी, தமிழ், తెలుగు, ಕನ್ನಡ, বাংলা, मराठी, Español, Français or Deutsch.' },
   { icon: '🥗', title: 'Diet-aware', desc: 'Vegetarian, vegan, gluten-free, dairy-free, low-carb — all handled.' },
   { icon: '🛒', title: 'Grocery list', desc: 'Instantly know what you need to buy vs what you already have.' },
   { icon: '📱', title: 'Installs like an app', desc: 'Add to home screen on any phone. No app store. No updates. Just Jiff.' },
@@ -183,7 +183,7 @@ export default function Landing() {
           </button>
         </div>
         <div style={s.heroBadges}>
-          {['5 free meals daily', null, '13 cuisines', null, '4 languages', null, 'Works globally'].map((item, i) =>
+          {['5 free meals daily', null, '28 cuisines', null, '10 languages', null, 'Works globally'].map((item, i) =>
             item === null
               ? <div key={i} style={s.heroBadgeLine} />
               : <span key={i} style={s.heroBadgeItem}>⚡ {item}</span>

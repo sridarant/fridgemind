@@ -124,6 +124,33 @@ const te = {
   error_retry:      '← మళ్ళీ మొదలుపెట్టండి',
   error_connection: 'కనెక్షన్ లోపం. మళ్ళీ ప్రయత్నించండి.',
   error_generate:   'సూచనలు రూపొందించడం సాధ్యపడలేదు.',
+  // Meal types
+  mealtype_any:  'ఏ భోజనమైనా',
+  mealtype_breakfast:  'అల్పాహారం',
+  mealtype_lunch:  'మధ్యాహ్న భోజనం',
+  mealtype_dinner:  'రాత్రి భోజనం',
+  mealtype_snack:  'స్నాక్స్',
+
+  // Nav & sections
+  week_plan: 'వారం ప్రణాళిక',
+  goal_plans: 'లక్ష్య ప్రణాళికలు',
+  history_nav: 'చరిత్ర',
+  go_premium: '⚡ ప్రీమియం పొందండి',
+  profile_nav: 'ప్రొఫైల్',
+  or_enter: 'లేదా క్రింద టైప్ చేయండి',
+  section_meal_type: 'భోజనం రకం',
+  section_ingredients: 'లభ్యమయ్యే పదార్థాలు',
+  section_servings: 'వడ్డింపులు',
+  section_cuisine: 'వంటకం రకం',
+  section_time: 'అందుబాటులో ఉన్న సమయం',
+  section_diet: 'ఆహార ప్రాధాన్యత',
+  pantry_prepopulated: 'మీ పాంట్రీ నుండి ముందే నింపారు',
+  no_prefs_msg: 'ప్రతి సూచనను వ్యక్తిగతీకరించడానికి ప్రొఫైల్‌లో మీ ప్రాధాన్యతలను సెట్ చేయండి.',
+  go_to_profile: 'ప్రొఫైల్‌కు వెళ్ళండి →',
+  back_to_cuisines: '← అన్ని వంటకాలు',
+  veg_disabled_msg: 'శాకాహారి నిలిపివేయబడింది — అశాకాహార పదార్థం గుర్తించబడింది',
+  cuisine_indian_sub: 'భారతీయ వంటకాలు',
+
 };
 
 export default te;

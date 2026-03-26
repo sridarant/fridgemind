@@ -124,6 +124,33 @@ const hi = {
   error_retry:      '← फिर से शुरू करें',
   error_connection: 'कनेक्शन त्रुटि। कृपया पुनः प्रयास करें।',
   error_generate:   'सुझाव नहीं बना सका। कृपया पुनः प्रयास करें।',
+  section_meal_type:     'भोजन का प्रकार',
+  section_ingredients:   'उपलब्ध सामग्री',
+  section_servings:      'सर्विंग्स',
+  section_cuisine:       'व्यंजन',
+  section_time:          'उपलब्ध समय',
+  section_diet:          'आहार प्राथमिकता',
+  or_enter:              'या नीचे टाइप करें',
+  pantry_prepopulated:   'आपकी पेंट्री से पहले से भरा हुआ',
+  no_prefs_msg:          'प्रत्येक सुझाव को व्यक्तिगत बनाने के लिए प्रोफ़ाइल में अपनी प्राथमिकताएं सेट करें।',
+  go_to_profile:         'प्रोफ़ाइल पर जाएं →',
+  week_plan:             'सप्ताह योजना',
+  goal_plans:            'लक्ष्य योजनाएं',
+  history_nav:           'इतिहास',
+  go_premium:            '⚡ प्रीमियम लें',
+  favourites_nav:        'पसंदीदा',
+  profile_nav:           'प्रोफ़ाइल',
+  cuisine_indian_sub:    'भारतीय व्यंजन',
+  back_to_cuisines:      '← सभी व्यंजन',
+  veg_disabled_msg:      'शाकाहारी अक्षम — मांसाहारी सामग्री चुनी गई',
+
+  // Meal types
+  mealtype_any:  'कोई भी भोजन',
+  mealtype_breakfast:  'नाश्ता',
+  mealtype_lunch:  'दोपहर का खाना',
+  mealtype_dinner:  'रात का खाना',
+  mealtype_snack:  'नाश्ता',
+
 };
 
 export default hi;

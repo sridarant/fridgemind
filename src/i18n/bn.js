@@ -124,6 +124,33 @@ const bn = {
   error_retry:      '← আবার শুরু করুন',
   error_connection: 'সংযোগ ত্রুটি। আবার চেষ্টা করুন।',
   error_generate:   'পরামর্শ তৈরি করা যায়নি।',
+  // Meal types
+  mealtype_any:  'যেকোনো খাবার',
+  mealtype_breakfast:  'সকালের নাস্তা',
+  mealtype_lunch:  'দুপুরের খাবার',
+  mealtype_dinner:  'রাতের খাবার',
+  mealtype_snack:  'স্ন্যাকস',
+
+  // Nav & sections
+  week_plan: 'সাপ্তাহিক পরিকল্পনা',
+  goal_plans: 'লক্ষ্য পরিকল্পনা',
+  history_nav: 'ইতিহাস',
+  go_premium: '⚡ প্রিমিয়াম নিন',
+  profile_nav: 'প্রোফাইল',
+  or_enter: 'বা নিচে টাইপ করুন',
+  section_meal_type: 'খাবারের ধরন',
+  section_ingredients: 'পাওয়া যাচ্ছে উপাদান',
+  section_servings: 'পরিবেশন',
+  section_cuisine: 'রন্ধনশৈলী',
+  section_time: 'উপলব্ধ সময়',
+  section_diet: 'খাদ্যাভ্যাস',
+  pantry_prepopulated: 'প্যান্ট্রি থেকে পূর্বে পূরণ',
+  no_prefs_msg: 'প্রতিটি পরামর্শ ব্যক্তিগত করতে প্রোফাইলে আপনার পছন্দ সেট করুন।',
+  go_to_profile: 'প্রোফাইলে যান →',
+  back_to_cuisines: '← সব রান্না',
+  veg_disabled_msg: 'নিরামিষ নিষ্ক্রিয় — আমিষ উপাদান যোগ করা হয়েছে',
+  cuisine_indian_sub: 'ভারতীয় রান্না',
+
 };
 
 export default bn;

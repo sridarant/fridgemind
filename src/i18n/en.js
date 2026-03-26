@@ -143,6 +143,35 @@ const en = {
   error_retry:     '← Start over',
   error_connection:'Connection error. Please try again.',
   error_generate:  'Could not generate suggestions. Please try again.',
+  // App sections
+  section_meal_type:     'Meal type',
+  section_ingredients:   'Ingredients available',
+  section_servings:      'Servings',
+  section_cuisine:       'Cuisine',
+  section_time:          'Time available',
+  section_diet:          'Dietary preference',
+  or_enter:              'or type ingredients below',
+  pantry_prepopulated:   'Pre-filled from your pantry',
+  no_prefs_msg:          'Set your preferences in Profile to personalise every suggestion.',
+  go_to_profile:         'Go to Profile →',
+  week_plan:             'Week plan',
+  goal_plans:            'Goal plans',
+  history_nav:           'History',
+  go_premium:            '⚡ Go Premium',
+  favourites_nav:        'Favourites',
+  profile_nav:           'Profile',
+  cuisine_indian_sub:    'Indian cuisines',
+  back_to_cuisines:      '← All cuisines',
+  serving_label_full:    'serving{plural} — sized for {n} {person}',
+  veg_disabled_msg:      'Vegetarian disabled — non-veg ingredient detected',
+
+  // Meal types
+  mealtype_any:  'Any meal',
+  mealtype_breakfast:  'Breakfast',
+  mealtype_lunch:  'Lunch',
+  mealtype_dinner:  'Dinner',
+  mealtype_snack:  'Snacks',
+
 };
 
 export default en;
