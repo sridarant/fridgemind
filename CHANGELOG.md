@@ -1,9 +1,84 @@
 # Jiff — Complete Release History
 
-AI-powered meal suggester. Built entirely through conversation with Claude.
-Live at: https://jiff-ecru.vercel.app
+AI-powered meal suggester. Live at https://jiff-ecru.vercel.app
+GitHub: https://github.com/sridarant/fridgemind
 
-> **Release rule:** Every release must update CHANGELOG.md, SUPABASE_SETUP.md, and SETUP.md before shipping. Never overwrite — always append new versions at the top.
+> **Release rule:** Every release must update CHANGELOG.md, SUPABASE_SETUP.md, SETUP.md, and any relevant docs before shipping. Never overwrite history — always prepend new versions.
+
+---
+
+## v16 — Full i18n, Smart Greeting, Autocomplete, Photo Upload, Food Types, Indian Cuisines, Public API, Feedback, Blinkit + 14 more
+**Date:** March 2026
+**Files changed:** 40+ files across all layers
+
+### New features by item
+
+**a. Full language coverage** — Fixed all hardcoded strings. All dynamic option labels (TIME_OPTIONS, DIET_OPTIONS, CUISINE_OPTIONS) now generated via `t()` inside LocaleContext so they react to language changes. Added 6 new languages:
+- New Indian: **Telugu** (te), **Kannada** (kn), **Bengali** (bn), **Marathi** (mr)
+- New Global: **French** (fr), **German** (de)
+- Total: 10 languages (7 Indian + 3 global)
+
+**b. Smart greeting with weather** — `SmartGreeting.jsx` + `src/lib/weather.js`. Browser Geolocation → Nominatim reverse geocode → wttr.in weather (no API key needed). Contextual recipe suggestion: rain+India+evening → Pakoda, cold+morning → Upma, hot+afternoon → Lassi. Weather card shown in greeting.
+
+**c. Ingredient autocomplete** — `IngredientInput.jsx` replaces the plain tag input. 200+ ingredient database in `src/lib/ingredients-db.js`. Fuzzy match as you type. Auto-correct common misspellings (panir→paneer, tumeric→turmeric etc). Pantry items shown as blue tags with "In pantry" badge.
+
+**d/e. Smart input screen** — Ingredients auto-filled from pantry. Meal type auto-detected from local time. FridgePhotoUpload as additional input method. Profile preferences (food type, cuisine, diet requirements) injected into every AI prompt automatically.
+
+**f. Blinkit integration** — "Order on Blinkit →" link on every grocery list item in Planner. Deep-links to `https://blinkit.com/s/?q=INGREDIENT`.
+
+**g. Public API** — `api/v1/suggest.js`. X-API-Key header auth. Tiers: free (10/day), starter (500/day), pro (5000/day). Rate limiting via Supabase `api_keys` table. Returns `meta.remaining` count.
+
+**h. Technical documentation** — `TECHNICAL_DOC.docx` — 12-section Word doc covering product overview, tech stack, project structure, AI prompt architecture, database schema, auth, i18n, API reference, deployment, testing, and GA4 setup.
+
+**i. Granular cookie preferences** — `CookieBanner.jsx` rebuilt. "Manage preferences" expands to show toggle switches per category: Essential (locked on), Functional, Analytics. "Save preferences" persists choices. "Accept all" / "Essential only" quick options.
+
+**j. Investor pitch deck** — `INVESTOR_DECK.pptx` — 12-slide professional deck: Cover, Problem, Solution, Product, Market ($42B TAM), Traction, Business Model, Why Now, Competitive Moat, Roadmap, The Ask (₹1.5Cr seed), Closing.
+
+**k. Diet requirements** — `DIET_REQUIREMENTS` in LocaleContext: Diabetic-friendly, Low sodium, Low fat, Keto, High protein, Low calorie, Gluten-free, Dairy-free. Multi-select in Profile page. Passed to AI prompt. Separate from food type (veg/non-veg).
+
+**l. Fridge photo upload** — `FridgePhotoUpload.jsx` + `api/detect-ingredients.js`. Camera or file upload → base64 → Claude Vision → ingredient list. User reviews detected items, selects which to add. Shows photo preview with count.
+
+**m. Auto meal type by time** — `getDefaultMealType()` in Jiff.jsx: 5–11h → breakfast, 11–15h → lunch, 15–18h → snack, 18–22h → dinner. Pre-selects the chip; user can change it.
+
+**n. Latency messages** — LoadingView in Jiff.jsx shows "Taking a bit longer (Ns)…" after 10s. Planner already had this; Plans.jsx now also tracks `genElapsed` and shows warning after 12s.
+
+**o. Singapore rollout** — SGD pricing added to CURRENCY_MAP: S$3/mo, S$24/yr, S$49 lifetime. Stripe gateway. SG onboarding steps in SETUP.md.
+
+**p. GA4 setup guide** — Full step-by-step in TECHNICAL_DOC.docx and SETUP.md. Includes browser console verification, Chrome extension debugging, events reference.
+
+**q. Usage stats** — `Stats.jsx` stub exists. Full implementation requires GA4 Data API or Supabase aggregate queries. Noted as v17 pending item.
+
+**r. Back to home buttons** — Home button added to Planner header nav. Plans.jsx already has "Back to app" button. History, Pricing, Profile, Privacy all have back navigation.
+
+**s. Auto-logout on close** — `beforeunload` event listener in Jiff.jsx calls Supabase `signOut()` when user closes tab/window.
+
+**t. Cross-cuisine recommendations** — After 5+ saved favourites, AI prompt receives a context block: "User has saved many {cuisine} recipes. Suggest this recipe from a different cuisine to broaden their palate." Implemented in suggest.js prompt building.
+
+**u. Egg + vegetarian conflict fix** — In `api/suggest.js`: if diet=vegetarian AND eggs in ingredients → treats as eggetarian. Strict vegetarian gets explicit rule "NO eggs even if in ingredient list." Vegan and Jain also get specific rule strings.
+
+**v. Feedback widget** — `FeedbackWidget.jsx` floating button on all pages. Star rating (1–5), category dropdown (bug/feature/recipe/UX/general), free text message. Saved to Supabase `feedback` table via `api/feedback.js`. Thank-you animation on submit.
+
+**w. Food type categories + Indian sub-cuisines** — `FOOD_TYPE_OPTIONS` in LocaleContext: Non-veg, Veg, Eggetarian, Vegan, Jain, Halal, Kosher, Pescatarian. `INDIAN_CUISINES`: 14 regional (Chettinad, Punjabi, South Indian, Kerala, Andhra, Gujarati, Rajasthani, Bengali, Maharashtrian, Kashmiri, Goan, Hyderabadi, Tamil, Mughlai). `GLOBAL_CUISINES`: 14 global. Profile page completely rewritten with 5 tabs.
+
+### New files
+`src/i18n/fr.js`, `de.js`, `bn.js`, `te.js`, `kn.js`, `mr.js` — 6 new language files
+`src/lib/weather.js` — geolocation + weather utility
+`src/lib/ingredients-db.js` — 200+ ingredient database
+`src/components/SmartGreeting.jsx`
+`src/components/IngredientInput.jsx`
+`src/components/FridgePhotoUpload.jsx`
+`src/components/FeedbackWidget.jsx`
+`api/detect-ingredients.js`
+`api/feedback.js`
+`api/v1/suggest.js`
+`TECHNICAL_DOC.docx`
+`INVESTOR_DECK.pptx`
+
+### Supabase — Phase 3 tables needed
+See SUPABASE_SETUP.md Phase 3: `feedback` table, `api_keys` table, profile columns `food_type` and `diet_requirements[]`.
+
+### E2E tests
+18 tests — unchanged from v15. v17 will add tests for: greeting visible, autocomplete suggestions, photo upload flow, cookie preference toggles, food type selection persists.
 
 ---
 

@@ -1,283 +1,234 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }   from '../contexts/AuthContext';
-import { useLocale } from '../contexts/LocaleContext';
+import { useLocale, FOOD_TYPE_OPTIONS, DIET_REQUIREMENTS, INDIAN_CUISINES, GLOBAL_CUISINES } from '../contexts/LocaleContext';
 
-const C = {
-  jiff: '#FF4500', jiffDark: '#CC3700', ink: '#1C0A00',
-  cream: '#FFFAF5', warm: '#FFF0E5', muted: '#7C6A5E',
-  border: 'rgba(28,10,0,0.10)', borderMid: 'rgba(28,10,0,0.18)',
-  shadow: '0 4px 28px rgba(28,10,0,0.08)',
-  green: '#1D9E75', greenBg: 'rgba(29,158,117,0.1)',
-};
-
-const SPICE_OPTIONS   = ['none','mild','medium','hot','extra hot'];
-const SKILL_OPTIONS   = ['beginner','intermediate','advanced'];
-const ALLERGY_OPTIONS = ['gluten','dairy','nuts','eggs','soy','shellfish','fish'];
-const CUISINE_OPTIONS = ['Indian','Italian','Chinese','Mexican','Mediterranean','Thai','Japanese','American'];
-
-const s = {
-  page: { minHeight: '100vh', background: C.cream, fontFamily: "'DM Sans', sans-serif" },
-  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 36px', borderBottom: `1px solid ${C.border}`, position: 'sticky', top: 0, zIndex: 10, background: 'rgba(255,250,245,0.95)', backdropFilter: 'blur(12px)' },
-  logo: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' },
-  logoName: { fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 900, color: C.ink, letterSpacing: '-0.5px' },
-  backBtn: { fontSize: 13, fontWeight: 500, color: C.muted, background: 'none', border: `1.5px solid ${C.borderMid}`, borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' },
-  wrap: { maxWidth: 680, margin: '0 auto', padding: '40px 24px 80px' },
-  pageTitle: { fontFamily: "'Fraunces', serif", fontSize: 'clamp(28px,5vw,42px)', fontWeight: 900, color: C.ink, letterSpacing: '-1px', marginBottom: 6 },
-  pageSub: { fontSize: 14, color: C.muted, fontWeight: 300, marginBottom: 36, lineHeight: 1.6 },
-  card: { background: 'white', border: `1px solid ${C.border}`, borderRadius: 20, padding: 28, boxShadow: C.shadow, marginBottom: 20 },
-  cardTitle: { fontFamily: "'Fraunces', serif", fontSize: 18, fontWeight: 700, color: C.ink, marginBottom: 4, letterSpacing: '-0.3px' },
-  cardSub: { fontSize: 13, color: C.muted, fontWeight: 300, marginBottom: 20, lineHeight: 1.55 },
-  label: { fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 500, color: C.jiff, marginBottom: 10, display: 'block' },
-  row: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
-  pill: (active) => ({
-    border: `1.5px solid ${active ? C.jiff : C.borderMid}`,
-    background: active ? C.jiff : 'white',
-    color: active ? 'white' : C.muted,
-    borderRadius: 20, padding: '6px 14px', fontSize: 13,
-    cursor: 'pointer', fontWeight: active ? 500 : 400,
-    fontFamily: "'DM Sans', sans-serif", transition: 'all 0.15s',
-    textTransform: 'capitalize',
-  }),
-  spicePill: (level, active) => {
-    const colors = { none:'#888', mild:'#22C55E', medium:'#F59E0B', hot:'#EF4444', 'extra hot':'#7C3AED' };
-    const col = colors[level] || C.jiff;
-    return {
-      border: `1.5px solid ${active ? col : C.borderMid}`,
-      background: active ? col : 'white',
-      color: active ? 'white' : C.muted,
-      borderRadius: 20, padding: '6px 16px', fontSize: 13,
-      cursor: 'pointer', fontWeight: active ? 500 : 400,
-      fontFamily: "'DM Sans', sans-serif", transition: 'all 0.15s',
-      textTransform: 'capitalize',
-    };
-  },
-  saveBtn: { background: C.jiff, color: 'white', border: 'none', borderRadius: 12, padding: '14px 32px', fontSize: 15, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s', display: 'inline-flex', alignItems: 'center', gap: 8 },
-  successBanner: { background: C.greenBg, border: `1px solid rgba(29,158,117,0.25)`, borderRadius: 12, padding: '12px 16px', fontSize: 13, color: C.green, fontWeight: 500, marginTop: 16, display: 'flex', alignItems: 'center', gap: 8 },
-  signOutBtn: { background: 'none', border: `1.5px solid ${C.borderMid}`, borderRadius: 10, padding: '10px 20px', fontSize: 13, color: C.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' },
-  // Pantry
-  ingBox: { border: `1.5px solid ${C.borderMid}`, borderRadius: 12, padding: '12px 14px', background: C.cream, minHeight: 80, cursor: 'text', display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'flex-start' },
-  tag: { background: C.ink, color: 'white', padding: '5px 12px 5px 13px', borderRadius: 20, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' },
-  tagRemove: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 },
-  tagInput: { border: 'none', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: C.ink, flex: 1, minWidth: 140, background: 'transparent', padding: '4px 0' },
-  hint: { fontSize: 11.5, color: C.muted, marginTop: 7, fontWeight: 300 },
-  // User avatar row
-  userRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24, padding: '16px 20px', background: C.warm, borderRadius: 14 },
-  avatar: { width: 48, height: 48, borderRadius: '50%', background: C.jiff, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: 'white', flexShrink: 0, overflow: 'hidden' },
-  userName: { fontSize: 15, fontWeight: 500, color: C.ink },
-  userEmail: { fontSize: 13, color: C.muted, fontWeight: 300, marginTop: 2 },
-};
+const C = { jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5', muted:'#7C6A5E', border:'rgba(28,10,0,0.10)', borderMid:'rgba(28,10,0,0.18)', shadow:'0 4px 28px rgba(28,10,0,0.08)', green:'#1D9E75', greenBg:'rgba(29,158,117,0.08)' };
+const PALETTE = ['#E53E3E','#DD6B20','#38A169','#3182CE','#805AD5','#D69E2E','#319795','#E91E63'];
+const pill = (active) => ({ border:`1.5px solid ${active?C.jiff:C.borderMid}`, background:active?C.jiff:'white', color:active?'white':C.muted, borderRadius:20, padding:'6px 14px', fontSize:13, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:active?500:400, transition:'all 0.15s' });
+const sectionTab = (active) => ({ padding:'8px 16px', borderRadius:20, fontSize:13, fontWeight:active?500:400, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", border:`1.5px solid ${active?C.jiff:C.borderMid}`, background:active?C.jiff:'white', color:active?'white':C.muted, transition:'all 0.15s' });
+const label = { fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.jiff, fontWeight:500, marginBottom:8, display:'block' };
+const ingBox = { border:`1.5px solid ${C.borderMid}`, borderRadius:12, padding:'12px 14px', background:C.cream, minHeight:60, cursor:'text', display:'flex', flexWrap:'wrap', gap:7, alignItems:'flex-start' };
+const tag = { background:C.ink, color:'white', padding:'5px 12px 5px 13px', borderRadius:20, fontSize:12, display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap' };
+const tagInput = { border:'none', outline:'none', fontFamily:"'DM Sans', sans-serif", fontSize:13, color:C.ink, flex:1, minWidth:120, background:'transparent', padding:'3px 0' };
+const SPICE = [{id:'none',l:'None',e:'😌'},{id:'mild',l:'Mild',e:'🙂'},{id:'medium',l:'Medium',e:'😊'},{id:'hot',l:'Hot',e:'🌶️'},{id:'extra-hot',l:'Extra hot',e:'🔥'}];
+const SKILL = [{id:'beginner',l:'Beginner',e:'👶'},{id:'intermediate',l:'Intermediate',e:'🍳'},{id:'advanced',l:'Advanced',e:'👨‍🍳'}];
 
 export default function Profile() {
   const navigate = useNavigate();
   const { user, profile, pantry, updateProfile, savePantry, signOut, supabaseEnabled } = useAuth();
   const { lang, setLang, units, setUnits, supportedLanguages } = useLocale();
 
-  const [local, setLocal]       = useState(profile || { spice_level:'medium', allergies:[], preferred_cuisines:[], skill_level:'intermediate' });
-  const [pantryLocal, setPantryLocal] = useState(pantry || []);
-  const [pantryInput, setPantryInput] = useState('');
-  const [saved, setSaved]       = useState(false);
-  const [saving, setSaving]     = useState(false);
-  const pantryRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('food');
+  const [saved,  setSaved]   = useState(false);
+  const [saving, setSaving]  = useState(false);
 
-  // Keep local in sync if profile loads async
-  useState(() => { if (profile) setLocal(profile); }, [profile]);
-  useState(() => { if (pantry?.length) setPantryLocal(pantry); }, [pantry]);
+  const [foodType,      setFoodType]      = useState(profile?.food_type || 'veg');
+  const [spiceLevel,    setSpiceLevel]    = useState(profile?.spice_level || 'medium');
+  const [skillLevel,    setSkillLevel]    = useState(profile?.skill_level || 'intermediate');
+  const [allergies,     setAllergies]     = useState(profile?.allergies || []);
+  const [allergyInput,  setAllergyInput]  = useState('');
+  const [dietReqs,      setDietReqs]      = useState(profile?.diet_requirements || []);
+  const [prefCuisines,  setPrefCuisines]  = useState(profile?.preferred_cuisines || []);
+  const [pantryItems,   setPantryItems]   = useState(pantry || []);
+  const [pantryInput,   setPantryInput]   = useState('');
+  const allergyRef = useRef(null);
+  const pantryRef  = useRef(null);
 
-  const toggle = (field, value) => {
-    setLocal(prev => {
-      const arr = prev[field] || [];
-      return { ...prev, [field]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value] };
-    });
-  };
-
-  const addPantryItem = (val) => {
-    const v = val.trim().replace(/,$/,'');
-    if (v && !pantryLocal.includes(v)) setPantryLocal(p => [...p, v]);
-    setPantryInput('');
-  };
-  const onPantryKey = e => {
-    if (e.key==='Enter'||e.key===','){e.preventDefault();addPantryItem(pantryInput);}
-    else if(e.key==='Backspace'&&!pantryInput&&pantryLocal.length) setPantryLocal(p=>p.slice(0,-1));
-  };
+  const addTag = (setArr, arr, v) => { const t=v.trim().toLowerCase().replace(/,$/,''); if(t&&!arr.includes(t)) setArr(p=>[...p,t]); };
+  const toggleArr = (setArr, arr, id) => setArr(p => p.includes(id) ? p.filter(x=>x!==id) : [...p,id]);
 
   const handleSave = async () => {
     setSaving(true);
-    await Promise.all([
-      updateProfile(local),
-      savePantry(pantryLocal),
-    ]);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    await updateProfile({ food_type:foodType, spice_level:spiceLevel, allergies, diet_requirements:dietReqs, preferred_cuisines:prefCuisines, skill_level:skillLevel });
+    await savePantry(pantryItems);
+    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),3000);
   };
 
-  const handleSignOut = async () => { await signOut(); navigate('/'); };
-
-  const initials = profile?.name ? profile.name.slice(0,2).toUpperCase() : user?.email?.slice(0,2).toUpperCase() || 'J';
+  const TABS = [{id:'food',l:'🍽️ Food type'},{id:'cuisine',l:'🌍 Cuisines'},{id:'dietary',l:'💊 Dietary'},{id:'pantry',l:'🧂 Pantry'},{id:'prefs',l:'⚙️ Settings'}];
 
   return (
-    <div style={s.page}>
-      <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-
-      <header style={s.header}>
-        <div style={s.logo} onClick={() => navigate('/')}>
+    <div style={{minHeight:'100vh',background:C.cream,fontFamily:"'DM Sans', sans-serif",color:C.ink}}>
+      <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+      <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 28px',borderBottom:`1px solid ${C.border}`,position:'sticky',top:0,zIndex:10,background:'rgba(255,250,245,0.95)',backdropFilter:'blur(12px)'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>navigate('/')}>
           <span style={{fontSize:22}}>⚡</span>
-          <span style={s.logoName}><span style={{color:C.jiff}}>J</span>iff</span>
+          <span style={{fontFamily:"'Fraunces', serif",fontSize:22,fontWeight:900,color:C.ink}}><span style={{color:C.jiff}}>J</span>iff</span>
         </div>
-        <button style={s.backBtn} onClick={() => navigate('/app')}
-          onMouseEnter={e=>Object.assign(e.target.style,{borderColor:C.jiff,color:C.jiff})}
-          onMouseLeave={e=>Object.assign(e.target.style,{borderColor:C.borderMid,color:C.muted})}>
-          ← Back to app
-        </button>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>navigate('/app')} style={{fontSize:13,color:C.muted,background:'none',border:`1.5px solid ${C.borderMid}`,borderRadius:8,padding:'7px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>← App</button>
+          {user && <button onClick={signOut} style={{fontSize:13,color:'#E53E3E',background:'none',border:'1.5px solid rgba(229,62,62,0.3)',borderRadius:8,padding:'7px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>Sign out</button>}
+        </div>
       </header>
 
-      <div style={s.wrap}>
-        <div style={s.pageTitle}>Your Jiff profile</div>
-        <div style={s.pageSub}>Jiff uses your preferences to personalise every meal suggestion automatically.</div>
+      <div style={{maxWidth:720,margin:'0 auto',padding:'36px 20px 100px'}}>
+        <div style={{fontFamily:"'Fraunces', serif",fontSize:'clamp(24px,4vw,36px)',fontWeight:900,color:C.ink,letterSpacing:'-1px',marginBottom:4}}>Your profile</div>
+        <div style={{fontSize:14,color:C.muted,fontWeight:300,marginBottom:24}}>Preferences here personalise every recipe Jiff generates for you.</div>
 
-        {/* User info */}
         {user && (
-          <div style={s.card}>
-            <div style={s.userRow}>
-              <div style={s.avatar}>
-                {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                  : initials}
-              </div>
-              <div style={{flex:1}}>
-                <div style={s.userName}>{profile?.name || 'Chef'}</div>
-                <div style={s.userEmail}>{user.email}</div>
-              </div>
-              <button style={s.signOutBtn} onClick={handleSignOut}
-                onMouseEnter={e=>Object.assign(e.target.style,{borderColor:'#E53E3E',color:'#E53E3E'})}
-                onMouseLeave={e=>Object.assign(e.target.style,{borderColor:C.borderMid,color:C.muted})}>
-                Sign out
-              </button>
+          <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:16,padding:'14px 18px',marginBottom:20,boxShadow:C.shadow,display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:40,height:40,borderRadius:'50%',background:C.jiff,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,color:'white',fontWeight:700,flexShrink:0}}>
+              {(profile?.name||user.email||'U')[0].toUpperCase()}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:500,color:C.ink}}>{profile?.name||'Your account'}</div>
+              <div style={{fontSize:12,color:C.muted,fontWeight:300}}>{user.email}</div>
+            </div>
+            {!supabaseEnabled && <span style={{fontSize:11,color:C.muted,background:C.warm,borderRadius:20,padding:'3px 10px'}}>Guest mode</span>}
+          </div>
+        )}
+
+        <div style={{display:'flex',gap:7,flexWrap:'wrap',marginBottom:20}}>
+          {TABS.map(t => <button key={t.id} style={sectionTab(activeTab===t.id)} onClick={()=>setActiveTab(t.id)}>{t.l}</button>)}
+        </div>
+
+        {/* FOOD TYPE TAB */}
+        {activeTab==='food' && (
+          <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,padding:22,boxShadow:C.shadow}}>
+            <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>🍽️ What do you eat?</div>
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:18}}>This is your most important preference. It controls ingredients and recipes Jiff will suggest.</div>
+            <span style={label}>Food type</span>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(175px,1fr))',gap:10,marginBottom:22}}>
+              {FOOD_TYPE_OPTIONS.map((opt,i)=>(
+                <div key={opt.id} onClick={()=>setFoodType(opt.id)} style={{border:`2px solid ${foodType===opt.id?PALETTE[i%8]:C.borderMid}`,borderRadius:14,padding:'11px 13px',cursor:'pointer',background:foodType===opt.id?PALETTE[i%8]+'12':'white',transition:'all 0.15s'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
+                    <span style={{fontSize:18}}>{opt.emoji}</span>
+                    <span style={{fontSize:13,fontWeight:500,color:foodType===opt.id?C.ink:C.muted}}>{opt.label}</span>
+                    {foodType===opt.id && <span style={{marginLeft:'auto',color:PALETTE[i%8]}}>✓</span>}
+                  </div>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:300,lineHeight:1.4}}>{opt.desc}</div>
+                </div>
+              ))}
+            </div>
+            <span style={label}>Spice level</span>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:18}}>
+              {SPICE.map(o=><button key={o.id} style={pill(spiceLevel===o.id)} onClick={()=>setSpiceLevel(o.id)}>{o.e} {o.l}</button>)}
+            </div>
+            <span style={label}>Cooking skill</span>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:18}}>
+              {SKILL.map(o=><button key={o.id} style={pill(skillLevel===o.id)} onClick={()=>setSkillLevel(o.id)}>{o.e} {o.l}</button>)}
+            </div>
+            <span style={label}>Allergies / foods to avoid</span>
+            <div style={ingBox} onClick={()=>allergyRef.current?.focus()}>
+              {allergies.map(a=>(
+                <span key={a} style={{...tag,background:'#E53E3E'}}>
+                  {a}<button onClick={()=>setAllergies(p=>p.filter(x=>x!==a))} style={{background:'none',border:'none',color:'rgba(255,255,255,0.7)',cursor:'pointer',fontSize:14,padding:0}}>×</button>
+                </span>
+              ))}
+              <input ref={allergyRef} style={tagInput} value={allergyInput}
+                onChange={e=>setAllergyInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addTag(setAllergies,allergies,allergyInput);setAllergyInput('');}}}
+                onBlur={()=>{if(allergyInput.trim()){addTag(setAllergies,allergies,allergyInput);setAllergyInput('');}}}
+                placeholder={allergies.length===0?'peanuts, shellfish, dairy…':'add more…'}
+              />
             </div>
           </div>
         )}
 
-        {/* Pantry */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>🧂 Saved pantry</div>
-          <div style={s.cardSub}>Your regular staples. These will pre-fill your ingredient list every time you open Jiff.</div>
-          <span style={s.label}>Pantry ingredients</span>
-          <div style={s.ingBox} onClick={() => pantryRef.current?.focus()}>
-            {pantryLocal.map(ing => (
-              <span key={ing} style={s.tag}>
-                {ing}
-                <button style={s.tagRemove} onClick={e=>{e.stopPropagation();setPantryLocal(p=>p.filter(i=>i!==ing));}}>×</button>
-              </span>
-            ))}
-            <input
-              ref={pantryRef} style={s.tagInput} value={pantryInput}
-              onChange={e=>setPantryInput(e.target.value)} onKeyDown={onPantryKey}
-              onBlur={()=>{if(pantryInput.trim())addPantryItem(pantryInput);}}
-              placeholder={pantryLocal.length===0?'rice, onions, garlic, olive oil… press Enter after each':'add more…'}
-            />
-          </div>
-          <p style={s.hint}>Enter or comma to add · Backspace to remove last</p>
-        </div>
-
-        {/* Spice level */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>🌶️ Spice tolerance</div>
-          <div style={s.cardSub}>Jiff will calibrate heat levels in every recipe to match your preference.</div>
-          <span style={s.label}>Your spice level</span>
-          <div style={s.row}>
-            {SPICE_OPTIONS.map(o => (
-              <button key={o} style={s.spicePill(o, local.spice_level===o)} onClick={() => setLocal(p=>({...p,spice_level:o}))}>
-                {o==='none'?'🚫 none':o==='mild'?'😌 mild':o==='medium'?'🔥 medium':o==='hot'?'🔥🔥 hot':'🔥🔥🔥 extra hot'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Allergies */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>⚠️ Allergies & intolerances</div>
-          <div style={s.cardSub}>Jiff will never suggest a meal containing these ingredients.</div>
-          <span style={s.label}>Select all that apply</span>
-          <div style={s.row}>
-            {ALLERGY_OPTIONS.map(o => (
-              <button key={o} style={s.pill((local.allergies||[]).includes(o))} onClick={() => toggle('allergies', o)}>
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Preferred cuisines */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>🌍 Favourite cuisines</div>
-          <div style={s.cardSub}>Jiff will favour these styles when no cuisine is selected.</div>
-          <span style={s.label}>Select all you love</span>
-          <div style={s.row}>
-            {CUISINE_OPTIONS.map(o => (
-              <button key={o} style={s.pill((local.preferred_cuisines||[]).includes(o))} onClick={() => toggle('preferred_cuisines', o)}>
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Cooking skill */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>👨‍🍳 Cooking skill level</div>
-          <div style={s.cardSub}>Jiff will adjust recipe complexity and technique to match your confidence in the kitchen.</div>
-          <span style={s.label}>Your level</span>
-          <div style={s.row}>
-            {SKILL_OPTIONS.map(o => (
-              <button key={o} style={s.pill(local.skill_level===o)} onClick={() => setLocal(p=>({...p,skill_level:o}))}>
-                {o==='beginner'?'🌱 Beginner':o==='intermediate'?'🍳 Intermediate':'👨‍🍳 Advanced'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Language */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>🌍 Language</div>
-          <div style={s.cardSub}>Jiff will display the UI and generate recipes in your chosen language.</div>
-          <span style={s.label}>Display language</span>
-          <div style={s.row}>
-            {supportedLanguages.map(l => (
-              <button key={l.id} style={s.pill(lang===l.id)} onClick={()=>setLang(l.id)}>
-                {l.flag} {l.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Units */}
-        <div style={s.card}>
-          <div style={s.cardTitle}>📏 Measurement units</div>
-          <div style={s.cardSub}>Ingredient quantities in all recipes will use your preferred system.</div>
-          <span style={s.label}>Units</span>
-          <div style={s.row}>
-            {[{id:'metric',label:'⚖️ Metric (g, ml, kg)'},{id:'imperial',label:'🥛 Imperial (oz, cups, lbs)'}].map(o=>(
-              <button key={o.id} style={s.pill(units===o.id)} onClick={()=>setUnits(o.id)}>{o.label}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Save */}
-        <button style={s.saveBtn} onClick={handleSave} disabled={saving}
-          onMouseEnter={e=>Object.assign(e.currentTarget.style,{background:C.jiffDark,transform:'translateY(-1px)'})}
-          onMouseLeave={e=>Object.assign(e.currentTarget.style,{background:C.jiff,transform:'none'})}>
-          {saving ? '⏳ Saving…' : '✓ Save profile'}
-        </button>
-
-        {saved && (
-          <div style={s.successBanner}>
-            ✓ Profile saved — Jiff will personalise your meals automatically from now on.
+        {/* CUISINE TAB */}
+        {activeTab==='cuisine' && (
+          <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,padding:22,boxShadow:C.shadow}}>
+            <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>🌍 Cuisine preferences</div>
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:18}}>Select your favourite cuisines. Jiff will favour these when suggesting meals. Select multiple.</div>
+            <span style={label}>Indian regional cuisines</span>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:20}}>
+              {INDIAN_CUISINES.map(c=>(
+                <button key={c.id} onClick={()=>toggleArr(setPrefCuisines,prefCuisines,c.id)}
+                  style={{...pill(prefCuisines.includes(c.id)),display:'flex',alignItems:'center',gap:5}}>
+                  <span style={{fontSize:12}}>{c.flag}</span>{c.label}
+                </button>
+              ))}
+            </div>
+            <span style={label}>Global cuisines</span>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+              {GLOBAL_CUISINES.map(c=>(
+                <button key={c.id} onClick={()=>toggleArr(setPrefCuisines,prefCuisines,c.id)}
+                  style={{...pill(prefCuisines.includes(c.id)),display:'flex',alignItems:'center',gap:5}}>
+                  <span style={{fontSize:12}}>{c.flag}</span>{c.label}
+                </button>
+              ))}
+            </div>
+            {prefCuisines.length>0 && <div style={{marginTop:10,fontSize:12,color:C.muted}}>{prefCuisines.length} cuisine{prefCuisines.length>1?'s':''} selected: {prefCuisines.join(', ')}</div>}
           </div>
         )}
 
-        {!supabaseEnabled && (
-          <div style={{marginTop:16,fontSize:13,color:C.muted,background:C.warm,borderRadius:10,padding:'10px 14px',lineHeight:1.6}}>
-            ℹ️ Supabase not configured — profile saved locally only. Follow the setup guide to enable cloud sync.
+        {/* DIETARY REQUIREMENTS TAB */}
+        {activeTab==='dietary' && (
+          <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,padding:22,boxShadow:C.shadow}}>
+            <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>💊 Dietary requirements</div>
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:18}}>Medical or health-based requirements. Jiff will optimise every recipe accordingly. Select all that apply.</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))',gap:10}}>
+              {DIET_REQUIREMENTS.map((req,i)=>{
+                const active=dietReqs.includes(req.id);
+                return (
+                  <div key={req.id} onClick={()=>toggleArr(setDietReqs,dietReqs,req.id)}
+                    style={{border:`1.5px solid ${active?PALETTE[i%8]:C.borderMid}`,borderRadius:12,padding:'10px 12px',cursor:'pointer',background:active?PALETTE[i%8]+'10':'white',transition:'all 0.15s'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
+                      <span style={{fontSize:16}}>{req.emoji}</span>
+                      <span style={{fontSize:13,fontWeight:500,color:active?C.ink:C.muted}}>{req.label}</span>
+                      {active && <span style={{marginLeft:'auto',color:PALETTE[i%8],fontSize:14}}>✓</span>}
+                    </div>
+                    <div style={{fontSize:11,color:C.muted,fontWeight:300}}>{req.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* PANTRY TAB */}
+        {activeTab==='pantry' && (
+          <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,padding:22,boxShadow:C.shadow}}>
+            <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>🧂 Your pantry</div>
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:16}}>Ingredients always in your kitchen. These pre-fill every search automatically.</div>
+            <div style={ingBox} onClick={()=>pantryRef.current?.focus()}>
+              {pantryItems.map(item=>(
+                <span key={item} style={{...tag,background:'#5C6BC0'}}>
+                  {item}<button onClick={()=>setPantryItems(p=>p.filter(x=>x!==item))} style={{background:'none',border:'none',color:'rgba(255,255,255,0.7)',cursor:'pointer',fontSize:14,padding:0}}>×</button>
+                </span>
+              ))}
+              <input ref={pantryRef} style={tagInput} value={pantryInput}
+                onChange={e=>setPantryInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addTag(setPantryItems,pantryItems,pantryInput);setPantryInput('');}}}
+                onBlur={()=>{if(pantryInput.trim()){addTag(setPantryItems,pantryItems,pantryInput);setPantryInput('');}}}
+                placeholder={pantryItems.length===0?'salt, oil, onion, garlic…':'add more…'}
+              />
+            </div>
+            <div style={{marginTop:8,display:'flex',flexWrap:'wrap',gap:5}}>
+              {['salt','oil','onion','garlic','ginger','cumin','turmeric','chilli powder','sugar'].map(s_=> !pantryItems.includes(s_) &&
+                <button key={s_} onClick={()=>addTag(setPantryItems,pantryItems,s_)} style={{background:'none',border:`1px dashed ${C.borderMid}`,borderRadius:20,padding:'3px 10px',fontSize:11,color:C.muted,cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>+ {s_}</button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* PREFERENCES TAB */}
+        {activeTab==='prefs' && (
+          <div style={{background:'white',border:`1px solid ${C.border}`,borderRadius:20,padding:22,boxShadow:C.shadow}}>
+            <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:16}}>⚙️ App preferences</div>
+            <span style={label}>Display language (10 available)</span>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:20}}>
+              {supportedLanguages.map(l=>(
+                <button key={l.id} style={pill(lang===l.id)} onClick={()=>setLang(l.id)}>
+                  {l.flag} {l.label}
+                </button>
+              ))}
+            </div>
+            <span style={label}>Measurement units</span>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+              {[{id:'metric',label:'⚖️ Metric (g, ml, kg)'},{id:'imperial',label:'🥛 Imperial (oz, cups, lbs)'}].map(u=>(
+                <button key={u.id} style={pill(units===u.id)} onClick={()=>setUnits(u.id)}>{u.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab!=='prefs' && (
+          <div style={{marginTop:20}}>
+            <button onClick={handleSave} disabled={saving} style={{background:C.jiff,color:'white',border:'none',borderRadius:12,padding:'13px 30px',fontSize:14,fontFamily:"'DM Sans', sans-serif",fontWeight:500,cursor:saving?'not-allowed':'pointer',opacity:saving?0.7:1,display:'inline-flex',alignItems:'center',gap:7}}>
+              {saving?'⏳ Saving…':'⚡ Save preferences'}
+            </button>
+            {saved && <div style={{background:C.greenBg,border:`1px solid rgba(29,158,117,0.25)`,borderRadius:10,padding:'11px 14px',fontSize:13,color:C.green,fontWeight:500,marginTop:14,display:'inline-flex',alignItems:'center',gap:7}}>✓ Preferences saved!</div>}
           </div>
         )}
       </div>

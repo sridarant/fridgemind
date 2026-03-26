@@ -118,6 +118,7 @@ const styles = `
   .loading-day{background:var(--warm);border-radius:7px;padding:7px 3px;text-align:center;font-size:11px;color:var(--muted);transition:all 0.3s;}
   .loading-day.done{background:var(--jiff);color:white;font-weight:500;}
   .loading-day.active{background:var(--warm);border:2px solid var(--jiff);color:var(--jiff);font-weight:500;}
+  .latency-warn{margin-top:16px;padding:10px 16px;background:rgba(255,69,0,0.07);border:1px solid rgba(255,69,0,0.2);border-radius:10px;font-size:13px;color:#CC3700;font-weight:300;line-height:1.6;}
 
   /* Results */
   .planner-wrap{max-width:1100px;margin:0 auto;padding:32px 20px 60px;}
@@ -298,6 +299,11 @@ function GrocerySection({ plan, mealTypes }) {
                 <div key={key} className="grocery-item-row" onClick={()=>toggle(key)}>
                   <div className={`g-checkbox ${checked[key]?'checked':''}`}><svg viewBox="0 0 12 12"><polyline points="10 2 5 9 2 6" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
                   <div className={`g-item-text ${checked[key]?'done':''}`}>{item}</div>
+                  <a href={'https://blinkit.com/s/?q='+encodeURIComponent(item)} target="_blank" rel="noopener noreferrer"
+                    onClick={e=>e.stopPropagation()}
+                    style={{fontSize:10,color:'#1A8A3E',fontWeight:500,background:'rgba(26,138,62,0.08)',border:'1px solid rgba(26,138,62,0.2)',borderRadius:6,padding:'2px 6px',textDecoration:'none',marginLeft:'auto',whiteSpace:'nowrap',flexShrink:0}}>
+                    Blinkit →
+                  </a>
                 </div>
               );})}
             </div>
@@ -361,12 +367,19 @@ export default function Planner() {
   const inputRef = useRef(null);
   const timerRef = useRef(null);
   const [pantryLoaded, setPantryLoaded]   = useState(false);
+  const [loadElapsed,  setLoadElapsed]   = useState(0);
 
   // Pre-fill pantry
   useEffect(() => { if(!pantryLoaded&&pantry?.length){setIngredients(pantry);setPantryLoaded(true);} }, [pantry,pantryLoaded]);
 
   useEffect(() => {
-    if (view==='loading') { let d=0; timerRef.current=setInterval(()=>{d++;setLoadingDay(d);if(d>=7)clearInterval(timerRef.current);},1100); }
+    if (view==='loading') {
+      let d=0; timerRef.current=setInterval(()=>{d++;setLoadingDay(d);if(d>=7)clearInterval(timerRef.current);},1100);
+      // Latency counter
+      const startTs = Date.now();
+      const elapsedT = setInterval(() => setLoadElapsed(Math.floor((Date.now()-startTs)/1000)), 1000);
+      return () => { clearInterval(timerRef.current); clearInterval(elapsedT); setLoadElapsed(0); };
+    }
     return ()=>clearInterval(timerRef.current);
   }, [view]);
 
@@ -428,6 +441,7 @@ export default function Planner() {
         <header className="header">
           <div className="logo" onClick={()=>navigate('/')}><span style={{fontSize:22}}>⚡</span><span className="logo-name"><span>J</span>iff</span></div>
           <div className="nav-links">
+            <button className="nav-link" onClick={()=>navigate('/')}>🏠 Home</button>
             <button className="nav-link" onClick={()=>navigate('/app')}>⚡ Quick meal</button>
             <button className="nav-link active">📅 Week planner</button>
           </div>
@@ -519,7 +533,10 @@ export default function Planner() {
           <div className="loading-wrap">
             <div className="spinner"/>
             <div className="loading-title">Planning your week…</div>
-            <div className="loading-sub">Building {mealCount} meals across 7 days. Takes about 20 seconds.</div>
+            <div className="loading-sub">Building {mealCount} meals across 7 days — usually takes 20–30 seconds.</div>
+            {loadElapsed >= 10 && (
+              <div className="latency-warn">⏳ Taking a bit longer than usual ({loadElapsed}s) — building your full week plan…</div>
+            )}
             <div className="loading-days">
               {DAYS.map((day,i)=>(
                 <div key={day} className={`loading-day ${loadingDay>i?'done':loadingDay===i?'active':''}`}>

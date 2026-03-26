@@ -153,6 +153,7 @@ export default function Plans() {
   const [plan,         setPlan]         = useState(null);
   const [currentGoal,  setCurrentGoal]  = useState(null);
   const [errorMsg,     setErrorMsg]     = useState('');
+  const [genElapsed,   setGenElapsed]   = useState(0);
   const [expandedDay,  setExpandedDay]  = useState(null);
 
   const addIng = val => {
@@ -168,6 +169,8 @@ export default function Plans() {
   const handleGenerate = async (planConfig) => {
     if (!isPremium) { navigate('/pricing'); return; }
     setGenerating(planConfig.id);
+    setGenElapsed(0);
+    const elapsed_timer = setInterval(() => setGenElapsed(e => e + 1), 1000);
     setCurrentGoal(planConfig);
     setErrorMsg('');
     try {
@@ -189,7 +192,7 @@ export default function Plans() {
       if (data.plan?.length >= 7) { setPlan(data.plan); setExpandedDay(0); }
       else { setErrorMsg(data.error || 'Could not generate plan. Please try again.'); }
     } catch { setErrorMsg('Connection error. Please try again.'); }
-    finally { setGenerating(null); }
+    finally { setGenerating(null); if (typeof elapsed_timer !== 'undefined') clearInterval(elapsed_timer); }
   };
 
   const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -283,7 +286,14 @@ export default function Plans() {
           </div>
         )}
 
-        {/* Plan cards grid */}
+        {/* Latency warning */}
+      {generating && genElapsed >= 12 && (
+        <div style={{background:'rgba(255,69,0,0.07)',border:'1px solid rgba(255,69,0,0.2)',borderRadius:12,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#CC3700',fontWeight:300,lineHeight:1.6}}>
+          ⏳ Taking a bit longer ({genElapsed}s) — building your full 7-day plan… this usually takes 20–30 seconds.
+        </div>
+      )}
+
+      {/* Plan cards grid */}
         {!plan && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {PLANS.map(p => <PlanCard key={p.id} plan={p} onGenerate={handleGenerate} generating={generating} />)}

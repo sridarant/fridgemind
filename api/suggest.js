@@ -20,6 +20,23 @@ export default async function handler(req, res) {
     if (!ingredients?.length) return res.status(400).json({ error: 'Please provide at least one ingredient.' });
 
     const dietLabel    = (!diet || diet === 'none') ? 'no dietary restrictions' : diet;
+
+    // ── Egg + vegetarian conflict fix (item u) ────────────────
+    // If diet is vegetarian and ingredients contain eggs, treat as eggetarian
+    // This prevents AI from returning egg dishes for strict vegetarian
+    const hasEggs = (ingredients || []).some(i => ['egg','eggs','boiled egg'].includes(i.toLowerCase().trim()));
+    let effectiveDiet = dietLabel;
+    let eggRule = '';
+    if (diet === 'vegetarian' && hasEggs) {
+      effectiveDiet = 'eggetarian (vegetarian who eats eggs)';
+      eggRule = 'User is eggetarian — recipes CAN include eggs but must have NO meat or fish.';
+    } else if (diet === 'vegetarian') {
+      eggRule = 'STRICT vegetarian — absolutely NO eggs, meat, fish, or seafood in any recipe. Even if eggs appear in the ingredient list, do NOT use them.';
+    } else if (diet === 'vegan') {
+      eggRule = 'STRICTLY vegan — NO eggs, dairy, meat, fish, honey, or any animal products.';
+    } else if (diet === 'jain') {
+      eggRule = 'Jain diet — NO meat, eggs, fish, or root vegetables (onion, garlic, potato, carrot, beetroot, turnip). Use only above-ground vegetables.';
+    }
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
     const cuisineRule  = cuisineLabel
       ? `All ${count} meals MUST be authentic ${cuisineLabel} cuisine.`
@@ -56,11 +73,13 @@ export default async function handler(req, res) {
       ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}`
       : '';
 
+    const promptDiet = eggRule || effectiveDiet;
+
     const prompt = `You are a creative, practical chef with deep knowledge of world cuisines.
 
 Available ingredients: ${ingredients.join(', ')}.
 Time available: ${time}.
-Dietary preference: ${dietLabel}.
+Dietary preference: ${effectiveDiet}. ${eggRule}
 Meal type: ${mealTypeRule}
 Cuisine requirement: ${cuisineRule}
 Serving size: Each recipe should serve ${defaultServings} people.

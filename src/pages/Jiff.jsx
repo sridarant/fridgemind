@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale }  from '../contexts/LocaleContext';
-import JiffLogo from '../components/JiffLogo';
+import JiffLogo        from '../components/JiffLogo';
+import SmartGreeting    from '../components/SmartGreeting';
+import IngredientInput  from '../components/IngredientInput';
+import FridgePhotoUpload from '../components/FridgePhotoUpload';
 
 // ── localStorage helpers (favourites for guest fallback) ─────────
 const STORAGE_KEY = 'jiff-favourites';
@@ -633,7 +636,16 @@ export default function Jiff() {
   const [time,         setTime]         = useState('30 min');
   const [diet,         setDiet]         = useState('none');
   const [cuisine,      setCuisine]      = useState('any');
-  const [mealType,     setMealType]     = useState('any');
+  // Auto-detect meal type from local time (item m) — user can override
+  const getDefaultMealType = () => {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 11)  return 'breakfast';
+    if (h >= 11 && h < 15)  return 'lunch';
+    if (h >= 15 && h < 18)  return 'snack';
+    if (h >= 18 && h < 22)  return 'dinner';
+    return 'any';
+  };
+  const [mealType,     setMealType]     = useState(getDefaultMealType);
   const [defaultServings, setDefaultServings] = useState(2);
   const [view,         setView]         = useState('input');
   const [meals,        setMeals]        = useState([]);
@@ -731,6 +743,21 @@ export default function Jiff() {
     catch (e) { if (e.message !== 'dismissed') alert('Payment failed — please try again.'); }
     finally { setGateLoading(false); }
   };
+
+  // Auto-logout on window/tab close (item s)
+  useEffect(() => {
+    const handleUnload = () => {
+      try {
+        // Use Supabase signOut — best effort on unload
+        if (user && supabaseEnabled) {
+          const sb = window._supabaseClient;
+          if (sb) sb.auth.signOut();
+        }
+      } catch {}
+    };
+    window.addEventListener('beforeunload', handleUnload);
+    return () => window.removeEventListener('beforeunload', handleUnload);
+  }, [user, supabaseEnabled]);
 
   const reset = () => { setView('input'); setMeals([]); setIngredients(pantry||[]); setInputVal(''); setShowFavs(false); setPantryLoaded(true); };
 
@@ -853,6 +880,17 @@ export default function Jiff() {
         {view === 'input' && (
           <div className="main-layout">
             <div className="main-form">
+              {/* Smart greeting with weather/time/location (item b) */}
+              {user && view === 'input' && (
+                <SmartGreeting
+                  user={user}
+                  profile={profile}
+                  onSuggestRecipe={(suggestion, autoMealType) => {
+                    if (autoMealType && autoMealType !== 'any') setMealType(autoMealType);
+                    // Pre-fill the suggested dish name as a search hint
+                  }}
+                />
+              )}
               <div style={{marginBottom:6}}>
                 <h1 style={{fontFamily:"'Fraunces', serif",fontSize:'clamp(26px,4vw,40px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-1px',lineHeight:1.05,marginBottom:6}}>
                   What can I make <em style={{fontStyle:'italic',color:'var(--jiff)'}}>right now?</em>
@@ -874,21 +912,19 @@ export default function Jiff() {
                   </div>
                 </div>
 
-                {/* Ingredients */}
+                {/* Ingredients — smart autocomplete + fridge photo */}
                 <div className="section">
-                  <div className="section-label">What's in your fridge?</div>
-                  <div className="ingredient-box" onClick={()=>inputRef.current?.focus()}>
-                    {ingredients.map(ing=>(
-                      <span key={ing} className="tag">{ing}
-                        <button className="tag-remove" onClick={e=>{e.stopPropagation();setIngredients(p=>p.filter(i=>i!==ing));}}>×</button>
-                      </span>
-                    ))}
-                    <input ref={inputRef} className="tag-input" value={inputVal}
-                      onChange={e=>setInputVal(e.target.value)} onKeyDown={onKey}
-                      onBlur={()=>{if(inputVal.trim())addIng(inputVal);}}
-                      placeholder={ingredients.length===0?'eggs, onions, rice, tomatoes… press Enter after each':'add more…'}/>
-                  </div>
-                  <p className="tag-hint">Enter or comma to add · Backspace to remove last</p>
+                  <div className="section-label">{t('label_ingredients')}</div>
+                  <FridgePhotoUpload
+                    onIngredientsDetected={detected => setIngredients(prev => [...new Set([...prev, ...detected])])}
+                    existingIngredients={ingredients}
+                  />
+                  <IngredientInput
+                    ingredients={ingredients}
+                    onChange={setIngredients}
+                    pantryIngredients={pantry || []}
+                    placeholder={t('ingPlaceholder')}
+                  />
                 </div>
 
                 {/* Servings */}

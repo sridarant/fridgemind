@@ -213,3 +213,53 @@ Add to Vercel and redeploy. Meal history will now persist to Supabase and appear
 | Meal history | Not saved | Saved to cloud |
 | Sign-in | Dev bypass only | Google + magic link |
 | Cross-device sync | No | Yes |
+
+---
+
+## Phase 3 — Feedback & Public API (v16+)
+
+### Step 1 — Create feedback and api_keys tables
+
+Go to **Supabase → SQL Editor** and run:
+
+```sql
+-- User feedback table
+create table if not exists feedback (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete set null,
+  email       text,
+  rating      int check (rating >= 1 and rating <= 5),
+  category    text default 'other',
+  message     text,
+  page        text,
+  user_agent  text,
+  created_at  timestamptz default now()
+);
+alter table feedback enable row level security;
+create policy "feedback: insert only" on feedback for insert with check (true);
+
+-- Public API keys table
+create table if not exists api_keys (
+  id          uuid primary key default gen_random_uuid(),
+  key         text unique not null,
+  tier        text default 'free' check (tier in ('free','starter','pro')),
+  user_id     uuid references auth.users(id) on delete cascade,
+  usage_count int default 0,
+  usage_date  date,
+  created_at  timestamptz default now()
+);
+alter table api_keys enable row level security;
+create policy "api_keys: own data" on api_keys for all using (auth.uid() = user_id);
+
+-- Also add new profile columns for v16
+alter table profiles add column if not exists food_type         text default 'veg';
+alter table profiles add column if not exists diet_requirements text[] default '{}';
+```
+
+### What requires SUPABASE_SERVICE_ROLE_KEY
+
+- `api/meal-history.js` — write meal history
+- `api/feedback.js` — save feedback
+- `api/v1/suggest.js` — validate API keys
+
+All three use the service role key for trusted server-side writes that bypass RLS.
