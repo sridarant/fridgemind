@@ -629,7 +629,7 @@ export default function Jiff() {
   const navigate = useNavigate();
   const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, supabaseEnabled, authLoading } = useAuth();
   const { isPremium, trial, trialActive, trialExpired, trialDaysLeft, recipeCount, plans, checkAccess, recordUsage, startTrial, openCheckout, activateTestPremium, showGate, setShowGate, gateReason, razorpayEnabled, TRIAL_DAYS, PAID_RECIPE_CAP } = usePremium();
-  const { lang, units, setUnits, setLang, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, supportedLanguages } = useLocale();
+  const { lang, units, setUnits, setLang, t, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, supportedLanguages } = useLocale();
 
   const [ingredients,  setIngredients]  = useState([]);
   const [inputVal,     setInputVal]     = useState('');

@@ -28,7 +28,7 @@ const s = {
 
   // Hero
   hero: { maxWidth: 880, margin: '0 auto', padding: '96px 24px 80px', textAlign: 'center' },
-  heroPill: { display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,69,0,0.1)', border: `1px solid rgba(255,69,0,0.2)`, borderRadius: 20, padding: '5px 14px 5px 10px', marginBottom: 28 },
+  heroPill: { display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 20, padding: '5px 14px 5px 10px', marginBottom: 28 },
   heroPillDot: { width: 7, height: 7, borderRadius: '50%', background: C.jiff },
   heroPillText: { fontSize: 12, fontWeight: 500, color: C.jiff, letterSpacing: '0.5px' },
   h1: { fontFamily: "'Fraunces', serif", fontSize: 'clamp(48px, 8vw, 88px)', fontWeight: 900, lineHeight: 1.0, color: C.ink, marginBottom: 24, letterSpacing: '-2.5px' },
@@ -44,7 +44,7 @@ const s = {
   // Big stat bar
   statBar: { background: C.ink, padding: '48px 24px' },
   statBarInner: { maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 0 },
-  statItem: { padding: '20px 32px', textAlign: 'center', borderRight: `1px solid rgba(255,250,245,0.1)` },
+  statItem: { padding: '20px 32px', textAlign: 'center', borderRight: '1px solid rgba(255,250,245,0.1)' },
   statNum: { fontFamily: "'Fraunces', serif", fontSize: 44, fontWeight: 900, color: C.jiff, lineHeight: 1, letterSpacing: '-1px' },
   statLabel: { fontSize: 13, color: 'rgba(255,250,245,0.5)', marginTop: 6, fontWeight: 300, lineHeight: 1.4 },
 
@@ -162,7 +162,7 @@ export default function Landing() {
       <section style={s.hero}>
         <div style={s.heroPill}>
           <div style={s.heroPillDot} />
-          <span style={s.heroPillText}>AI-powered · Free · No sign-up</span>
+          <span style={s.heroPillText}>AI-powered · 7-day free trial · Sign in to sync</span>
         </div>
         <h1 style={s.h1}>
           Any meal.
@@ -226,7 +226,8 @@ export default function Landing() {
                 <div style={s.problemCardTitle}>{p.title}</div>
                 <div style={s.problemCardDesc}>{p.desc}</div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -277,8 +278,14 @@ export default function Landing() {
               { name: 'Free', price: '₹0', period: 'forever', color: '#6B6458', features: ['5 meals / day', '1 weekly plan / month', 'All basic features', 'Device-only sync'], cta: 'Start free', onClick: () => navigate('/app'), outline: true },
               { name: 'Monthly', price: currency.plans.monthly, period: '/month', color: C.jiff, features: ['Unlimited meals', 'Unlimited weekly plans', 'Cloud sync across devices', 'Taste profile + pantry'], cta: 'Get Premium', onClick: () => navigate('/pricing'), outline: false },
               { name: 'Lifetime', price: currency.plans.lifetime, period: 'one time', color: '#854F0B', features: ['Everything in Premium', 'Pay once, use forever', 'All future features', 'Priority support'], cta: 'Best value', onClick: () => navigate('/pricing'), outline: false },
-            ].map((plan, i) => (
-              <div key={i} style={{ background: 'white', border: '2px solid ' + plan.outline ? 'rgba(28,10,0,0.12)' : plan.color, borderRadius: 20, padding: '28px 24px', boxShadow: plan.outline ? 'none' : `0 8px 32px ${plan.color}33` }}>
+            ].map((plan, i) => {
+              const planBorder    = '2px solid ' + (plan.outline ? 'rgba(28,10,0,0.12)' : plan.color);
+              const planShadow    = plan.outline ? 'none' : '0 8px 32px ' + plan.color + '33';
+              const btnBorder     = '2px solid ' + (plan.outline ? 'rgba(28,10,0,0.18)' : plan.color);
+              const btnBg         = plan.outline ? 'transparent' : plan.color;
+              const btnColor      = plan.outline ? C.ink : 'white';
+              return (
+              <div key={i} style={{ background: 'white', border: planBorder, borderRadius: 20, padding: '28px 24px', boxShadow: planShadow }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: plan.color, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 10 }}>{plan.name}</div>
                 <div style={{ fontFamily: "'Fraunces', serif", fontSize: 36, fontWeight: 900, color: C.ink, letterSpacing: '-1px', lineHeight: 1, marginBottom: 4 }}>{plan.price}</div>
                 <div style={{ fontSize: 13, color: '#6B6458', marginBottom: 20, fontWeight: 300 }}>{plan.period}</div>
@@ -287,11 +294,12 @@ export default function Landing() {
                     <span style={{ color: plan.color, fontWeight: 700, fontSize: 14 }}>✓</span>{f}
                   </div>
                 ))}
-                <button onClick={plan.onClick} style={{ marginTop: 20, width: '100%', background: plan.outline ? 'transparent' : plan.color, color: plan.outline ? C.ink : 'white', border: '2px solid ' + plan.outline ? 'rgba(28,10,0,0.18)' : plan.color, borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' }}>
+                <button onClick={plan.onClick} style={{ marginTop: 20, width: '100%', background: btnBg, color: btnColor, border: btnBorder, borderRadius: 10, padding: '11px', fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.18s' }}>
                   {plan.cta}
                 </button>
               </div>
-            ))}
+              );
+            })
           </div>
         </div>
       </section>
