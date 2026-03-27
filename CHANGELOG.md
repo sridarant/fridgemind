@@ -7,6 +7,29 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v16.2 — Grocery fix, country detection, cuisine cleanup, Planner fridge section, profile pre-fill
+**Date:** March 2026
+
+### Bug fixes
+- **Grocery list blank page** — `GroceryPanel` now calls `useLocale()` directly to get `country`, eliminating the `ReferenceError` from referencing `country` in a scope that didn't have it. Grocery list and Blinkit links now render correctly.
+- **Duplicate "Any Cuisine"** — Removed `any` from `GLOBAL_CUISINES` (it was already manually rendered as the first chip in the sidebar). Now only one "Any cuisine" button appears.
+- **Country shows SG instead of IN** — `guessCountry()` now uses `Intl.DateTimeFormat().resolvedOptions().timeZone` (e.g. `Asia/Kolkata` → `IN`, `Asia/Singapore` → `SG`). `SmartGreeting` also calls `onCountryDetected` when real GPS country is determined, updating `LocaleContext` with the accurate value.
+
+### Improvements
+- **Dietary + Cuisine pre-filled from profile** — On load, `useEffect` reads saved `food_type` and `preferred_cuisines` from profile and sets the `diet`/`cuisine` state automatically.
+- **Profile completion banner** — If logged in but no `spice_level` or `preferred_cuisines` saved, a prominent orange banner appears at the top of the app page: "Complete your profile — Set preferences →".
+- **Make it ⚡ button** — Clicking the contextual suggestion in SmartGreeting now adds the dish to fridge items and auto-triggers generation (with 150ms delay for state to settle).
+- **Planner fridge section** — `/planner` now has the same "What's in your fridge?" photo+text section and "Pantry & Spices" section as the main app. Pantry pre-filled from profile. Old `ingredient-box` tag input removed.
+- **Indian cuisines updated** — South Indian and Chettinad removed; `Tamil` renamed to `Tamil Nadu` (🌶️); `Karnataka` (🏯) added. 13 cuisines total.
+
+### E2E tests: 24 → 28
+- Test 25: No duplicate Any cuisine chip
+- Test 26: Profile completion banner
+- Test 27: Planner fridge section
+- Test 28: Tamil Nadu/Karnataka in Indian submenu, Chettinad absent
+
+---
+
 ## v16.1 — UX polish, Blinkit India-gate, routes, food validation, Mailchimp guide
 **Date:** March 2026
 

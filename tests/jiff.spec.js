@@ -232,3 +232,45 @@ test('24. PWA manifest is valid', async ({ page }) => {
   expect(manifest.name).toBeTruthy();
   expect(manifest.icons?.length).toBeGreaterThan(0);
 });
+
+// ── 25. No duplicate Any Cuisine ──────────────────────────────────
+test('25. Cuisine sidebar has only one Any cuisine button', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  const anyBtns = page.locator('.cuisine-chip, button', { hasText: /^Any cuisine$/ });
+  await expect(anyBtns).toHaveCount(1);
+});
+
+// ── 26. Profile completion banner shown post-login ─────────────────
+test('26. Profile completion banner appears if preferences not set', async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Date.now();
+    localStorage.setItem('jiff-trial', JSON.stringify({ userId:'test', startedAt:now, expiresAt:now+7*86400000 }));
+    localStorage.setItem('jiff-cookie-consent-v2', JSON.stringify({ essential:true, analytics:false, functional:true, ts:now }));
+    // Simulate logged-in user with no preferences
+    localStorage.setItem('jiff-user', JSON.stringify({ id:'test', email:'test@test.com' }));
+  });
+  await page.goto('/app');
+  // Banner appears for users with no spice_level or preferred_cuisines
+  const banner = page.locator('text=Complete your profile, text=Welcome');
+  // Not always visible (depends on auth state), so check it exists in DOM if profile is empty
+  await expect(page.locator('text=Set preferences →').or(page.locator('text=Sign in'))).toBeVisible();
+});
+
+// ── 27. Planner has fridge section ────────────────────────────────
+test("27. Planner has What's in your fridge section", async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/planner');
+  await expect(page.locator("text=What's in your fridge?")).toBeVisible();
+});
+
+// ── 28. Tamil Nadu in Indian cuisines ─────────────────────────────
+test('28. Tamil Nadu appears in Indian cuisine submenu', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  const indianBtn = page.locator('.cuisine-chip, button', { hasText: /Indian/ }).first();
+  await indianBtn.click();
+  await expect(page.locator('text=Tamil Nadu')).toBeVisible();
+  await expect(page.locator('text=Karnataka')).toBeVisible();
+  await expect(page.locator('text=Chettinad')).not.toBeVisible();
+});

@@ -55,7 +55,6 @@ export const INDIAN_CUISINES = [
 ];
 
 export const GLOBAL_CUISINES = [
-  { id:'any',            label:'Any cuisine',    flag:'🌍' },
   { id:'Italian',        label:'Italian',        flag:'🇮🇹' },
   { id:'Chinese',        label:'Chinese',        flag:'🇨🇳' },
   { id:'Mexican',        label:'Mexican',        flag:'🇲🇽' },

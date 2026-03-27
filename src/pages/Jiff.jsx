@@ -455,7 +455,9 @@ function StepWithTimer({ text }) {
 }
 
 // ── GroceryPanel ──────────────────────────────────────────────────
-function GroceryPanel({ meal, fridgeIngredients, onClose, country }) {
+function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }) {
+  const { country: ctxCountry } = useLocale();
+  const country = countryProp || ctxCountry;
   const { need, have } = buildGroceryList(meal.ingredients||[], fridgeIngredients);
   const [checked, setChecked] = useState({});
   const [copied, setCopied] = useState(false);
@@ -646,7 +648,7 @@ export default function Jiff() {
   const navigate = useNavigate();
   const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, supabaseEnabled, authLoading } = useAuth();
   const { isPremium, trial, trialActive, trialExpired, trialDaysLeft, recipeCount, plans, checkAccess, recordUsage, startTrial, openCheckout, activateTestPremium, showGate, setShowGate, gateReason, razorpayEnabled, TRIAL_DAYS, PAID_RECIPE_CAP } = usePremium();
-  const { lang, units, setUnits, setLang, t, country, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, INDIAN_CUISINES, GLOBAL_CUISINES, supportedLanguages } = useLocale();
+  const { lang, units, setUnits, setLang, t, country, setCountry, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, INDIAN_CUISINES, GLOBAL_CUISINES, supportedLanguages } = useLocale();
 
   const [fridgeItems,  setFridgeItems]  = useState([]);
   const [pantryItems,  setPantryItems]  = useState([]);
@@ -694,6 +696,20 @@ export default function Jiff() {
   useEffect(() => {
     if (!pantryLoaded && pantry?.length) { setPantryItems(pantry); setPantryLoaded(true); }
   }, [pantry, pantryLoaded]);
+
+  // Pre-fill diet + cuisine from saved profile preferences
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  useEffect(() => {
+    if (profile && !profileLoaded) {
+      // Pre-fill dietary from food_type (first entry takes precedence)
+      const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
+      if (ft === 'vegan') setDiet('vegan');
+      else if (ft === 'veg' || ft === 'eggetarian' || ft === 'jain') setDiet('vegetarian');
+      // Pre-fill cuisine from first preferred cuisine
+      if (profile.preferred_cuisines?.length) setCuisine(profile.preferred_cuisines[0]);
+      setProfileLoaded(true);
+    }
+  }, [profile, profileLoaded]);
 
   // h. Non-veg detection — if non-veg ingredient added, disable vegetarian diet
   const NON_VEG_INGREDIENTS = new Set([
@@ -930,14 +946,32 @@ export default function Jiff() {
         {view === 'input' && (
           <div className="main-layout">
             <div className="main-form">
-              {/* Smart greeting with weather/time/location (item b) */}
-              {user && view === 'input' && (
+              {/* Post-login profile completion banner — prominent, above everything */}
+              {user && profile && !profile.spice_level && !profile.preferred_cuisines?.length && (
+                <div style={{background:'rgba(255,69,0,0.07)',border:'1.5px solid rgba(255,69,0,0.25)',borderRadius:12,padding:'12px 16px',marginBottom:16,display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:500,color:'#CC3700',marginBottom:2}}>👋 Welcome! Complete your profile</div>
+                    <div style={{fontSize:12,color:'#CC3700',fontWeight:300}}>Set your food type, cuisine preferences and pantry so Jiff personalises every recipe for you.</div>
+                  </div>
+                  <button onClick={()=>navigate('/profile')} style={{background:'#CC3700',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",whiteSpace:'nowrap',flexShrink:0}}>
+                    Set preferences →
+                  </button>
+                </div>
+              )}
+              {/* Smart greeting with weather/time/location */}
+              {user && (
                 <SmartGreeting
                   user={user}
                   profile={profile}
+                  onCountryDetected={(code) => setCountry(code)}
                   onSuggestRecipe={(suggestion, autoMealType) => {
                     if (autoMealType && autoMealType !== 'any') setMealType(autoMealType);
-                    // Pre-fill the suggested dish name as a search hint
+                    // Pre-fill the suggested dish as a fridge ingredient hint and auto-submit
+                    if (suggestion?.dish) {
+                      setFridgeItems(prev => prev.includes(suggestion.dish.toLowerCase()) ? prev : [...prev, suggestion.dish.toLowerCase()]);
+                    }
+                    // Small delay so state settles before submit
+                    setTimeout(() => { if (ingredients.length || suggestion?.dish) handleSubmit(); }, 150);
                   }}
                 />
               )}
@@ -950,13 +984,6 @@ export default function Jiff() {
                 </p>
               </div>
               <div className="card">
-                {/* Profile prompt if no preferences set */}
-                {user && profile && !profile.spice_level && !profile.preferred_cuisines?.length && (
-                  <div style={{background:'rgba(255,69,0,0.06)',border:'1px solid rgba(255,69,0,0.2)',borderRadius:10,padding:'10px 14px',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
-                    <span style={{fontSize:12,color:'#CC3700',fontWeight:300}}>{t('no_prefs_msg')}</span>
-                    <button onClick={()=>navigate('/profile')} style={{background:'none',border:'1px solid #CC3700',borderRadius:7,padding:'4px 10px',fontSize:11,color:'#CC3700',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",whiteSpace:'nowrap'}}>{t('go_to_profile')}</button>
-                  </div>
-                )}
 
                 {/* ── What's in your fridge? — photo + text input for veg/meat/main items ── */}
                 <div className="section">

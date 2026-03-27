@@ -10,7 +10,7 @@ const C = {
   gold: '#FFB800', goldBg: 'rgba(255,184,0,0.08)',
 };
 
-export default function SmartGreeting({ user, profile, onSuggestRecipe }) {
+export default function SmartGreeting({ user, profile, onSuggestRecipe, onCountryDetected }) {
   const [ctx,     setCtx]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [denied,  setDenied]  = useState(false);
@@ -18,7 +18,23 @@ export default function SmartGreeting({ user, profile, onSuggestRecipe }) {
   useEffect(() => {
     let cancelled = false;
     getUserContext()
-      .then(c => { if (!cancelled) { setCtx(c); setLoading(false); } })
+      .then(c => {
+        if (!cancelled) {
+          setCtx(c);
+          setLoading(false);
+          // Update country in LocaleContext from real geolocation
+          if (onCountryDetected && c.location?.country) {
+            const countryMap = {
+              'India':'IN','Singapore':'SG','United Kingdom':'GB','Australia':'AU',
+              'United States':'US','Germany':'DE','France':'FR','Spain':'ES',
+              'Japan':'JP','China':'CN','Canada':'CA','New Zealand':'NZ',
+              'United Arab Emirates':'AE','Malaysia':'MY','Thailand':'TH',
+            };
+            const code = countryMap[c.location.country];
+            if (code) onCountryDetected(code);
+          }
+        }
+      })
       .catch(() => { if (!cancelled) { setDenied(true); setLoading(false); } });
     return () => { cancelled = true; };
   }, []);

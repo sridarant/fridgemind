@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth }   from '../contexts/AuthContext';
+import FridgePhotoUpload from '../components/FridgePhotoUpload';
+import IngredientInput   from '../components/IngredientInput';
 
 const DAYS       = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -353,11 +355,12 @@ export default function Planner() {
   const { profile, pantry } = useAuth();
   const { lang, units , country } = useLocale();
 
-  const [ingredients,   setIngredients]   = useState([]);
-  const [inputVal,      setInputVal]      = useState('');
   const [diet,          setDiet]          = useState('none');
   const [cuisine,       setCuisine]       = useState('any');
   const [servings,      setServings]      = useState(2);
+  const [fridgeItems,   setFridgeItems]   = useState([]);
+  const [pantryItems,   setPantryItems]   = useState([]);
+  const ingredients = [...new Set([...fridgeItems, ...pantryItems])];
   const [selectedTypes, setSelectedTypes] = useState(['breakfast','lunch','dinner']);
   const [view,          setView]          = useState('input');
   const [plan,          setPlan]          = useState(null);
@@ -366,7 +369,6 @@ export default function Planner() {
   const [showGrocery,   setShowGrocery]   = useState(false);
   const [copiedPlan,    setCopiedPlan]    = useState(false);
   const [errorMsg,      setErrorMsg]      = useState('');
-  const inputRef = useRef(null);
   const timerRef = useRef(null);
   const [pantryLoaded, setPantryLoaded]   = useState(false);
   const [loadElapsed,  setLoadElapsed]   = useState(0);
@@ -385,54 +387,6 @@ export default function Planner() {
     return ()=>clearInterval(timerRef.current);
   }, [view]);
 
-  const addIng = val => { const v=val.trim().replace(/,$/,''); if(v&&!ingredients.includes(v))setIngredients(p=>[...p,v]); setInputVal(''); };
-  const onKey  = e => { if(e.key==='Enter'||e.key===','){e.preventDefault();addIng(inputVal);}else if(e.key==='Backspace'&&!inputVal&&ingredients.length)setIngredients(p=>p.slice(0,-1)); };
-
-  const toggleType = id => {
-    setSelectedTypes(prev => {
-      if (prev.includes(id)) { if(prev.length<=1)return prev; return prev.filter(t=>t!==id); }
-      return [...prev, id];
-    });
-  };
-
-  const handleSubmit = async () => {
-    if (!ingredients.length || !selectedTypes.length) return;
-    setView('loading'); setLoadingDay(0);
-    try {
-      const res = await fetch('/api/planner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients, diet, cuisine,
-          mealTypes: selectedTypes, servings,
-          language: lang, units,
-          tasteProfile: profile ? {
-            spice_level: profile.spice_level,
-            allergies: profile.allergies,
-            skill_level: profile.skill_level,
-          } : null,
-        }),
-      });
-      const data = await res.json();
-      if (data.plan?.length >= 7) { setPlan(data.plan); setShowGrocery(false); setActiveDay(0); setView('results'); }
-      else { setErrorMsg(data.error||'Could not generate meal plan. Please try again.'); setView('error'); }
-    } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
-  };
-
-  const handleCopyPlan = async () => {
-    const lines = ['⚡ *Jiff Weekly Meal Plan*',''];
-    plan.forEach(day => {
-      lines.push(`*${day.day}*`);
-      selectedTypes.forEach(type => { const m=day.meals?.[type]; if(m) lines.push(`${MEAL_TYPE_OPTIONS.find(t=>t.id===type)?.emoji} ${m.emoji} ${m.name}`); });
-      lines.push('');
-    });
-    lines.push('_Planned with Jiff — jiff.app_');
-    const text = lines.join('\n');
-    try{await navigator.clipboard.writeText(text);}catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}
-    setCopiedPlan(true); setTimeout(()=>setCopiedPlan(false),2500);
-  };
-
-  const reset = () => { setView('input'); setPlan(null); setIngredients(pantry||[]); setInputVal(''); setShowGrocery(false); setPantryLoaded(true); };
 
   const mealCount = selectedTypes.length * 7;
 
@@ -480,14 +434,34 @@ export default function Planner() {
                 <p className="tag-hint" style={{marginTop:8}}>{selectedTypes.length} meal type{selectedTypes.length>1?'s':''} selected · {mealCount} meals total</p>
               </div>
 
-              {/* Ingredients */}
+              {/* What's in your fridge? — mirrors main app section */}
               <div className="section">
-                <div className="section-label">Ingredients in your fridge & pantry</div>
-                <div className="ingredient-box" onClick={()=>inputRef.current?.focus()}>
-                  {ingredients.map(ing=>(<span key={ing} className="tag">{ing}<button className="tag-remove" onClick={e=>{e.stopPropagation();setIngredients(p=>p.filter(i=>i!==ing));}}>×</button></span>))}
-                  <input ref={inputRef} className="tag-input" value={inputVal} onChange={e=>setInputVal(e.target.value)} onKeyDown={onKey} onBlur={()=>{if(inputVal.trim())addIng(inputVal);}} placeholder={ingredients.length===0?'eggs, rice, chicken, onions… press Enter after each':'add more…'}/>
+                <div className="section-label">What's in your fridge?</div>
+                <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:8}}>Add vegetables, proteins and main ingredients</div>
+                <FridgePhotoUpload
+                  onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
+                  existingIngredients={fridgeItems}
+                />
+                <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',margin:'6px 0',fontWeight:400,letterSpacing:'0.5px'}}>— or type below —</div>
+                <IngredientInput
+                  ingredients={fridgeItems}
+                  onChange={setFridgeItems}
+                  pantryIngredients={[]}
+                  placeholder="cabbage, chicken, eggs, potatoes…"
+                />
+              </div>
+
+              {/* Pantry & Spices */}
+              <div className="section">
+                <div className="section-label">Pantry &amp; Spices
+                  {pantry?.length > 0 && <span style={{fontSize:10,fontWeight:400,color:'var(--muted)',marginLeft:8,textTransform:'none',letterSpacing:0}}>Pre-filled from your pantry</span>}
                 </div>
-                <p className="tag-hint">Enter or comma to add · More ingredients = more variety</p>
+                <IngredientInput
+                  ingredients={pantryItems}
+                  onChange={setPantryItems}
+                  pantryIngredients={pantry || []}
+                  placeholder="salt, oil, cumin, turmeric, garlic…"
+                />
               </div>
 
               {/* Servings */}
