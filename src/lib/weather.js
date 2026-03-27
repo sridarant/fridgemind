@@ -159,7 +159,7 @@ export function suggestContextualRecipe(weather, timeInfo, location) {
   if (isCold && mealType === 'breakfast')              return { dish: 'Upma', emoji: '🍚', reason: `Warm and filling for a cold morning` };
   if (isHot && mealType === 'lunch')                   return { dish: 'Curd Rice', emoji: '🍚', reason: `Cool and light for a hot day` };
   if (isHot && period === 'afternoon')                 return { dish: 'Lassi', emoji: '🥛', reason: `Beat the heat` };
-  if (mealType === 'breakfast' && isIndia)             return { dish: 'Masala Dosa', emoji: '🫓', reason: `Classic South Indian breakfast` };
+  if (mealType === 'breakfast' && isIndia)             return { dish: 'Masala Dosa', emoji: '🫓', reason: `Classic Tamil Nadu breakfast` };
   if (mealType === 'lunch' && isIndia)                 return { dish: 'Dal Rice', emoji: '🍛', reason: `Comforting midday meal` };
   if (mealType === 'dinner' && isIndia)                return { dish: 'Roti & Sabzi', emoji: '🫓', reason: `Light and balanced dinner` };
   if (mealType === 'snack')                            return { dish: 'Chai & Biscuits', emoji: '☕', reason: `Perfect snack time combo` };

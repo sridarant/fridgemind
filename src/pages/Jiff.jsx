@@ -455,7 +455,7 @@ function StepWithTimer({ text }) {
 }
 
 // ── GroceryPanel ──────────────────────────────────────────────────
-function GroceryPanel({ meal, fridgeIngredients, onClose }) {
+function GroceryPanel({ meal, fridgeIngredients, onClose, country }) {
   const { need, have } = buildGroceryList(meal.ingredients||[], fridgeIngredients);
   const [checked, setChecked] = useState({});
   const [copied, setCopied] = useState(false);
@@ -525,7 +525,7 @@ function ShareDrawer({ meal }) {
 }
 
 // ── MealCard ──────────────────────────────────────────────────────
-function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0 }) {
+function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='' }) {
   const baseServings = parseInt(meal.servings) || defaultServings;
   const [expanded, setExpanded]       = useState(false);
   const [shareOpen, setShareOpen]     = useState(false);
@@ -560,12 +560,12 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
       </div>
       <div className="meal-desc">{meal.description}</div>
       {shareOpen&&<ShareDrawer meal={meal}/>}
-      {fridgeIngredients.length>0&&(!groceryOpen?(
+      {!groceryOpen?(
         <button className="grocery-trigger" onClick={e=>{e.stopPropagation();setGroceryOpen(true);}}>
           <span style={{display:'flex',alignItems:'center',gap:5}}><IconCart/>What do I need to buy?</span>
           <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>See list →</span>
         </button>
-      ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)}/>)}
+      ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)} country={country}/>}
       {!expanded?(
         <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(true);}}><span>See full recipe</span><span>→</span></button>
       ):(
@@ -1179,7 +1179,7 @@ export default function Jiff() {
             )}
             <div className="meals-grid">
               {meals.map((meal,i)=>(
-                <MealCard key={mealKey(meal)+i} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} fridgeIngredients={ingredients} defaultServings={defaultServings} animDelay={i*0.06}/>
+                <MealCard key={mealKey(meal)+i} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} fridgeIngredients={ingredients} defaultServings={defaultServings} animDelay={i*0.06} country={country}/>
               ))}
             </div>
             <div className="reset-wrap">

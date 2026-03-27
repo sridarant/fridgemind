@@ -39,11 +39,10 @@ export const DIET_REQUIREMENTS = [
 
 // Indian sub-cuisines — item w
 export const INDIAN_CUISINES = [
-  { id:'South Indian',  label:'South Indian',  flag:'🥥' },
-  { id:'Chettinad',     label:'Chettinad',     flag:'🌶️' },
-  { id:'Tamil',         label:'Tamil',          flag:'🇮🇳' },
+  { id:'Tamil Nadu',    label:'Tamil Nadu',     flag:'🌶️' },
   { id:'Kerala',        label:'Kerala',         flag:'🥥' },
   { id:'Andhra',        label:'Andhra',         flag:'🌶️' },
+  { id:'Karnataka',     label:'Karnataka',      flag:'🏯' },
   { id:'Punjabi',       label:'Punjabi',        flag:'🧡' },
   { id:'Mughlai',       label:'Mughlai',        flag:'🍖' },
   { id:'Gujarati',      label:'Gujarati',       flag:'🙏' },
@@ -73,7 +72,25 @@ export const GLOBAL_CUISINES = [
 ];
 
 function guessCountry() {
-  try { const s=localStorage.getItem('jiff-country'); if(s)return s; return (navigator.language||'en-US').split('-')[1]?.toUpperCase()||'US'; } catch { return 'US'; }
+  try {
+    const saved = localStorage.getItem('jiff-country');
+    if (saved) return saved;
+    // Use timezone for accurate country detection — more reliable than navigator.language
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz.includes('Calcutta') || tz.includes('Kolkata') || tz.includes('Asia/Colombo')) return 'IN';
+    if (tz.includes('Singapore')) return 'SG';
+    if (tz.includes('London') || tz.includes('Europe/London')) return 'GB';
+    if (tz.includes('Sydney') || tz.includes('Melbourne') || tz.includes('Australia')) return 'AU';
+    if (tz.includes('Dubai') || tz.includes('Asia/Muscat')) return 'AE';
+    if (tz.includes('Kuala_Lumpur') || tz.includes('Malaysia')) return 'MY';
+    if (tz.includes('Bangkok') || tz.includes('Asia/Bangkok')) return 'TH';
+    if (tz.includes('Tokyo') || tz.includes('Asia/Tokyo')) return 'JP';
+    if (tz.includes('Shanghai') || tz.includes('Asia/Hong_Kong')) return 'CN';
+    if (tz.includes('Berlin') || tz.includes('Europe/Paris') || tz.includes('Europe/Amsterdam')) return 'DE';
+    // Fall back to navigator.language
+    const lang = (navigator.language || 'en-US').split('-')[1]?.toUpperCase() || 'US';
+    return lang;
+  } catch { return 'US'; }
 }
 function getLang()  { try { return localStorage.getItem('jiff-lang')||'en';     } catch { return 'en';     } }
 function getUnits() { try { return localStorage.getItem('jiff-units')||'metric';} catch { return 'metric'; } }
