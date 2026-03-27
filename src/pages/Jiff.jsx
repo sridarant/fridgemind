@@ -920,7 +920,34 @@ export default function Jiff() {
                   </div>
                 )}
 
-                {/* Meal type — full i18n */}
+                {/* ── What's in your fridge? — photo upload section ── */}
+                <div className="section">
+                  <div className="section-label" style={{marginBottom:6}}>What's in your fridge?</div>
+                  <FridgePhotoUpload
+                    onIngredientsDetected={detected => setIngredients(prev => [...new Set([...prev, ...detected])])}
+                    existingIngredients={ingredients}
+                  />
+                </div>
+
+                {/* ── Ingredients Available — type / autocomplete ── */}
+                <div className="section">
+                  <div className="section-label">
+                    {t('section_ingredients')}
+                    {pantry?.length > 0 && (
+                      <span style={{fontSize:10,fontWeight:400,color:'var(--muted)',marginLeft:8,textTransform:'none',letterSpacing:0}}>
+                        {t('pantry_prepopulated')}
+                      </span>
+                    )}
+                  </div>
+                  <IngredientInput
+                    ingredients={ingredients}
+                    onChange={setIngredients}
+                    pantryIngredients={pantry || []}
+                    placeholder={t('ingPlaceholder')}
+                  />
+                </div>
+
+                {/* ── Meal type — below ingredients ── */}
                 <div className="section">
                   <div className="section-label">{t('section_meal_type')}</div>
                   <div className="meal-type-chips">
@@ -932,51 +959,23 @@ export default function Jiff() {
                   </div>
                 </div>
 
-                {/* Ingredients — c. separate box pre-populated from pantry */}
+                {/* ── Servings — single column ── */}
                 <div className="section">
-                  <div className="section-label">
-                    {t('section_ingredients')}
-                    {pantry?.length > 0 && (
-                      <span style={{fontSize:10,fontWeight:400,color:'var(--muted)',marginLeft:8,textTransform:'none',letterSpacing:0}}>
-                        {t('pantry_prepopulated')}
-                      </span>
-                    )}
+                  <div className="section-label">{t('section_servings')}</div>
+                  <div className="serving-row">
+                    <div className="serving-controls">
+                      <button className="serving-btn" disabled={defaultServings<=1} onClick={()=>setDefaultServings(s=>Math.max(1,s-1))}>−</button>
+                      <div className="serving-count">{defaultServings}</div>
+                      <button className="serving-btn" disabled={defaultServings>=12} onClick={()=>setDefaultServings(s=>Math.min(12,s+1))}>+</button>
+                    </div>
+                    <span className="serving-label">serving{defaultServings!==1?'s':''} — sized for {defaultServings} {defaultServings===1?'person':'people'}</span>
                   </div>
-                  {/* b. Photo scan first, then "or enter" then text box */}
-                  <FridgePhotoUpload
-                    onIngredientsDetected={detected => setIngredients(prev => [...new Set([...prev, ...detected])])}
-                    existingIngredients={ingredients}
-                  />
-                  <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',margin:'6px 0',fontWeight:300}}>{t('or_enter')}</div>
-                  <IngredientInput
-                    ingredients={ingredients}
-                    onChange={setIngredients}
-                    pantryIngredients={pantry || []}
-                    placeholder={t('ingPlaceholder')}
-                  />
                 </div>
 
-                {/* e. 2-column grid for the auto-filled options below */}
-                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                  {/* Servings */}
-                  <div className="section">
-                    <div className="section-label">{t('section_servings')}</div>
-                    <div className="serving-row">
-                      <div className="serving-controls">
-                        <button className="serving-btn" disabled={defaultServings<=1} onClick={()=>setDefaultServings(s=>Math.max(1,s-1))}>−</button>
-                        <div className="serving-count">{defaultServings}</div>
-                        <button className="serving-btn" disabled={defaultServings>=12} onClick={()=>setDefaultServings(s=>Math.min(12,s+1))}>+</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Time */}
-                  <div className="section">
-                    <div className="section-label">{t('section_time')}</div>
-                    <div className="chips" style={{flexWrap:'wrap'}}>
-                      {TIME_OPTIONS.map(o=><button key={o.id} className={`chip ${time===o.id?'active':''}`} onClick={()=>setTime(o.id)}>{o.label}</button>)}
-                    </div>
-                  </div>
+                {/* ── Time — single column ── */}
+                <div className="section">
+                  <div className="section-label">{t('section_time')}</div>
+                  <div className="chips">{TIME_OPTIONS.map(o=><button key={o.id} className={`chip ${time===o.id?'active':''}`} onClick={()=>setTime(o.id)}>{o.label}</button>)}</div>
                 </div>
 
                 {/* d. Cuisine — shows Indian as a gateway to sub-cuisines */}
@@ -1015,31 +1014,6 @@ export default function Jiff() {
                       ))}
                     </div>
                   )}
-                </div>
-
-                {/* Diet — h. disable vegetarian if non-veg ingredient detected */}
-                <div className="section">
-                  <div className="section-label">{t('section_diet')}</div>
-                  {hasNonVeg && (
-                    <div style={{fontSize:11,color:'#CC3700',marginBottom:6,fontWeight:300}}>
-                      ⚠ {t('veg_disabled_msg')}
-                    </div>
-                  )}
-                  <div className="chips">
-                    {DIET_OPTIONS.map(o=>{
-                      const disabled = hasNonVeg && o.id === 'vegetarian';
-                      return (
-                        <button key={o.id}
-                          disabled={disabled}
-                          className={`chip diet ${diet===o.id?'active':''} ${disabled?'disabled':''}`}
-                          onClick={()=>!disabled&&setDiet(o.id)}
-                          style={disabled?{opacity:0.35,cursor:'not-allowed'}:{}}
-                        >
-                          {o.label}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
                 <div className="cta-wrap">
@@ -1101,12 +1075,27 @@ export default function Jiff() {
                 </div>
               </div>
 
-              {/* Week plan card */}
-              <div className="sidebar-card" style={{textAlign:'center'}}>
-                <div style={{fontSize:28,marginBottom:6}}>📅</div>
-                <div style={{fontSize:13,fontWeight:500,color:'var(--ink)',marginBottom:4}}>📅 {t('week_plan')}</div>
-                <div style={{fontSize:12,color:'var(--muted)',fontWeight:300,marginBottom:12}}>21 meals across 7 days — breakfast, lunch, dinner & snacks</div>
-                <button onClick={()=>navigate('/planner')} style={{width:'100%',background:'var(--jiff)',color:'white',border:'none',borderRadius:9,padding:'10px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>Go to Week Planner →</button>
+              {/* Dietary preference card — moved from main form */}
+              <div className="sidebar-card">
+                <div className="sidebar-card-title">{t('section_diet')}</div>
+                {hasNonVeg && (
+                  <div style={{fontSize:11,color:'#CC3700',marginBottom:6,fontWeight:300}}>
+                    ⚠ {t('veg_disabled_msg')}
+                  </div>
+                )}
+                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {DIET_OPTIONS.map(o=>{
+                    const disabled = hasNonVeg && o.id === 'vegetarian';
+                    return (
+                      <button key={o.id}
+                        disabled={disabled}
+                        className={`chip diet ${diet===o.id?'active':''}`}
+                        onClick={()=>!disabled&&setDiet(o.id)}
+                        style={disabled?{opacity:0.35,cursor:'not-allowed'}:{}}
+                      >{o.label}</button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

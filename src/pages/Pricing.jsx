@@ -169,7 +169,7 @@ export default function Pricing() {
                 const price = currency.plans[plan.id];
                 return (
                   <div key={plan.id} onClick={()=>setSelected(plan.id)}
-                    style={{background:sel?C.jiff:'white',border:'2px solid ' + sel?C.jiff:C.borderMid,borderRadius:18,padding:'22px 20px',cursor:'pointer',transition:'all 0.18s',position:'relative',boxShadow:sel?'0 8px 28px rgba(255,69,0,0.25)':C.shadow}}>
+                    style={{background:sel?C.jiff:'white',border:'2px solid ' + (sel?C.jiff:C.borderMid),borderRadius:18,padding:'22px 20px',cursor:'pointer',transition:'all 0.18s',position:'relative',boxShadow:sel?'0 8px 28px rgba(255,69,0,0.25)':C.shadow}}>
                     {popular && <div style={{position:'absolute',top:-12,left:'50%',transform:'translateX(-50%)',background:C.gold,color:C.ink,fontSize:10,fontWeight:700,padding:'3px 12px',borderRadius:20,whiteSpace:'nowrap'}}>MOST POPULAR</div>}
                     {plan.saving && <div style={{fontSize:10,fontWeight:600,color:sel?'rgba(255,255,255,0.8)':C.jiff,letterSpacing:'1px',textTransform:'uppercase',marginBottom:8}}>{plan.saving}</div>}
                     <div style={{fontFamily:"'Fraunces', serif",fontSize:30,fontWeight:900,color:sel?'white':C.ink,letterSpacing:'-1px',marginBottom:4}}>{price}</div>

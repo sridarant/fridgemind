@@ -5,8 +5,8 @@ import { useLocale, FOOD_TYPE_OPTIONS, DIET_REQUIREMENTS, INDIAN_CUISINES, GLOBA
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5', muted:'#7C6A5E', border:'rgba(28,10,0,0.10)', borderMid:'rgba(28,10,0,0.18)', shadow:'0 4px 28px rgba(28,10,0,0.08)', green:'#1D9E75', greenBg:'rgba(29,158,117,0.08)' };
 const PALETTE = ['#E53E3E','#DD6B20','#38A169','#3182CE','#805AD5','#D69E2E','#319795','#E91E63'];
-const pill = (active) => ({ border:'1.5px solid ' + active?C.jiff:C.borderMid, background:active?C.jiff:'white', color:active?'white':C.muted, borderRadius:20, padding:'6px 14px', fontSize:13, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:active?500:400, transition:'all 0.15s' });
-const sectionTab = (active) => ({ padding:'8px 16px', borderRadius:20, fontSize:13, fontWeight:active?500:400, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", border:'1.5px solid ' + active?C.jiff:C.borderMid, background:active?C.jiff:'white', color:active?'white':C.muted, transition:'all 0.15s' });
+const pill = (active) => ({ border:'1.5px solid ' + (active?C.jiff:C.borderMid), background:active?C.jiff:'white', color:active?'white':C.muted, borderRadius:20, padding:'6px 14px', fontSize:13, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:active?500:400, transition:'all 0.15s' });
+const sectionTab = (active) => ({ padding:'8px 16px', borderRadius:20, fontSize:13, fontWeight:active?500:400, cursor:'pointer', fontFamily:"'DM Sans', sans-serif", border:'1.5px solid ' + (active?C.jiff:C.borderMid), background:active?C.jiff:'white', color:active?'white':C.muted, transition:'all 0.15s' });
 const label = { fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.jiff, fontWeight:500, marginBottom:8, display:'block' };
 const ingBox = { border:'1.5px solid ' + C.borderMid, borderRadius:12, padding:'12px 14px', background:C.cream, minHeight:60, cursor:'text', display:'flex', flexWrap:'wrap', gap:7, alignItems:'flex-start' };
 const tag = { background:C.ink, color:'white', padding:'5px 12px 5px 13px', borderRadius:20, fontSize:12, display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap' };
@@ -23,7 +23,11 @@ export default function Profile() {
   const [saved,  setSaved]   = useState(false);
   const [saving, setSaving]  = useState(false);
 
-  const [foodType,      setFoodType]      = useState(profile?.food_type || 'veg');
+  const [foodType,      setFoodType]      = useState(
+    Array.isArray(profile?.food_type) ? profile.food_type
+    : profile?.food_type ? [profile.food_type]
+    : ['veg']
+  );
   const [spiceLevel,    setSpiceLevel]    = useState(profile?.spice_level || 'medium');
   const [skillLevel,    setSkillLevel]    = useState(profile?.skill_level || 'intermediate');
   const [allergies,     setAllergies]     = useState(profile?.allergies || []);
@@ -86,19 +90,22 @@ export default function Profile() {
         {activeTab==='food' && (
           <div style={{background:'white',border:'1px solid ' + C.border,borderRadius:20,padding:22,boxShadow:C.shadow}}>
             <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>🍽️ What do you eat?</div>
-            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:18}}>This is your most important preference. It controls ingredients and recipes Jiff will suggest.</div>
-            <span style={label}>Food type</span>
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:6}}>Select all that apply — controls ingredients and recipes Jiff suggests.</div>
+            <span style={label}>Food type <span style={{fontWeight:300,textTransform:'none',letterSpacing:0,fontSize:10,color:C.muted}}>(select multiple)</span></span>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(175px,1fr))',gap:10,marginBottom:22}}>
-              {FOOD_TYPE_OPTIONS.map((opt,i)=>(
-                <div key={opt.id} onClick={()=>setFoodType(opt.id)} style={{border:'2px solid ' + foodType===opt.id?PALETTE[i%8]:C.borderMid,borderRadius:14,padding:'11px 13px',cursor:'pointer',background:foodType===opt.id?PALETTE[i%8]+'12':'white',transition:'all 0.15s'}}>
+              {FOOD_TYPE_OPTIONS.map((opt,i)=>{
+                const active = Array.isArray(foodType) ? foodType.includes(opt.id) : foodType===opt.id;
+                return (
+                <div key={opt.id} onClick={()=>toggleArr(setFoodType,Array.isArray(foodType)?foodType:[foodType],opt.id)} style={{border:'2px solid '+(active?PALETTE[i%8]:C.borderMid),borderRadius:14,padding:'11px 13px',cursor:'pointer',background:active?PALETTE[i%8]+'12':'white',transition:'all 0.15s'}}>
                   <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
                     <span style={{fontSize:18}}>{opt.emoji}</span>
-                    <span style={{fontSize:13,fontWeight:500,color:foodType===opt.id?C.ink:C.muted}}>{opt.label}</span>
-                    {foodType===opt.id && <span style={{marginLeft:'auto',color:PALETTE[i%8]}}>✓</span>}
+                    <span style={{fontSize:13,fontWeight:500,color:active?C.ink:C.muted}}>{opt.label}</span>
+                    {active && <span style={{marginLeft:'auto',color:PALETTE[i%8]}}>✓</span>}
                   </div>
                   <div style={{fontSize:11,color:C.muted,fontWeight:300,lineHeight:1.4}}>{opt.desc}</div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <span style={label}>Spice level</span>
             <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:18}}>
@@ -129,8 +136,15 @@ export default function Profile() {
         {activeTab==='cuisine' && (
           <div style={{background:'white',border:'1px solid ' + C.border,borderRadius:20,padding:22,boxShadow:C.shadow}}>
             <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>🌍 Cuisine preferences</div>
-            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:18}}>Select your favourite cuisines. Jiff will favour these when suggesting meals. Select multiple.</div>
-            <span style={label}>Indian regional cuisines</span>
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:14}}>Select all your favourite cuisines — Jiff will favour these when suggesting meals.</div>
+
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+              <span style={label}>Indian regional cuisines</span>
+              <button onClick={()=>setPrefCuisines(p=>{const ids=INDIAN_CUISINES.map(c=>c.id);const allIn=ids.every(id=>p.includes(id));return allIn?p.filter(id=>!ids.includes(id)):[...new Set([...p,...ids])]})}
+                style={{fontSize:11,color:C.jiff,background:'none',border:'none',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",padding:0}}>
+                {INDIAN_CUISINES.every(c=>prefCuisines.includes(c.id)) ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:20}}>
               {INDIAN_CUISINES.map(c=>(
                 <button key={c.id} onClick={()=>toggleArr(setPrefCuisines,prefCuisines,c.id)}
@@ -139,7 +153,14 @@ export default function Profile() {
                 </button>
               ))}
             </div>
-            <span style={label}>Global cuisines</span>
+
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+              <span style={label}>Global cuisines</span>
+              <button onClick={()=>setPrefCuisines(p=>{const ids=GLOBAL_CUISINES.map(c=>c.id);const allIn=ids.every(id=>p.includes(id));return allIn?p.filter(id=>!ids.includes(id)):[...new Set([...p,...ids])]})}
+                style={{fontSize:11,color:C.jiff,background:'none',border:'none',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",padding:0}}>
+                {GLOBAL_CUISINES.every(c=>prefCuisines.includes(c.id)) ? 'Deselect all' : 'Select all'}
+              </button>
+            </div>
             <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
               {GLOBAL_CUISINES.map(c=>(
                 <button key={c.id} onClick={()=>toggleArr(setPrefCuisines,prefCuisines,c.id)}
@@ -148,7 +169,12 @@ export default function Profile() {
                 </button>
               ))}
             </div>
-            {prefCuisines.length>0 && <div style={{marginTop:10,fontSize:12,color:C.muted}}>{prefCuisines.length} cuisine{prefCuisines.length>1?'s':''} selected: {prefCuisines.join(', ')}</div>}
+            {prefCuisines.length>0 && (
+              <div style={{marginTop:12,fontSize:12,color:C.muted,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span>{prefCuisines.length} cuisine{prefCuisines.length>1?'s':''} selected</span>
+                <button onClick={()=>setPrefCuisines([])} style={{fontSize:11,color:'#E53E3E',background:'none',border:'none',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>Clear all</button>
+              </div>
+            )}
           </div>
         )}
 
@@ -162,7 +188,7 @@ export default function Profile() {
                 const active=dietReqs.includes(req.id);
                 return (
                   <div key={req.id} onClick={()=>toggleArr(setDietReqs,dietReqs,req.id)}
-                    style={{border:'1.5px solid ' + active?PALETTE[i%8]:C.borderMid,borderRadius:12,padding:'10px 12px',cursor:'pointer',background:active?PALETTE[i%8]+'10':'white',transition:'all 0.15s'}}>
+                    style={{border:'1.5px solid ' + (active?PALETTE[i%8]:C.borderMid),borderRadius:12,padding:'10px 12px',cursor:'pointer',background:active?PALETTE[i%8]+'10':'white',transition:'all 0.15s'}}>
                     <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:3}}>
                       <span style={{fontSize:16}}>{req.emoji}</span>
                       <span style={{fontSize:13,fontWeight:500,color:active?C.ink:C.muted}}>{req.label}</span>
