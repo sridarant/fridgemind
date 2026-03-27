@@ -731,46 +731,6 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
       )}
     </div>
   );
-}) {
-  const [slow, setSlow]       = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    const start = Date.now();
-    const t = setInterval(() => {
-      const s = Math.floor((Date.now() - start) / 1000);
-      setElapsed(s);
-      if (s >= 10) setSlow(true);
-    }, 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const titleText = cuisine !== 'any'
-    ? 'Finding ' + cuisine + (mealType !== 'any' ? ' ' + mealType : '') + ' recipes…'
-    : 'Jiffing your ' + (mealType !== 'any' ? mealType : 'meal') + '…';
-
-  const subText = 'Matching ' + ingredients.length + ' ingredient' + (ingredients.length > 1 ? 's' : '')
-    + ' · ' + (isPremium ? PAID_RECIPE_CAP : 1) + ' recipe' + (isPremium && PAID_RECIPE_CAP > 1 ? 's' : '') + ' coming up';
-
-  return (
-    <div className="loading-wrap">
-      <div className="spinner"/>
-      <div className="loading-title">{titleText}</div>
-      <div className="loading-sub">{subText}</div>
-      {slow && (
-        <div style={{
-          marginTop:16, padding:'10px 16px',
-          background:'rgba(255,69,0,0.07)',
-          border:'1px solid rgba(255,69,0,0.2)',
-          borderRadius:10, fontSize:13, color:'#CC3700',
-          fontWeight:300, lineHeight:1.6,
-        }}>
-          ⏳ Taking a little longer than usual ({elapsed}s) — the AI is working hard on your recipes…
-        </div>
-      )}
-      <div className="loading-fact">{FACTS[factIdx]}</div>
-    </div>
-  );
 }
 
 
