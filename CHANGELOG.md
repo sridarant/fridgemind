@@ -7,6 +7,54 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v16.3 — Planner/Plans fixed, pantry pre-fill, Goal Plans fridge section
+**Date:** March 2026
+
+### Bug fixes
+- **Week Plan page crash** — `setIngredients(pantry)` in Planner pantry-prefill `useEffect` referenced a deleted state variable. Fixed to `setPantryItems(pantry)`.
+- **Plans page ingredient section** — Replaced old tag-input `ingredient-box` with `FridgePhotoUpload` + `IngredientInput` components matching the main app.
+
+### Improvements
+- **Plans: What's in your fridge?** — Goal Plans page now has the same photo-upload + text-input fridge section and "Pantry & Spices" section.
+- **Plans: pantry pre-fill** — Added `useAuth` hook; pantry items pre-fill from profile on load.
+- **Plans: API call** — Already used computed `ingredients` variable; now correctly merges `fridgeItems` + `pantryItems`.
+- **Planner: pantry pre-fill fixed** — `setPantryItems(pantry)` now correctly populates the Pantry & Spices field.
+
+### E2E tests: 28 → 32
+- Test 29: Week Plan loads with fridge section
+- Test 30: Goal Plans loads with fridge section
+- Test 31: Pantry pre-fills in Planner
+- Test 32: Pantry & Spices section shown in main app
+
+---
+
+## v16.3 — Week Plan & Goal Plans fixed, complete cleanup pass
+**Date:** March 2026
+
+### Root cause of page crashes
+Both `/planner` and `/plans` were crashing because of **stale variable references** — `setIngredients`, `inputVal`, `addIng`, `onKey`, `inputRef` remained in the code after the ingredient state was split into `fridgeItems` + `pantryItems`. When React tried to call a function that no longer existed (`setIngredients(pantry)` in Planner's pre-fill `useEffect`), the page crashed silently.
+
+### Fixes
+- **Planner crash** — `setIngredients(pantry)` → `setPantryItems(pantry)` in pantry pre-fill `useEffect`
+- **Jiff.jsx dead code** — Removed `inputVal`, `setInputVal`, `inputRef`, `addIng`, `onKey` (dead since v16 ingredient split). None were referenced in JSX any longer.
+- **Plans.jsx dead code** — Same stale vars removed from Goal Plans page
+- **Plans: What's in your fridge?** — New photo upload + text input fridge section added above Pantry & Spices
+- **Plans: pantry pre-fill** — `useAuth` hook added; `setPantryItems(pantry)` pre-fills from saved pantry on load
+- **Plans: API call** — Correctly uses computed `ingredients = [...fridgeItems, ...pantryItems]` merged array
+- **Planner: pantry pre-fill confirmed working** — `setPantryItems(pantry)` verified correct
+
+### E2E test suite rewrite
+- Full rewrite from 28 tests to **32 targeted tests**
+- Tests 15–17 specifically cover Planner and Plans loading with fridge sections
+- Test 31: All three main pages (`/app`, `/planner`, `/plans`) load without JS errors
+- Removed brittle tests, improved selectors throughout
+
+### Documents updated
+- `CHANGELOG.md` — this entry
+- `tests/jiff.spec.js` — complete rewrite, 32 tests
+
+---
+
 ## v16.2 — Grocery fix, country detection, cuisine cleanup, Planner fridge section, profile pre-fill
 **Date:** March 2026
 

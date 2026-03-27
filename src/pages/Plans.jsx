@@ -1,9 +1,12 @@
 // src/pages/Plans.jsx — Premium Meal Plans by goal (Phase 4)
 // Curated 7-day plans for specific goals: weight loss, muscle gain, family, budget, etc.
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../contexts/PremiumContext';
+import { useAuth }    from '../contexts/AuthContext';
+import FridgePhotoUpload from '../components/FridgePhotoUpload';
+import IngredientInput   from '../components/IngredientInput';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -145,26 +148,25 @@ function PlanCard({ plan, onGenerate, generating }) {
 export default function Plans() {
   const navigate   = useNavigate();
   const { isPremium } = usePremium();
+  const { pantry, profile } = useAuth();
 
-  const [ingredients,  setIngredients]  = useState([]);
-  const [inputVal,     setInputVal]     = useState('');
+  const [fridgeItems,  setFridgeItems]  = useState([]);
+  const [pantryItems,  setPantryItems]  = useState([]);
+  const ingredients = [...new Set([...fridgeItems, ...pantryItems])];
+  const [pantryLoaded, setPantryLoaded] = useState(false);
   const [servings,     setServings]     = useState(2);
   const [generating,   setGenerating]   = useState(null);
+
+  // Pre-fill pantry items from saved pantry
+  useEffect(() => {
+    if (!pantryLoaded && pantry?.length) { setPantryItems(pantry); setPantryLoaded(true); }
+  }, [pantry, pantryLoaded]);
   const [plan,         setPlan]         = useState(null);
   const [currentGoal,  setCurrentGoal]  = useState(null);
   const [errorMsg,     setErrorMsg]     = useState('');
   const [genElapsed,   setGenElapsed]   = useState(0);
   const [expandedDay,  setExpandedDay]  = useState(null);
 
-  const addIng = val => {
-    const v = val.trim().replace(/,$/, '');
-    if (v && !ingredients.includes(v)) setIngredients(p => [...p, v]);
-    setInputVal('');
-  };
-  const onKey = e => {
-    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addIng(inputVal); }
-    else if (e.key === 'Backspace' && !inputVal && ingredients.length) setIngredients(p => p.slice(0, -1));
-  };
 
   const handleGenerate = async (planConfig) => {
     if (!isPremium) { navigate('/pricing'); return; }
@@ -245,29 +247,39 @@ export default function Plans() {
           )}
         </div>
 
-        {/* Ingredient input + servings */}
+        {/* Fridge + Pantry + Servings */}
         <div style={{ background: 'white', border: '1px solid ' + C.border, borderRadius: 18, padding: '20px 22px', marginBottom: 32, boxShadow: C.shadow }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, alignItems: 'start' }}>
             <div>
-              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginBottom: 10 }}>
-                Optional: ingredients you have
+              {/* What's in your fridge */}
+              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginBottom: 6 }}>
+                What's in your fridge?
               </div>
-              <div style={{ border: '1.5px solid ' + C.borderMid, borderRadius: 12, padding: '10px 12px', background: C.cream, minHeight: 56, cursor: 'text', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'flex-start' }}
-                onClick={e => e.currentTarget.querySelector('input')?.focus()}>
-                {ingredients.map(ing => (
-                  <span key={ing} style={{ background: C.ink, color: 'white', padding: '4px 10px 4px 12px', borderRadius: 20, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {ing}
-                    <button onClick={() => setIngredients(p => p.filter(i => i !== ing))} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 15, padding: 0, lineHeight: 1 }}>×</button>
-                  </span>
-                ))}
-                <input
-                  value={inputVal} onChange={e => setInputVal(e.target.value)} onKeyDown={onKey}
-                  onBlur={() => { if (inputVal.trim()) addIng(inputVal); }}
-                  placeholder={ingredients.length === 0 ? 'Add ingredients or leave blank for Jiff to choose…' : 'add more…'}
-                  style={{ border: 'none', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.ink, flex: 1, minWidth: 160, background: 'transparent', padding: '3px 0' }}
-                />
+              <div style={{ fontSize: 11, color: C.muted, fontWeight: 300, marginBottom: 8 }}>Vegetables, proteins and main ingredients</div>
+              <FridgePhotoUpload
+                onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
+                existingIngredients={fridgeItems}
+              />
+              <div style={{ fontSize: 11, color: C.muted, textAlign: 'center', margin: '5px 0', letterSpacing: '0.5px' }}>— or type below —</div>
+              <IngredientInput
+                ingredients={fridgeItems}
+                onChange={setFridgeItems}
+                pantryIngredients={[]}
+                placeholder="cabbage, chicken, eggs, potatoes…"
+              />
+
+              {/* Pantry & Spices */}
+              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginTop: 14, marginBottom: 6 }}>
+                Pantry &amp; Spices
+                {pantry?.length > 0 && <span style={{ fontSize: 10, fontWeight: 400, color: C.muted, marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>Pre-filled from your pantry</span>}
               </div>
-              <p style={{ fontSize: 11, color: C.muted, marginTop: 6, fontWeight: 300 }}>Enter or comma to add · Jiff uses these as a base, adding what the goal requires</p>
+              <IngredientInput
+                ingredients={pantryItems}
+                onChange={setPantryItems}
+                pantryIngredients={pantry || []}
+                placeholder="salt, oil, cumin, turmeric, garlic…"
+              />
+              <p style={{ fontSize: 11, color: C.muted, marginTop: 6, fontWeight: 300 }}>Leave blank and Jiff will choose the best ingredients for your goal</p>
             </div>
             <div>
               <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginBottom: 10 }}>Servings</div>

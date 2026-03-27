@@ -662,7 +662,6 @@ export default function Jiff() {
       setFridgeItems(val.filter(i => !pantryItems.includes(i)));
     }
   };
-  const [inputVal,     setInputVal]     = useState('');
   const [time,         setTime]         = useState('30 min');
   const [diet,         setDiet]         = useState('none');
   const [cuisine,      setCuisine]      = useState('any');
@@ -689,7 +688,6 @@ export default function Jiff() {
   const [showIndianSub, setShowIndianSub] = useState(false);
   const [gateLoading,  setGateLoading]  = useState(false);
 
-  const inputRef = useRef(null);
   const timerRef = useRef(null);
 
   // Pre-fill pantry on load into pantryItems
@@ -731,12 +729,6 @@ export default function Jiff() {
     if (view === 'loading') timerRef.current = setInterval(() => setFactIdx(f => (f + 1) % FACTS.length), 1400);
     return () => clearInterval(timerRef.current);
   }, [view]);
-
-  const addIng = val => { const v = val.trim().replace(/,$/,''); if(v&&!ingredients.includes(v)) setIngredients(p=>[...p,v]); setInputVal(''); };
-  const onKey  = e => {
-    if(e.key==='Enter'||e.key===','){e.preventDefault();addIng(inputVal);}
-    else if(e.key==='Backspace'&&!inputVal&&ingredients.length) setIngredients(p=>p.slice(0,-1));
-  };
 
   const handleSubmit = async () => {
     if (!ingredients.length) return;
@@ -815,7 +807,7 @@ export default function Jiff() {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [user, supabaseEnabled]);
 
-  const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); setInputVal(''); setShowFavs(false); setPantryLoaded(true); };
+  const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); setShowFavs(false); setPantryLoaded(true); };
 
   // Profile prefs for sidebar
   const profilePrefs = profile ? [

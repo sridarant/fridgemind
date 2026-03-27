@@ -374,7 +374,7 @@ export default function Planner() {
   const [loadElapsed,  setLoadElapsed]   = useState(0);
 
   // Pre-fill pantry
-  useEffect(() => { if(!pantryLoaded&&pantry?.length){setIngredients(pantry);setPantryLoaded(true);} }, [pantry,pantryLoaded]);
+  useEffect(() => { if(!pantryLoaded&&pantry?.length){setPantryItems(pantry);setPantryLoaded(true);} }, [pantry,pantryLoaded]);
 
   useEffect(() => {
     if (view==='loading') {
