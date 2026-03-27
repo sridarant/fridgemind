@@ -131,7 +131,7 @@ export default function ApiDocs() {
           <h2 style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink, marginBottom:20 }}>API pricing</h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
             {TIERS.map(tier => (
-              <div key={tier.name} style={{ border:'\1 ' + tier.color + '44', borderRadius:14, padding:'18px 16px' }}>
+              <div key={tier.name} style={{ border:'2px solid ' + tier.color + '44', borderRadius:14, padding:'18px 16px' }}>
                 <div style={{ fontFamily:"'Fraunces', serif", fontSize:18, fontWeight:900, color:tier.color, marginBottom:4 }}>{tier.name}</div>
                 <div style={{ fontSize:15, fontWeight:500, color:C.ink, marginBottom:2 }}>{tier.price}</div>
                 <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>{tier.limit}</div>

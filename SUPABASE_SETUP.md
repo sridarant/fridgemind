@@ -263,3 +263,79 @@ alter table profiles add column if not exists diet_requirements text[] default '
 - `api/v1/suggest.js` — validate API keys
 
 All three use the service role key for trusted server-side writes that bypass RLS.
+
+---
+
+## Supabase checklist for v16 — what still needs to be done
+
+### Phase 3 tables (required for new v16 features)
+
+Go to **Supabase → SQL Editor** and run this if you haven't already:
+
+```sql
+-- User feedback table (for FeedbackWidget)
+create table if not exists feedback (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid references auth.users(id) on delete set null,
+  email       text,
+  rating      int check (rating >= 1 and rating <= 5),
+  category    text default 'other',
+  message     text,
+  page        text,
+  user_agent  text,
+  created_at  timestamptz default now()
+);
+alter table feedback enable row level security;
+create policy "feedback: insert only" on feedback for insert with check (true);
+
+-- Public API keys table (for api/v1/suggest.js)
+create table if not exists api_keys (
+  id          uuid primary key default gen_random_uuid(),
+  key         text unique not null,
+  tier        text default 'free' check (tier in ('free','starter','pro')),
+  user_id     uuid references auth.users(id) on delete cascade,
+  usage_count int default 0,
+  usage_date  date,
+  created_at  timestamptz default now()
+);
+alter table api_keys enable row level security;
+create policy "api_keys: own data" on api_keys for all using (auth.uid() = user_id);
+
+-- New profile columns for food type and diet requirements
+alter table profiles add column if not exists food_type         text[] default '{}';
+alter table profiles add column if not exists diet_requirements text[] default '{}';
+```
+
+### Verify existing tables exist
+
+Run this to check all required tables are present:
+
+```sql
+select table_name from information_schema.tables
+where table_schema = 'public'
+order by table_name;
+```
+
+You should see: `api_keys`, `favourites`, `feedback`, `meal_history`, `pantry`, `profiles`
+
+### Auth providers to enable
+
+In Supabase → **Authentication → Providers**:
+
+1. **Google** — Enable, add your Google OAuth credentials:
+   - Go to [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services → Credentials → Create OAuth 2.0 Client ID
+   - Authorised redirect URI: `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
+   - Copy Client ID and Secret into Supabase
+
+2. **Email** — Already enabled by default (used for magic link sign-in)
+
+### Environment variables needed in Vercel
+
+| Variable | Where to get it |
+|---|---|
+| `REACT_APP_SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `REACT_APP_SUPABASE_ANON_KEY` | Supabase → Settings → API → anon public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role key (secret!) |
+
+All three are required. The first two are safe to expose to the browser. The service role key is server-only — never put it in a `REACT_APP_` variable.
+

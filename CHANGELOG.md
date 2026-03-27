@@ -7,6 +7,25 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v16.1 — UX polish, Blinkit India-gate, routes, food validation, Mailchimp guide
+**Date:** March 2026
+
+### Changes
+- **ApiDocs.jsx build fix** — Invalid octal escape `\1` in border string corrected to `2px solid`
+- **Blinkit India-only** — Per-item "Order →" and "🛒 Blinkit" buttons now only shown when `country === 'IN'` (both in recipe grocery list and Planner grocery list)
+- **Profile button country flag** — Flag emoji from LocaleContext displayed in the profile header button (🇮🇳 🇸🇬 🇬🇧 etc.)
+- **Language & Units merged** — Removed separate "Language & units" sidebar card; controls merged into "Your preferences" card
+- **Photo upload label** — "Photograph your fridge" → "Upload fridge photos" with better subtitle
+- **Food photo validation** — `api/detect-ingredients.js` now uses a two-step Claude prompt to reject non-food images with a user-friendly error message
+- **Stats route** — `/stats` registered in App.jsx; visit jiff-ecru.vercel.app/stats
+- **API docs route** — `/api-docs` registered in App.jsx; visit jiff-ecru.vercel.app/api-docs
+- **Mailchimp setup guide** — `MAILCHIMP_SETUP.md` expanded to 7-step detailed guide including drip sequence setup
+- **E2E tests updated** — 18 → 24 tests covering v16 layout: fridge section, sidebar diet/cuisine, Indian submenu, stats/apidocs pages, language change, profile tabs
+
+### Supabase — no new tables needed for v16.1
+
+---
+
 ## v16 — Full i18n, Smart Greeting, Autocomplete, Photo Upload, Food Types, Indian Cuisines, Public API, Feedback, Blinkit + 14 more
 **Date:** March 2026
 **Files changed:** 40+ files across all layers
