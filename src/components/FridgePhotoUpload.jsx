@@ -42,10 +42,19 @@ export default function FridgePhotoUpload({ onIngredientsDetected, existingIngre
           body: JSON.stringify({ imageBase64: base64, mediaType: file.type }),
         });
         const data = await res.json();
-        if (res.ok && data.ingredients?.length) {
+        if (!res.ok) {
+          if (data.code === 'not_food') {
+            throw new Error('not_food');
+          }
+        } else if (data.ingredients?.length) {
           data.ingredients.forEach(i => allDetected.add(i));
         }
-      } catch {}
+      } catch (e) {
+        if (e.message === 'not_food') {
+          setErrMsg("That photo doesn't look like food — please upload a fridge, pantry, or ingredients photo.");
+          setState('error'); return;
+        }
+      }
     }));
 
     // Filter out already-added items
@@ -153,10 +162,10 @@ export default function FridgePhotoUpload({ onIngredientsDetected, existingIngre
           <div>
             <div style={{ fontSize:22, marginBottom:4 }}>📸</div>
             <div style={{ fontSize:13, fontWeight:500, color:C.ink, marginBottom:2 }}>
-              Photograph your fridge
+              Upload fridge photos
             </div>
             <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>
-              Click to upload · drag & drop · multiple photos OK
+              Click or drag &amp; drop photos of your fridge or ingredients
             </div>
           </div>
         )}

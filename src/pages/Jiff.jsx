@@ -475,6 +475,14 @@ function GroceryPanel({ meal, fridgeIngredients, onClose }) {
             <div key={i} className="grocery-item need" onClick={()=>toggle(`n-${i}`)}>
               <div className={`grocery-checkbox ${checked[`n-${i}`]?'checked':''}`}><svg viewBox="0 0 12 12"><polyline points="10 2 5 9 2 6" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
               <div className={`grocery-item-text ${checked[`n-${i}`]?'checked-text':''}`}>{ing}</div>
+              {country === 'IN' && (
+                <a href={'https://blinkit.com/s/?q='+encodeURIComponent(ing.replace(/^[\d½¼¾⅓⅔⅛]+\s*(?:g|kg|ml|l|tsp|tbsp|cup|cups)?\s*/i,''))}
+                  target="_blank" rel="noopener noreferrer"
+                  onClick={e=>e.stopPropagation()}
+                  style={{marginLeft:'auto',flexShrink:0,fontSize:10,fontWeight:500,color:'#1A8A3E',background:'rgba(26,138,62,0.08)',border:'1px solid rgba(26,138,62,0.22)',borderRadius:6,padding:'2px 7px',textDecoration:'none',whiteSpace:'nowrap',fontFamily:"'DM Sans',sans-serif"}}>
+                  Order →
+                </a>
+              )}
             </div>
           ))}</div>
         )}
@@ -483,6 +491,15 @@ function GroceryPanel({ meal, fridgeIngredients, onClose }) {
       <div className="grocery-actions">
         <button className={`grocery-action-btn copy ${copied?'copied':''}`} onClick={handleCopy}>{copied?<IconCheck/>:<IconCopy/>}{copied?'Copied!':'Copy list'}</button>
         <a className="grocery-action-btn wa" href={waUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><IconWA/>WhatsApp</a>
+        {need.length > 0 && country === 'IN' && (
+          <a className="grocery-action-btn"
+            href={'https://blinkit.com/s/?q='+encodeURIComponent(need.map(i=>i.replace(/^[\d½¼¾⅓⅔⅛]+\s*(?:g|kg|ml|l|tsp|tbsp|cup|cups)?\s*/i,'')).join(', '))}
+            target="_blank" rel="noopener noreferrer"
+            onClick={e=>e.stopPropagation()}
+            style={{background:'#1A8A3E',color:'white',border:'none',textDecoration:'none',display:'flex',alignItems:'center',gap:5}}>
+            🛒 Blinkit
+          </a>
+        )}
       </div>
     </div>
   );
@@ -629,7 +646,7 @@ export default function Jiff() {
   const navigate = useNavigate();
   const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, supabaseEnabled, authLoading } = useAuth();
   const { isPremium, trial, trialActive, trialExpired, trialDaysLeft, recipeCount, plans, checkAccess, recordUsage, startTrial, openCheckout, activateTestPremium, showGate, setShowGate, gateReason, razorpayEnabled, TRIAL_DAYS, PAID_RECIPE_CAP } = usePremium();
-  const { lang, units, setUnits, setLang, t, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, INDIAN_CUISINES, GLOBAL_CUISINES, supportedLanguages } = useLocale();
+  const { lang, units, setUnits, setLang, t, country, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, INDIAN_CUISINES, GLOBAL_CUISINES, supportedLanguages } = useLocale();
 
   const [fridgeItems,  setFridgeItems]  = useState([]);
   const [pantryItems,  setPantryItems]  = useState([]);
@@ -879,7 +896,17 @@ export default function Jiff() {
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
-            {user && <button className="hdr-btn profile" onClick={()=>navigate('/profile')}>👤 {profile?.name?.split(' ')[0]||t('profile_nav')}</button>}
+            {user && (
+              <button className="hdr-btn profile" onClick={()=>navigate('/profile')}
+                style={{position:'relative', paddingLeft: country && country !== 'US' ? '28px' : undefined}}>
+                {country && country !== 'US' && country !== 'DEFAULT' && (
+                  <span style={{position:'absolute',left:7,top:'50%',transform:'translateY(-50%)',fontSize:14,lineHeight:1}}>
+                    {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','US':'🇺🇸','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '🌍'}
+                  </span>
+                )}
+                {!country || country === 'US' ? '👤 ' : ''}{profile?.name?.split(' ')[0]||t('profile_nav')}
+              </button>
+            )}
             <div className="header-tag">AI</div>
           </div>
         </header>
@@ -1026,40 +1053,34 @@ export default function Jiff() {
                 </div>
               )}
 
-              {/* Profile preferences card */}
-              {profile && (
-                <div className="sidebar-card">
-                  <div className="sidebar-card-title">Your preferences</div>
-                  {profilePrefs.map(p=>(
-                    <div key={p.key} className="sidebar-pref">
-                      <span className="sidebar-pref-key">{p.key}</span>
-                      <span className="sidebar-pref-val" style={{textTransform:'capitalize'}}>{p.val}</span>
-                    </div>
-                  ))}
-
-                  <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>Edit preferences →</button>
-                </div>
-              )}
-
-              {/* Language + units sidebar */}
+              {/* Your preferences card — includes language & units */}
               <div className="sidebar-card">
-                <div className="sidebar-card-title">Language & units</div>
-                <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:6}}>
+                <div className="sidebar-card-title">Your preferences</div>
+                {profile && profilePrefs.map(p=>(
+                  <div key={p.key} className="sidebar-pref">
+                    <span className="sidebar-pref-key">{p.key}</span>
+                    <span className="sidebar-pref-val" style={{textTransform:'capitalize'}}>{p.val}</span>
+                  </div>
+                ))}
+                {/* Language — inline in preferences */}
+                <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:4,marginTop:4}}>
                   <span className="sidebar-pref-key">Language</span>
-                  <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'6px 10px',fontSize:12,fontFamily:"'DM Sans',sans-serif",color:'var(--ink)',background:'white',cursor:'pointer'}}>
+                  <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'5px 9px',fontSize:12,fontFamily:"'DM Sans',sans-serif",color:'var(--ink)',background:'white',cursor:'pointer'}}>
                     {supportedLanguages.map(l=><option key={l.id} value={l.id}>{l.flag} {l.label}</option>)}
                   </select>
                 </div>
-                <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:6,marginTop:8}}>
+                {/* Units — inline in preferences */}
+                <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:4,marginTop:4}}>
                   <span className="sidebar-pref-key">Units</span>
                   <div style={{display:'flex',width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,overflow:'hidden'}}>
                     {[{id:'metric',label:'Metric'},{id:'imperial',label:'Imperial'}].map(u=>(
-                      <button key={u.id} onClick={()=>setUnits(u.id)} style={{flex:1,padding:'6px',fontSize:12,fontFamily:"'DM Sans',sans-serif",border:'none',cursor:'pointer',background:units===u.id?'var(--ink)':'white',color:units===u.id?'white':'var(--muted)',fontWeight:units===u.id?500:400,transition:'all 0.15s'}}>
+                      <button key={u.id} onClick={()=>setUnits(u.id)} style={{flex:1,padding:'5px',fontSize:12,fontFamily:"'DM Sans',sans-serif",border:'none',cursor:'pointer',background:units===u.id?'var(--ink)':'white',color:units===u.id?'white':'var(--muted)',fontWeight:units===u.id?500:400,transition:'all 0.15s'}}>
                         {u.label}
                       </button>
                     ))}
                   </div>
                 </div>
+                {profile && <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>Edit preferences →</button>}
               </div>
 
               {/* Dietary preference card */}

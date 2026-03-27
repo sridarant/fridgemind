@@ -299,11 +299,13 @@ function GrocerySection({ plan, mealTypes }) {
                 <div key={key} className="grocery-item-row" onClick={()=>toggle(key)}>
                   <div className={`g-checkbox ${checked[key]?'checked':''}`}><svg viewBox="0 0 12 12"><polyline points="10 2 5 9 2 6" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
                   <div className={`g-item-text ${checked[key]?'done':''}`}>{item}</div>
-                  <a href={'https://blinkit.com/s/?q='+encodeURIComponent(item)} target="_blank" rel="noopener noreferrer"
-                    onClick={e=>e.stopPropagation()}
-                    style={{fontSize:10,color:'#1A8A3E',fontWeight:500,background:'rgba(26,138,62,0.08)',border:'1px solid rgba(26,138,62,0.2)',borderRadius:6,padding:'2px 6px',textDecoration:'none',marginLeft:'auto',whiteSpace:'nowrap',flexShrink:0}}>
-                    Blinkit →
-                  </a>
+                  {country === 'IN' && (
+                    <a href={'https://blinkit.com/s/?q='+encodeURIComponent(item)} target="_blank" rel="noopener noreferrer"
+                      onClick={e=>e.stopPropagation()}
+                      style={{fontSize:10,color:'#1A8A3E',fontWeight:500,background:'rgba(26,138,62,0.08)',border:'1px solid rgba(26,138,62,0.2)',borderRadius:6,padding:'2px 6px',textDecoration:'none',marginLeft:'auto',whiteSpace:'nowrap',flexShrink:0}}>
+                      Blinkit →
+                    </a>
+                  )}
                 </div>
               );})}
             </div>
@@ -349,7 +351,7 @@ function MealSlot({ meal, type, servings }) {
 export default function Planner() {
   const navigate = useNavigate();
   const { profile, pantry } = useAuth();
-  const { lang, units } = useLocale();
+  const { lang, units , country } = useLocale();
 
   const [ingredients,   setIngredients]   = useState([]);
   const [inputVal,      setInputVal]      = useState('');

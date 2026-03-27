@@ -34,16 +34,18 @@ export default async function handler(req, res) {
             },
             {
               type: 'text',
-              text: `Look at this fridge/pantry photo and list all the food ingredients you can identify.
+              text: `First, determine if this image shows food, ingredients, a fridge, a pantry, a kitchen, or cooking items. If it does NOT (e.g. it's a selfie, a landscape, a document, a vehicle, or anything unrelated to food/cooking), respond with exactly: {"error": "not_food"}
+
+If it IS food-related, list all the food ingredients you can identify.
 
 Rules:
 - List only actual food ingredients (vegetables, fruits, meats, dairy, grains, condiments, spices)
 - Use common simple names: "onion" not "yellow onion", "milk" not "whole milk carton"
 - Skip non-food items (bottles of water, cleaning products, containers you can't identify)
 - Maximum 20 ingredients
-- If you cannot identify food items, return an empty array
+- If the image is food-related but you cannot identify specific ingredients, return []
 
-Respond ONLY with a valid JSON array of strings. No markdown, no explanation:
+Respond ONLY with valid JSON. Either {"error": "not_food"} or a plain array:
 ["ingredient1", "ingredient2", "ingredient3"]`,
             },
           ],
@@ -55,6 +57,14 @@ Respond ONLY with a valid JSON array of strings. No markdown, no explanation:
     if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'API error' });
 
     const rawText = data.content?.map(c => c.text || '').join('') || '';
+
+    // Check for not_food response
+    if (rawText.includes('"not_food"') || rawText.includes('not_food')) {
+      return res.status(400).json({
+        error: 'The photo does not appear to show food or cooking ingredients. Please upload a photo of your fridge, pantry, or ingredients.',
+        code: 'not_food',
+      });
+    }
 
     let ingredients = [];
     try {
