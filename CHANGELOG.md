@@ -7,6 +7,151 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v17.1 — Quick wins + medium features: Surprise me, ratings, voice, streaks, seasonal
+**Date:** March 2026  |  **Package:** 1.17.1
+
+### Quick wins
+
+**"Surprise me" button**
+- One-tap generation with zero input required
+- Reads `profile.preferred_cuisines` and picks one at random
+- Falls back to `pantry` items or current seasonal produce as ingredients
+- Respects meal type (auto-detected from time of day), spice level, allergies
+- Shown only when user is logged in with a profile
+
+**Recipe star rating**
+- 1–5 star rating on every recipe card with hover preview effect
+- Saves to `localStorage('jiff-ratings')` immediately (key = meal name+emoji hash)
+- Syncs to Supabase `meal_history.rating` column (PATCH) when user is signed in
+- Visible on both recipe results and Favourites panel
+
+**Share card — canvas PNG download**
+- "📤 Share" button on every recipe card
+- Generates an 800×450px canvas image: dark gradient background, recipe emoji, name, description, nutrition stats, "Made with ⚡ Jiff" branding
+- Downloads as `jiff-dal-rice.png` for WhatsApp/Instagram sharing
+- Runs entirely client-side — no server call
+
+**Meal streaks**
+- Tracks consecutive cooking days in `localStorage('jiff-streak')`
+- Shows "🔥 N-day streak!" badge in the header area when streak ≥ 2
+- Increments on every successful generation; resets if a day is skipped
+
+### Medium features
+
+**Voice input (Web Speech API)**
+- 🎤 microphone button added to every IngredientInput box
+- Uses `SpeechRecognition` / `webkitSpeechRecognition` with `lang: 'en-IN'`
+- Parses comma or "and" separated items from speech (e.g. "chicken and onion and rice")
+- Shows pulsing animation while listening; tap ⏹ to stop early
+- Gracefully hidden if browser doesn't support Speech API
+
+**Seasonal ingredient suggestions**
+- `INDIA_SEASONAL` data for all 12 months added to LocaleContext (Tamil Nadu focused)
+- `getCurrentSeason()` exported from LocaleContext — returns month, label, emoji, item list
+- Green "In season: mango, watermelon…" chip in app header — tap to add one random seasonal item to fridge
+- Surprise me also uses seasonal produce as fallback ingredients
+
+**Smart pantry learning**
+- After generation, cross-references recipe ingredients against saved pantry
+- Shows "🧂 You may need to restock: turmeric, cumin" banner in results
+- Dismissible with ✕; doesn't re-appear until next generation
+
+### Supabase additions (Phase 4 — run in SQL Editor)
+See `SUPABASE_SETUP.md` → Phase 4 for full SQL. Summary:
+- `broadcasts` table (admin broadcast feature)
+- `meal_history.rating` column (recipe ratings)
+
+### E2E tests: 44 → 52
+- Test 45: Surprise me button visible when profile set
+- Test 46: Seasonal nudge "In season:" text appears
+- Test 47: Star rating (☆) on recipe cards
+- Test 48: Share button present on recipe cards
+- Test 49: Streak badge shows when streak in localStorage
+- Test 50: Voice input 🎤 button in fridge section
+- Test 51: Rating click saves to localStorage
+- Test 52: SUPABASE_SETUP.md Phase 4 documented
+
+---
+
+## v17.0 — India-only, profile-driven plans, avatar dropdown, CSS animation, admin overhaul
+**Date:** March 2026  |  **Package:** 1.17.0  |  **Breaking:** yes
+
+### Architecture changes
+- **India-only release** — `guessCountry()` now returns `'IN'` unconditionally. All country detection, currency switching, Stripe/non-Razorpay payment paths, and non-IN gating removed from rendering logic. Blinkit shown unconditionally everywhere.
+- **Planner / Plans no longer use fridge input** — both pages now generate from saved profile preferences (cuisines, dietary, spice, pantry). Users without preferences are redirected to Profile with a clear message.
+
+### New features
+
+**Week Plan (Planner.jsx) — complete rewrite**
+- Profile-based generation: reads `preferred_cuisines`, `food_type`, `spice_level`, `allergies`, `skill_level`, `pantry` from AuthContext
+- Multi-cuisine ratio selector: if user has 3 preferred cuisines, they assign days across them (e.g. 3 Tamil + 2 Karnataka + 2 Italian = 7 days). Submit locked until all 7 days assigned.
+- "Goal Planner" link in nav header
+- Blinkit order links on every grocery item
+- Profile redirect if no preferences set
+
+**Goal Plans (Plans.jsx)**
+- Fridge/pantry input removed; replaced with profile preferences display card
+- Shows cuisine, food type, spice, pantry count from profile
+- Link to Profile if preferences not set
+
+**CSS fridge animation** — loading state replaced with:
+- Fridge door opening (CSS `perspective` + `rotateY` keyframe)
+- Ingredients flying out to a plate (`translate` + `scale` keyframe)
+- Steam puffs rising (`translateY` + opacity keyframe)
+- No external library — instant load, works offline
+
+**Avatar dropdown** — profile button replaced with:
+- Orange initials circle (first letter of name)
+- Dropdown with: Profile, Settings, History, Sign out
+- Click-outside closes via overlay div
+- Sign out styled in red, separated from nav items
+
+**Cuisine card restructured**
+- Removed "Indian ▸" submenu pattern — all cuisines flat and visible
+- Two labelled groups: "🇮🇳 Indian Regional" and "🌐 International"
+- No more `showIndianSub` state needed
+- `pref-highlight` class shows user's saved preferences without selecting them
+
+**3-column layout** — Meal Type / Servings / Time Available displayed as equal-width columns with individual card backgrounds
+
+### Profile changes
+- **Cuisine tab removed** — `TABS` array updated, cuisine tab JSX removed
+- **Skill → Cooking Skill** — label updated in Profile, sidebar Your Preferences card, all display strings
+- **Your Preferences sidebar** — now shows: Spice, Dietary (from food_type), Cooking Skill. Cuisines row removed.
+
+### Admin overhaul (Admin.jsx + api/admin/)
+- **Users tab** — loads profiles from Supabase via `/api/admin/users`, CSV export
+- **Feedback tab** — loads from Supabase feedback table, CSV export
+- **Tools: Reset trial** — POST to `/api/admin/reset-trial`, finds user by email, deletes trial record
+- **Tools: Broadcast message** — POST to `/api/admin/broadcast`, stores in `broadcasts` Supabase table
+- **API Usage tab** — shows total calls, today's calls, active keys from `api_keys` table
+- **Toast notifications** — feedback for all tool actions
+- All 5 admin endpoints: `api/admin/{users,feedback,reset-trial,broadcast,usage}.js`
+
+### E2E tests: 40 → 44
+- Tests 16-20: Planner profile-redirect, meal type, nav
+- Tests 21-23: Goal Plans no fridge input, profile card
+- Tests 33-37: Admin login, all tabs, reset trial, broadcast
+- Test 38: Tamil translation fridge label
+- Test 41: All 7 main pages load without JS errors
+
+### Supabase additions needed for v17 admin features
+Run in SQL Editor:
+```sql
+-- Broadcasts table (for admin broadcast feature)
+create table if not exists broadcasts (
+  id         uuid primary key default gen_random_uuid(),
+  message    text not null,
+  active     boolean default true,
+  created_at timestamptz default now()
+);
+alter table broadcasts enable row level security;
+create policy "broadcasts: read all" on broadcasts for select using (true);
+create policy "broadcasts: service insert" on broadcasts for insert with check (false);
+```
+
+---
+
 ## v16.6 — Critical crash fix: recipe generation & Favourites
 **Date:** March 2026
 

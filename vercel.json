@@ -44,6 +44,26 @@
       "destination": "/api/stats.js"
     },
     {
+      "source": "/api/admin/users",
+      "destination": "/api/admin/users.js"
+    },
+    {
+      "source": "/api/admin/feedback",
+      "destination": "/api/admin/feedback.js"
+    },
+    {
+      "source": "/api/admin/reset-trial",
+      "destination": "/api/admin/reset-trial.js"
+    },
+    {
+      "source": "/api/admin/broadcast",
+      "destination": "/api/admin/broadcast.js"
+    },
+    {
+      "source": "/api/admin/usage",
+      "destination": "/api/admin/usage.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

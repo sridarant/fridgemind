@@ -54,6 +54,9 @@ const styles = `
     font-style: italic;
   }
   .ing-hint { font-size: 11px; color: ${C.muted}; margin-top: 6px; font-weight: 300; }
+  .voice-btn { background: none; border: 1.5px solid ${C.borderMid}; border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 16px; color: ${C.muted}; transition: all 0.15s; line-height: 1; flex-shrink: 0; }
+  .voice-btn.listening { background: rgba(255,69,0,0.1); border-color: ${C.jiff}; color: ${C.jiff}; animation: voicePulse 0.8s ease-in-out infinite; }
+  @keyframes voicePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
 `;
 
 // Emoji for ingredient category hints
@@ -72,6 +75,9 @@ function getIngredientEmoji(ing) {
 
 export default function IngredientInput({ ingredients, onChange, pantryIngredients = [], placeholder }) {
   const [inputVal,     setInputVal]     = useState('');
+  const recognitionRef = useRef(null);
+  const [listening,    setListening]    = useState(false);
+  const hasVoice = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
   const [suggestions,  setSuggestions]  = useState([]);
   const [selectedIdx,  setSelectedIdx]  = useState(-1);
   const [correction,   setCorrection]   = useState(null);
@@ -122,6 +128,33 @@ export default function IngredientInput({ ingredients, onChange, pantryIngredien
 
   // Source label for tags
   const isPantry = (ing) => pantryIngredients.map(i => i.toLowerCase()).includes(ing.toLowerCase());
+
+
+  const startVoice = () => {
+    if (!hasVoice) return;
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const rec = new SpeechRec();
+    rec.lang = 'en-IN';
+    rec.continuous = false;
+    rec.interimResults = false;
+    recognitionRef.current = rec;
+    rec.onstart = () => setListening(true);
+    rec.onend   = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    rec.onresult = (e) => {
+      const transcript = e.results[0][0].transcript.toLowerCase();
+      // Parse comma or "and" separated ingredients from speech
+      const raw = transcript.replace(/and/gi, ',').split(/[,،]+/).map(s => s.trim()).filter(Boolean);
+      raw.forEach(item => {
+        const corrected = item.replace(/[.!?]/g, '').trim();
+        if (corrected && !ingredients.includes(corrected)) {
+          onChange([...new Set([...ingredients, corrected])]);
+        }
+      });
+      setListening(false);
+    };
+    rec.start();
+  };
 
   return (
     <>

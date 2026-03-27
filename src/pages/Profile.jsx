@@ -49,7 +49,7 @@ export default function Profile() {
     setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),3000);
   };
 
-  const TABS = [{id:'food',l:'🍽️ Food type'},{id:'cuisine',l:'🌍 Cuisines'},{id:'dietary',l:'💊 Dietary'},{id:'pantry',l:'🧂 Pantry'},{id:'prefs',l:'⚙️ Settings'}];
+  const TABS = [{id:'food',l:'🍽️ Food type'},{id:'dietary',l:'💊 Dietary'},{id:'pantry',l:'🧂 Pantry'},{id:'prefs',l:'⚙️ Settings'}];
 
   return (
     <div style={{minHeight:'100vh',background:C.cream,fontFamily:"'DM Sans', sans-serif",color:C.ink}}>
@@ -111,7 +111,7 @@ export default function Profile() {
             <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:18}}>
               {SPICE.map(o=><button key={o.id} style={pill(spiceLevel===o.id)} onClick={()=>setSpiceLevel(o.id)}>{o.e} {o.l}</button>)}
             </div>
-            <span style={label}>Cooking skill</span>
+            <span style={label}>Cooking Skill</span>
             <div style={{display:'flex',flexWrap:'wrap',gap:7,marginBottom:18}}>
               {SKILL.map(o=><button key={o.id} style={pill(skillLevel===o.id)} onClick={()=>setSkillLevel(o.id)}>{o.e} {o.l}</button>)}
             </div>

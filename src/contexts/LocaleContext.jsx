@@ -5,7 +5,7 @@ const LocaleContext = createContext(null);
 export const useLocale = () => useContext(LocaleContext);
 
 // Countries where Jiff is fully live with payments
-export const ENABLED_COUNTRIES = ['IN', 'SG', 'GB', 'AU', 'US'];
+export const ENABLED_COUNTRIES = ['IN']; // India-only release
 
 export const CURRENCY_MAP = {
   IN: { code:'INR', symbol:'₹', plans:{ monthly:'₹99', annual:'₹799', lifetime:'₹2,999' }, amounts:{ monthly:9900, annual:79900, lifetime:299900 }, gateway:'razorpay' },
@@ -73,29 +73,34 @@ export const GLOBAL_CUISINES = [
   { id:'Greek',          label:'Greek',          flag:'🇬🇷' },
 ];
 
+// India-only: country is always IN
 function guessCountry() {
-  try {
-    const saved = localStorage.getItem('jiff-country');
-    if (saved) return saved;
-    // Use timezone for accurate country detection — more reliable than navigator.language
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    if (tz.includes('Calcutta') || tz.includes('Kolkata') || tz.includes('Asia/Colombo')) return 'IN';
-    if (tz.includes('Singapore')) return 'SG';
-    if (tz.includes('London') || tz.includes('Europe/London')) return 'GB';
-    if (tz.includes('Sydney') || tz.includes('Melbourne') || tz.includes('Australia')) return 'AU';
-    if (tz.includes('Dubai') || tz.includes('Asia/Muscat')) return 'AE';
-    if (tz.includes('Kuala_Lumpur') || tz.includes('Malaysia')) return 'MY';
-    if (tz.includes('Bangkok') || tz.includes('Asia/Bangkok')) return 'TH';
-    if (tz.includes('Tokyo') || tz.includes('Asia/Tokyo')) return 'JP';
-    if (tz.includes('Shanghai') || tz.includes('Asia/Hong_Kong')) return 'CN';
-    if (tz.includes('Berlin') || tz.includes('Europe/Paris') || tz.includes('Europe/Amsterdam')) return 'DE';
-    // Fall back to navigator.language
-    const lang = (navigator.language || 'en-US').split('-')[1]?.toUpperCase() || 'US';
-    return lang;
-  } catch { return 'US'; }
+  return 'IN';
 }
-function getLang()  { try { return localStorage.getItem('jiff-lang')||'en';     } catch { return 'en';     } }
-function getUnits() { try { return localStorage.getItem('jiff-units')||'metric';} catch { return 'metric'; } }
+
+
+
+// India seasonal ingredients by month (Tamil Nadu / South India focused)
+export const INDIA_SEASONAL = {
+  Jan:  { label:'Winter',  emoji:'❄️',  items:['gooseberry','carrot','peas','radish','spinach','fenugreek','guava','pomegranate'] },
+  Feb:  { label:'Winter',  emoji:'❄️',  items:['strawberry','broccoli','cauliflower','peas','carrot','beetroot','guava'] },
+  Mar:  { label:'Spring',  emoji:'🌸',  items:['raw mango','jackfruit','bitter gourd','drumstick','tulsi','gongura'] },
+  Apr:  { label:'Summer',  emoji:'☀️',  items:['mango','jackfruit','watermelon','cucumber','ridge gourd','drumstick','wood apple'] },
+  May:  { label:'Summer',  emoji:'☀️',  items:['mango','watermelon','raw mango','bottle gourd','snake gourd','mulberry','jamun'] },
+  Jun:  { label:'Monsoon', emoji:'🌧️',  items:['snake gourd','bitter gourd','cluster beans','raw banana','taro','moringa','colocasia'] },
+  Jul:  { label:'Monsoon', emoji:'🌧️',  items:['yam','colocasia','elephant foot','taro','bitter gourd','ridge gourd','drumstick'] },
+  Aug:  { label:'Monsoon', emoji:'🌧️',  items:['ash gourd','ivy gourd','pumpkin','sweet potato','turmeric root','green papaya'] },
+  Sep:  { label:'Autumn',  emoji:'🍂',  items:['pumpkin','sweet potato','pomegranate','guava','lemon','drumstick','green papaya'] },
+  Oct:  { label:'Autumn',  emoji:'🍂',  items:['pomegranate','pear','figs','drumstick','green chilli','coriander','moringa'] },
+  Nov:  { label:'Pre-winter', emoji:'🌤️', items:['amla','carrot','peas','spinach','fenugreek','cluster beans','drumstick'] },
+  Dec:  { label:'Winter',  emoji:'❄️',  items:['amla','guava','carrot','peas','spinach','green leafy vegetables','dates'] },
+};
+
+export function getCurrentSeason() {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mon = months[new Date().getMonth()];
+  return { month: mon, ...INDIA_SEASONAL[mon] };
+}
 
 export function LocaleProvider({ children }) {
   const [lang,    setLangState]    = useState(getLang);

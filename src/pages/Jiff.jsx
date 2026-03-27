@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
-import { useLocale }  from '../contexts/LocaleContext';
+import { useLocale, getCurrentSeason } from '../contexts/LocaleContext';
 import JiffLogo        from '../components/JiffLogo';
 import SmartGreeting    from '../components/SmartGreeting';
 import IngredientInput  from '../components/IngredientInput';
@@ -478,7 +478,7 @@ function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }
             <div key={i} className="grocery-item need" onClick={()=>toggle(`n-${i}`)}>
               <div className={`grocery-checkbox ${checked[`n-${i}`]?'checked':''}`}><svg viewBox="0 0 12 12"><polyline points="10 2 5 9 2 6" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
               <div className={`grocery-item-text ${checked[`n-${i}`]?'checked-text':''}`}>{ing}</div>
-              {country === 'IN' && (
+              {(
                 <a href={'https://blinkit.com/s/?q='+encodeURIComponent(ing.replace(/^[\d½¼¾⅓⅔⅛]+\s*(?:g|kg|ml|l|tsp|tbsp|cup|cups)?\s*/i,''))}
                   target="_blank" rel="noopener noreferrer"
                   onClick={e=>e.stopPropagation()}
@@ -494,7 +494,7 @@ function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }
       <div className="grocery-actions">
         <button className={`grocery-action-btn copy ${copied?'copied':''}`} onClick={handleCopy}>{copied?<IconCheck/>:<IconCopy/>}{copied?'Copied!':'Copy list'}</button>
         <a className="grocery-action-btn wa" href={waUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><IconWA/>WhatsApp</a>
-        {need.length > 0 && country === 'IN' && (
+        {need.length > 0 && (
           <a className="grocery-action-btn"
             href={'https://blinkit.com/s/?q='+encodeURIComponent(need.map(i=>i.replace(/^[\d½¼¾⅓⅔⅛]+\s*(?:g|kg|ml|l|tsp|tbsp|cup|cups)?\s*/i,'')).join(', '))}
             target="_blank" rel="noopener noreferrer"
@@ -529,9 +529,11 @@ function ShareDrawer({ meal }) {
 }
 
 // ── MealCard ──────────────────────────────────────────────────────
-function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='' }) {
+function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='', onRate, rating=0 }) {
   const { t } = useLocale();
   const baseServings = parseInt(meal.servings) || defaultServings;
+  const [shareCardOpen, setShareCardOpen] = useState(false);
+  const [hoverStar,     setHoverStar]     = useState(0);
   const [expanded, setExpanded]       = useState(false);
   const [shareOpen, setShareOpen]     = useState(false);
   const [groceryOpen, setGroceryOpen] = useState(false);
@@ -544,6 +546,34 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
   const scaledPro   = scaleNutrition(meal.protein||'',ratio);
   const scaledCarbs = scaleNutrition(meal.carbs||'',ratio);
   const scaledFat   = scaleNutrition(meal.fat||'',ratio);
+
+  // ── Share card — canvas PNG download ───────────────────────────
+  const generateShareCard = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800; canvas.height = 450;
+    const cx = canvas.getContext('2d');
+    const grad = cx.createLinearGradient(0, 0, 800, 450);
+    grad.addColorStop(0, '#1C0A00'); grad.addColorStop(1, '#3D1500');
+    cx.fillStyle = grad; cx.fillRect(0, 0, 800, 450);
+    cx.fillStyle = '#FF4500'; cx.fillRect(0, 0, 6, 450);
+    cx.font = '80px serif'; cx.textAlign = 'center';
+    cx.fillText(meal.emoji || '🍽️', 400, 120);
+    cx.font = 'bold 36px Georgia, serif'; cx.fillStyle = 'white';
+    const title = meal.name || 'Recipe';
+    cx.fillText(title.length > 32 ? title.slice(0,32)+'…' : title, 400, 190);
+    cx.font = '18px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.6)';
+    cx.fillText((meal.description||'').slice(0,65), 400, 230);
+    cx.font = '16px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.45)';
+    cx.fillText('⏱ '+(meal.time||'?')+'   🔥 '+(meal.calories||'?')+' cal   💪 '+(meal.protein||'?'), 400, 290);
+    cx.font = 'bold 22px Georgia, serif'; cx.fillStyle = '#FF4500';
+    cx.fillText('Made with ⚡ Jiff', 400, 375);
+    cx.font = '14px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.35)';
+    cx.fillText('jiff-ecru.vercel.app', 400, 415);
+    const link = document.createElement('a');
+    link.download = 'jiff-'+(meal.name||'recipe').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
   return (
     <div className={`meal-card ${expanded?'expanded':''} ${isFavourite?'is-fav':''}`} style={{animationDelay:`${animDelay}s`}}
@@ -571,6 +601,27 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>{t('see_list')}</span>
         </button>
       ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)} country={country}/>}
+      {/* ── Star rating ── */}
+      <div style={{display:'flex',alignItems:'center',gap:3,marginBottom:4}}>
+        {[1,2,3,4,5].map(s=>(
+          <button key={s}
+            onMouseEnter={()=>setHoverStar(s)}
+            onMouseLeave={()=>setHoverStar(0)}
+            onClick={e=>{e.stopPropagation();onRate&&onRate(s);}}
+            style={{background:'none',border:'none',cursor:onRate?'pointer':'default',fontSize:15,padding:'1px',lineHeight:1,transition:'transform 0.1s',transform:hoverStar>=s?'scale(1.2)':'scale(1)'}}>
+            {(hoverStar||rating)>=s ? '⭐' : '☆'}
+          </button>
+        ))}
+        {rating > 0 && <span style={{fontSize:10,color:'var(--muted)',marginLeft:3,fontWeight:300}}>Rated {rating}/5</span>}
+        {/* Share card button */}
+        <button onClick={e=>{e.stopPropagation();generateShareCard();}}
+          style={{marginLeft:'auto',background:'none',border:'1px solid rgba(28,10,0,0.12)',borderRadius:8,padding:'3px 9px',fontSize:11,color:'var(--muted)',cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontFamily:"'DM Sans',sans-serif",transition:'all 0.15s'}}
+          onMouseEnter={e=>e.currentTarget.style.borderColor='var(--jiff)'}
+          onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(28,10,0,0.12)'}
+          title="Download share image">
+          📤 Share
+        </button>
+      </div>
       {!expanded?(
         <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(true);}}><span>{t('see_full_recipe')}</span><span>→</span></button>
       ):(
@@ -605,6 +656,82 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
 // ── Main ──────────────────────────────────────────────────────────
 // ── LoadingView — shows latency warning after 10s ─────────────────
 function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CAP, factIdx }) {
+  const FACTS = [
+    'Raiding your fridge…','Cross-referencing 50,000+ recipes…',
+    'Matching cuisine and flavour profile…','Crunching nutrition numbers…',
+    'Preparing 5 great options for you…',
+  ];
+  const fact = FACTS[factIdx % FACTS.length];
+
+  return (
+    <div style={{textAlign:'center',padding:'48px 24px',maxWidth:500,margin:'0 auto'}}>
+      {/* CSS Fridge Animation */}
+      <div style={{position:'relative',width:200,height:200,margin:'0 auto 28px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <style>{`
+          @keyframes fridgeDoor{0%{transform:perspective(400px) rotateY(0deg)}60%{transform:perspective(400px) rotateY(-75deg)}100%{transform:perspective(400px) rotateY(-75deg)}}
+          @keyframes ingredientFly{0%{opacity:0;transform:translate(0,0) scale(0.5)}30%{opacity:1}70%{opacity:1;transform:translate(var(--tx),var(--ty)) scale(1.1)}100%{opacity:0;transform:translate(calc(var(--tx)*2),calc(var(--ty)*2 + 40px)) scale(0.8)}}
+          @keyframes plateAppear{0%,50%{opacity:0;transform:scale(0.6) translateY(20px)}75%{opacity:1;transform:scale(1.1) translateY(-5px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+          @keyframes steam{0%{opacity:0;transform:translateY(0) scaleX(1)}50%{opacity:0.7;transform:translateY(-15px) scaleX(1.3)}100%{opacity:0;transform:translateY(-30px) scaleX(0.8)}}
+          @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+          .fridge-door{animation:fridgeDoor 0.8s ease-in-out 0.3s both;transform-origin:left center;}
+          .ingredient-fly{animation:ingredientFly 1.2s ease-in-out infinite;}
+          .plate-appear{animation:plateAppear 0.6s ease-out 1s both;}
+          .steam-puff{animation:steam 1.5s ease-out infinite;}
+          .fridge-pulse{animation:pulse 2s ease-in-out infinite;}
+        `}</style>
+        {/* Fridge body */}
+        <div className="fridge-pulse" style={{position:'relative',width:90,height:130,background:'#F5F5F5',borderRadius:10,border:'2px solid #E0E0E0',boxShadow:'4px 4px 12px rgba(0,0,0,0.15)',overflow:'visible'}}>
+          {/* Fridge door swinging open */}
+          <div className="fridge-door" style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#FAFAFA,#E8E8E8)',borderRadius:10,border:'2px solid #D0D0D0',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',gap:6}}>
+            <div style={{fontSize:8,color:'#999',fontWeight:700,letterSpacing:'1px'}}>JIFF</div>
+            <div style={{width:8,height:22,background:'#C0C0C0',borderRadius:4}}/>
+          </div>
+          {/* Inside fridge — ingredients */}
+          <div style={{position:'absolute',inset:4,display:'flex',flexWrap:'wrap',gap:3,padding:4,alignContent:'flex-start',fontSize:14}}>
+            {['🥚','🧅','🫑','🥬','🍅','🧄'].map((e,i)=>(
+              <span key={i} style={{lineHeight:1.2}}>{e}</span>
+            ))}
+          </div>
+        </div>
+        {/* Flying ingredients */}
+        {['🌶️','🧅','🥩','🫛'].map((e,i)=>(
+          <span key={i} className="ingredient-fly" style={{
+            position:'absolute', fontSize:18, lineHeight:1,
+            '--tx': `${[60,-60,50,-50][i]}px`,
+            '--ty': `${[-40,-30,-55,-25][i]}px`,
+            animationDelay: `${i*0.3}s`,
+            animationDuration: `${1.2 + i*0.2}s`,
+          }}>{e}</span>
+        ))}
+        {/* Plate appearing */}
+        <div className="plate-appear" style={{position:'absolute',right:-20,bottom:10,fontSize:42,lineHeight:1,filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.2))'}}>
+          🍽️
+        </div>
+        {/* Steam puffs */}
+        {[0,1,2].map(i=>(
+          <div key={i} className="steam-puff" style={{
+            position:'absolute',right:-10+i*10,bottom:50-i*5,
+            width:8,height:8,borderRadius:'50%',
+            background:'rgba(200,200,200,0.6)',
+            animationDelay:`${i*0.4}s`,
+          }}/>
+        ))}
+      </div>
+
+      <div style={{fontFamily:"'Fraunces',serif",fontSize:'clamp(20px,3.5vw,28px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-0.5px',marginBottom:8}}>
+        {cuisine !== 'any'
+          ? `Finding ${cuisine}${mealType !== 'any' ? ' ' + mealType : ''} recipes…`
+          : `Jiffing your ${mealType !== 'any' ? mealType : 'meal'}…`}
+      </div>
+      <div style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20,minHeight:20}}>{fact}</div>
+      {isPremium && (
+        <div style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(255,69,0,0.08)',borderRadius:20,padding:'4px 14px',fontSize:11,color:'var(--jiff)',fontWeight:500}}>
+          ⚡ Generating {PAID_RECIPE_CAP} recipes
+        </div>
+      )}
+    </div>
+  );
+}) {
   const [slow, setSlow]       = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
@@ -688,7 +815,6 @@ export default function Jiff() {
   const [emailSent,    setEmailSent]    = useState(false);
   const [pantryLoaded, setPantryLoaded] = useState(false);
   const [gatePlan,     setGatePlan]     = useState('annual');
-  const [showIndianSub, setShowIndianSub] = useState(false);
   const [gateLoading,  setGateLoading]  = useState(false);
 
   const timerRef = useRef(null);
@@ -700,6 +826,11 @@ export default function Jiff() {
 
   // Pre-fill diet + cuisine from saved profile preferences
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [streak,         setStreak]         = useState(0);
+  const [showSurprise,   setShowSurprise]   = useState(false);
+  const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
+  const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
+  const season = getCurrentSeason();
   useEffect(() => {
     if (profile && !profileLoaded) {
       // Pre-fill dietary from food_type
@@ -733,6 +864,38 @@ export default function Jiff() {
     return () => clearInterval(timerRef.current);
   }, [view]);
 
+  // ── Surprise me — one tap, profile-based, no fridge input ─────────
+  const handleSurprise = async () => {
+    if (!checkAccess('generation')) return;
+    setView('loading'); setFactIdx(0); setShowFavs(false);
+    try {
+      const count = isPremium ? PAID_RECIPE_CAP : 1;
+      const surpriseMealType = getDefaultMealType();
+      const surpriseCuisine = profile?.preferred_cuisines?.length
+        ? profile.preferred_cuisines[Math.floor(Math.random() * profile.preferred_cuisines.length)]
+        : 'any';
+      const res = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: pantry?.length ? pantry : season.items.slice(0,4),
+          time, diet, cuisine: surpriseCuisine, mealType: surpriseMealType,
+          defaultServings, count, language: lang, units,
+          tasteProfile: profile ? {
+            spice_level: profile.spice_level, allergies: profile.allergies,
+            preferred_cuisines: profile.preferred_cuisines, skill_level: profile.skill_level,
+          } : null,
+          surpriseMode: true,
+        }),
+      });
+      const data = await res.json();
+      if (data.meals?.length > 0) {
+        setMeals(data.meals); setView('results'); recordUsage();
+        setCuisine(surpriseCuisine); setMealType(surpriseMealType);
+      } else { setErrorMsg(data.error||'Could not generate suggestions.'); setView('error'); }
+    } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
+  };
+
   const handleSubmit = async () => {
     if (!ingredients.length) return;
     if (!checkAccess('generation')) return;
@@ -762,6 +925,22 @@ export default function Jiff() {
         if (typeof window !== 'undefined' && window._jiffGA) {
           window._jiffGA('meal_generated', { cuisine, mealType, ingredient_count: ingredients.length, is_premium: isPremium });
         }
+        // ── Streak update ────────────────────────────────────────────
+        try {
+          const today = new Date().toDateString();
+          const data  = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+          const yesterday = new Date(Date.now() - 86400000).toDateString();
+          const newCount = data.lastDate === yesterday ? (data.count || 0) + 1 : 1;
+          localStorage.setItem('jiff-streak', JSON.stringify({ count: newCount, lastDate: today }));
+          setStreak(newCount);
+        } catch {}
+
+        // ── Pantry nudge — items used from pantry ────────────────────
+        const usedFromPantry = (pantry || []).filter(p =>
+          data.meals?.[0]?.ingredients?.some(ing => ing.toLowerCase().includes(p.toLowerCase()))
+        );
+        if (usedFromPantry.length) setPantryNudge(usedFromPantry.slice(0, 4));
+
         // Auto-save to meal history (localStorage + API)
         const histEntry = {
           id: Date.now().toString(),
@@ -830,14 +1009,30 @@ export default function Jiff() {
     };
   }, [user, supabaseEnabled]);
 
+  // ── Streak tracking ──────────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const today = new Date().toDateString();
+      const data  = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+      const last  = data.lastDate;
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (last === today) {
+        setStreak(data.count || 1);
+      } else if (last === yesterday) {
+        setStreak(data.count || 1);
+      } else {
+        setStreak(0);
+      }
+    } catch {}
+  }, []);
+
   const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); setShowFavs(false); setPantryLoaded(true); };
 
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
-    { key: 'Spice',     val: profile.spice_level || 'Medium' },
-    { key: 'Allergies', val: profile.allergies?.length ? profile.allergies.join(', ') : 'None' },
-    { key: 'Cuisines',  val: profile.preferred_cuisines?.length ? profile.preferred_cuisines.slice(0,2).join(', ') : 'Any' },
-    { key: 'Skill',     val: profile.skill_level || 'Intermediate' },
+    { key: 'Spice',          val: profile.spice_level || 'Medium' },
+    { key: 'Dietary',        val: (() => { const ft = Array.isArray(profile.food_type) ? profile.food_type : (profile.food_type ? [profile.food_type] : []); return ft.length ? ft.join(', ') : 'Not set'; })() },
+    { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
   ] : [];
 
   // Show mandatory sign-in gate
@@ -926,20 +1121,48 @@ export default function Jiff() {
             {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {user && (
-              <button className="hdr-btn profile" onClick={()=>navigate('/profile')}
-                style={{display:'flex',alignItems:'center',gap:6,paddingLeft:4}}>
-                <span style={{
-                  width:26, height:26, borderRadius:'50%',
-                  background:'rgba(255,255,255,0.15)',
-                  border:'1.5px solid rgba(255,69,0,0.3)',
-                  display:'inline-flex', alignItems:'center', justifyContent:'center',
-                  fontSize:20, lineHeight:1, flexShrink:0,
-                  overflow:'visible',
-                }}>
-                  {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','US':'🇺🇸','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '👤'}
-                </span>
-                {profile?.name?.split(' ')[0]||t('profile_nav')}
-              </button>
+              <div style={{position:'relative'}}>
+                {/* Avatar button */}
+                <button
+                  onClick={()=>setShowUserMenu(p=>!p)}
+                  style={{display:'flex',alignItems:'center',gap:7,padding:'5px 10px',borderRadius:20,border:'1.5px solid rgba(28,10,0,0.18)',background:'white',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:500,color:'#1C0A00',transition:'all 0.15s'}}>
+                  {/* Initials circle */}
+                  <span style={{width:26,height:26,borderRadius:'50%',background:'#FF4500',color:'white',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,flexShrink:0,lineHeight:1}}>
+                    {(profile?.name||'U').charAt(0).toUpperCase()}
+                  </span>
+                  <span>{profile?.name?.split(' ')[0]||t('profile_nav')}</span>
+                  <span style={{fontSize:9,color:'#7C6A5E'}}>▼</span>
+                </button>
+                {/* Dropdown menu */}
+                {showUserMenu && (
+                  <div onClick={()=>setShowUserMenu(false)} style={{position:'fixed',inset:0,zIndex:99}} />
+                )}
+                {showUserMenu && (
+                  <div style={{position:'absolute',right:0,top:'calc(100% + 6px)',background:'white',border:'1px solid rgba(28,10,0,0.12)',borderRadius:12,boxShadow:'0 8px 24px rgba(28,10,0,0.12)',minWidth:180,zIndex:100,overflow:'hidden',fontFamily:"'DM Sans',sans-serif"}}>
+                    <div style={{padding:'10px 14px',borderBottom:'1px solid rgba(28,10,0,0.07)',fontSize:11,color:'#7C6A5E',fontWeight:300}}>
+                      {user.email}
+                    </div>
+                    {[
+                      {label:'👤 My Profile',   action:()=>navigate('/profile')},
+                      {label:'⚙️ Settings',      action:()=>navigate('/profile')},
+                      {label:'📜 History',       action:()=>navigate('/history')},
+                    ].map(item=>(
+                      <button key={item.label} onClick={()=>{item.action();setShowUserMenu(false);}}
+                        style={{width:'100%',padding:'10px 14px',border:'none',background:'white',cursor:'pointer',textAlign:'left',fontSize:13,color:'#1C0A00',fontWeight:400,fontFamily:"'DM Sans',sans-serif",borderBottom:'1px solid rgba(28,10,0,0.05)',transition:'background 0.1s'}}
+                        onMouseEnter={e=>e.target.style.background='rgba(255,69,0,0.05)'}
+                        onMouseLeave={e=>e.target.style.background='white'}>
+                        {item.label}
+                      </button>
+                    ))}
+                    <button onClick={()=>{signOut();setShowUserMenu(false);}}
+                      style={{width:'100%',padding:'10px 14px',border:'none',background:'white',cursor:'pointer',textAlign:'left',fontSize:13,color:'#E53E3E',fontWeight:500,fontFamily:"'DM Sans',sans-serif",transition:'background 0.1s'}}
+                      onMouseEnter={e=>e.target.style.background='rgba(229,62,62,0.05)'}
+                      onMouseLeave={e=>e.target.style.background='white'}>
+                      🚪 Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
           </div>
@@ -955,7 +1178,7 @@ export default function Jiff() {
             {favourites.length===0?(
               <div className="favs-empty"><div className="favs-empty-icon">🤍</div><div className="favs-empty-title">{t('favs_empty_title')}</div><div className="favs-empty-sub">Tap ♥ on any recipe card to save it here.</div></div>
             ):(
-              <div className="favs-grid">{favourites.map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} defaultServings={defaultServings} showFavTag animDelay={i*0.05}/>)}</div>
+              <div className="favs-grid">{favourites.map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} defaultServings={defaultServings} showFavTag animDelay={i*0.05} rating={ratings[mealKey(meal)]||0}/>)}</div>
             )}
           </div>
         )}
@@ -1001,6 +1224,22 @@ export default function Jiff() {
                   }}
                 />
               )}
+
+              {/* ── Streak badge + Seasonal nudge ── */}
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12,alignItems:'center'}}>
+                {streak >= 2 && (
+                  <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(255,184,0,0.1)',border:'1px solid rgba(255,184,0,0.3)',borderRadius:20,padding:'4px 12px',fontSize:12,color:'#854F0B',fontWeight:500}}>
+                    🔥 {streak}-day streak!
+                  </div>
+                )}
+                {season?.items?.length > 0 && (
+                  <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(29,158,117,0.08)',border:'1px solid rgba(29,158,117,0.2)',borderRadius:20,padding:'4px 12px',fontSize:12,color:'#1D9E75',fontWeight:300,cursor:'pointer'}}
+                    onClick={()=>{const s=season.items[Math.floor(Math.random()*season.items.length)]; if(!fridgeItems.includes(s)) setFridgeItems(p=>[...p,s]);}}>
+                    {season.emoji} In season: {season.items.slice(0,3).join(', ')} ·<span style={{fontWeight:500,marginLeft:3}}>tap to add</span>
+                  </div>
+                )}
+              </div>
+
               <div style={{marginBottom:6}}>
                 <h1 style={{fontFamily:"'Fraunces', serif",fontSize:'clamp(26px,4vw,40px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-1px',lineHeight:1.05,marginBottom:6}}>
                   {t('main_heading')}
@@ -1047,35 +1286,47 @@ export default function Jiff() {
                   />
                 </div>
 
-                {/* ── Meal type — below ingredients ── */}
-                <div className="section">
-                  <div className="section-label">{t('section_meal_type')}</div>
-                  <div className="meal-type-chips">
-                    {MEAL_TYPE_OPTIONS.map(o=>(
-                      <button key={o.id} className={`meal-type-chip ${mealType===o.id?'active':''}`} onClick={()=>setMealType(o.id)}>
-                        <span>{o.emoji}</span><span>{t('mealtype_'+o.id)||o.label}</span>
-                      </button>
-                    ))}
+                {/* ── Meal Type, Servings & Time — 3 column layout ── */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:18}}>
+                  {/* Meal Type */}
+                  <div style={{background:'rgba(255,250,245,0.8)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:8}}>{t('section_meal_type')}</div>
+                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                      {MEAL_TYPE_OPTIONS.map(o=>(
+                        <button key={o.id}
+                          className={`meal-type-chip ${mealType===o.id?'active':''}`}
+                          onClick={()=>setMealType(o.id)}
+                          style={{justifyContent:'flex-start',padding:'5px 8px',borderRadius:8,fontSize:12}}>
+                          <span>{o.emoji}</span><span>{t('mealtype_'+o.id)||o.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                {/* ── Servings — single column ── */}
-                <div className="section">
-                  <div className="section-label">{t('section_servings')}</div>
-                  <div className="serving-row">
-                    <div className="serving-controls">
+                  {/* Servings */}
+                  <div style={{background:'rgba(255,250,245,0.8)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:8}}>{t('section_servings')}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
                       <button className="serving-btn" disabled={defaultServings<=1} onClick={()=>setDefaultServings(s=>Math.max(1,s-1))}>−</button>
-                      <div className="serving-count">{defaultServings}</div>
+                      <div className="serving-count" style={{fontSize:20,minWidth:28}}>{defaultServings}</div>
                       <button className="serving-btn" disabled={defaultServings>=12} onClick={()=>setDefaultServings(s=>Math.min(12,s+1))}>+</button>
                     </div>
-                    <span className="serving-label">serving{defaultServings!==1?'s':''} — sized for {defaultServings} {defaultServings===1?'person':'people'}</span>
+                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,lineHeight:1.4}}>
+                      {defaultServings} {defaultServings===1?'person':'people'}
+                    </div>
                   </div>
-                </div>
-
-                {/* ── Time — single column ── */}
-                <div className="section">
-                  <div className="section-label">{t('section_time')}</div>
-                  <div className="chips">{TIME_OPTIONS.map(o=><button key={o.id} className={`chip ${time===o.id?'active':''}`} onClick={()=>setTime(o.id)}>{o.label}</button>)}</div>
+                  {/* Time Available */}
+                  <div style={{background:'rgba(255,250,245,0.8)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12,padding:'12px 14px'}}>
+                    <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:8}}>{t('section_time')}</div>
+                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                      {TIME_OPTIONS.map(o=>(
+                        <button key={o.id} className={`chip ${time===o.id?'active':''}`}
+                          onClick={()=>setTime(o.id)}
+                          style={{borderRadius:8,fontSize:11,padding:'4px 10px',textAlign:'left'}}>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
 
@@ -1085,6 +1336,21 @@ export default function Jiff() {
                     <span>Jiff it now!</span>
                   </button>
                   {!ingredients.length && <p className="cta-note">{t('cta_note')}</p>}
+
+                {/* Surprise me — one tap, profile-based */}
+                {user && profile && (
+                  <div style={{marginTop:12,textAlign:'center'}}>
+                    <div style={{fontSize:11,color:'var(--muted)',marginBottom:6,fontWeight:300}}>
+                      or let Jiff decide for you
+                    </div>
+                    <button onClick={handleSurprise}
+                      style={{background:'none',border:'1.5px dashed rgba(255,69,0,0.4)',borderRadius:12,padding:'8px 20px',fontSize:13,color:'var(--jiff)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontWeight:500,transition:'all 0.2s'}}
+                      onMouseEnter={e=>{e.target.style.background='rgba(255,69,0,0.06)';}}
+                      onMouseLeave={e=>{e.target.style.background='none';}}>
+                      ✨ Surprise me
+                    </button>
+                  </div>
+                )}
                   {trialActive && !isPremium && <p className="trial-note">🎁 Trial mode — you'll see 1 recipe preview. <button onClick={()=>navigate('/pricing')} style={{background:'none',border:'none',color:'#854F0B',cursor:'pointer',fontWeight:600,fontFamily:"'DM Sans',sans-serif",fontSize:'inherit',textDecoration:'underline'}}>Upgrade for {PAID_RECIPE_CAP} recipes →</button></p>}
                 </div>
               </div>
@@ -1155,51 +1421,34 @@ export default function Jiff() {
                 </div>
               </div>
 
-              {/* Cuisine card — below dietary preference */}
+              {/* Cuisine card — grouped: Indian Regional + International */}
               <div className="sidebar-card">
                 <div className="sidebar-card-title">{t('section_cuisine')}</div>
-                {showIndianSub ? (
-                  <div>
-                    <button onClick={()=>setShowIndianSub(false)} style={{fontSize:11,color:'var(--muted)',background:'none',border:'none',cursor:'pointer',marginBottom:8,padding:0,fontFamily:"'DM Sans',sans-serif"}}>
-                      {t('back_to_cuisines')}
+                <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`}
+                  onClick={()=>setCuisine('any')}
+                  style={{marginBottom:10,width:'100%',justifyContent:'center'}}>
+                  <span style={{fontSize:13}}>🌍</span><span style={{fontSize:12}}>{t('cuisine_any')}</span>
+                </button>
+                <div style={{fontSize:9,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:6}}>🇮🇳 Indian Regional</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:12}}>
+                  {INDIAN_CUISINES.map(o=>(
+                    <button key={o.id}
+                      className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
+                      onClick={()=>setCuisine(o.id)} style={{fontSize:11,padding:'4px 9px'}}>
+                      <span style={{fontSize:12}}>{o.flag}</span><span>{o.label}</span>
                     </button>
-                    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                      {INDIAN_CUISINES.map(o=>(
-                        <button key={o.id}
-                          className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
-                          onClick={()=>{setCuisine(o.id);setShowIndianSub(false);}}>
-                          <span style={{fontSize:13}}>{o.flag}</span><span style={{fontSize:12}}>{o.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                    {/* Preferred cuisines from profile shown highlighted */}
-                    {profile?.preferred_cuisines?.length > 1 && (
-                      <div style={{fontSize:10,color:'var(--muted)',width:'100%',marginBottom:4,fontWeight:300}}>
-                        Your preferences: tap to select
-                      </div>
-                    )}
-                    <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`} onClick={()=>setCuisine('any')}>
-                      <span style={{fontSize:13}}>🌍</span><span style={{fontSize:12}}>{t('cuisine_any')}</span>
+                  ))}
+                </div>
+                <div style={{fontSize:9,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:6}}>🌐 International</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                  {GLOBAL_CUISINES.map(o=>(
+                    <button key={o.id}
+                      className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
+                      onClick={()=>setCuisine(o.id)} style={{fontSize:11,padding:'4px 9px'}}>
+                      <span style={{fontSize:12}}>{o.flag}</span><span>{o.label}</span>
                     </button>
-                    <button
-                      className={`cuisine-chip ${INDIAN_CUISINES.some(c=>c.id===cuisine)?'active':profile?.preferred_cuisines?.some(p=>INDIAN_CUISINES.some(c=>c.id===p))?'pref-highlight':''}`}
-                      onClick={()=>setShowIndianSub(true)}>
-                      <span style={{fontSize:13}}>🇮🇳</span>
-                      <span style={{fontSize:12}}>{INDIAN_CUISINES.some(c=>c.id===cuisine) ? cuisine : 'Indian'}</span>
-                      <span style={{fontSize:10,marginLeft:2}}>▸</span>
-                    </button>
-                    {GLOBAL_CUISINES.map(o=>(
-                      <button key={o.id}
-                        className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
-                        onClick={()=>setCuisine(o.id)}>
-                        <span style={{fontSize:13}}>{o.flag}</span><span style={{fontSize:12}}>{o.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -1217,6 +1466,15 @@ export default function Jiff() {
         {/* ── Results ── */}
         {view === 'results' && (
           <div className="results-wrap">
+            {/* Pantry restock nudge */}
+            {pantryNudge.length > 0 && (
+              <div style={{background:'rgba(92,107,192,0.08)',border:'1px solid rgba(92,107,192,0.2)',borderRadius:12,padding:'10px 14px',marginBottom:16,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+                <span style={{fontSize:13,color:'#3949AB',fontWeight:300}}>
+                  🧂 You may need to restock: <strong>{pantryNudge.join(', ')}</strong>
+                </span>
+                <button onClick={()=>setPantryNudge([])} style={{background:'none',border:'none',color:'#9E9E9E',cursor:'pointer',fontSize:12,fontFamily:"'DM Sans',sans-serif"}}>✕</button>
+              </div>
+            )}
             <div className="results-header">
               <div className="results-title">Jiffed. ⚡ Here's your menu.</div>
               <div className="results-sub">
@@ -1240,7 +1498,25 @@ export default function Jiff() {
             )}
             <div className="meals-grid">
               {meals.map((meal,i)=>(
-                <MealCard key={mealKey(meal)+i} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} fridgeIngredients={ingredients} defaultServings={defaultServings} animDelay={i*0.06} country={country}/>
+                <MealCard key={mealKey(meal)+i} meal={meal} index={i}
+                  isFavourite={isFav(meal)} onToggleFav={toggleFavourite}
+                  fridgeIngredients={ingredients} defaultServings={defaultServings}
+                  animDelay={i*0.06} country={country}
+                  rating={ratings[mealKey(meal)] || 0}
+                  onRate={(stars)=>{
+                    const key = mealKey(meal);
+                    const next = {...ratings, [key]: stars};
+                    setRatings(next);
+                    try { localStorage.setItem('jiff-ratings', JSON.stringify(next)); } catch {}
+                    if (supabaseEnabled && user) {
+                      fetch('/api/meal-history', {
+                        method: 'PATCH',
+                        headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({ userId: user.id, mealName: meal.name, rating: stars }),
+                      }).catch(()=>{});
+                    }
+                  }}
+                />
               ))}
             </div>
             <div className="reset-wrap">

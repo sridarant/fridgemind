@@ -211,6 +211,46 @@ Expected output:
 
 ---
 
+## Phase 4 — v17 features (broadcast, ratings, admin tools)
+
+### Step 1 — Broadcasts table (admin broadcast feature)
+
+```sql
+create table if not exists broadcasts (
+  id         uuid primary key default gen_random_uuid(),
+  message    text not null,
+  active     boolean default true,
+  created_at timestamptz default now()
+);
+alter table broadcasts enable row level security;
+-- Users can read active broadcasts (for in-app banner)
+create policy "broadcasts: read active" on broadcasts for select using (active = true);
+-- Only service role can insert (via /api/admin/broadcast)
+-- No insert policy needed — service role bypasses RLS
+```
+
+### Step 2 — Recipe ratings column on meal_history
+
+```sql
+alter table meal_history add column if not exists rating int check (rating >= 1 and rating <= 5);
+```
+
+### Step 3 — Verify all tables (Phases 1–4)
+
+```sql
+select table_name, (
+  select count(*) from information_schema.columns c
+  where c.table_name = t.table_name and c.table_schema = 'public'
+) as col_count
+from information_schema.tables t
+where table_schema = 'public'
+order by table_name;
+```
+
+Expected tables: `api_keys`, `broadcasts`, `favourites`, `feedback`, `meal_history`, `pantry`, `profiles`
+
+---
+
 ## Why Admin shows "Phase 3 not complete"
 
 The admin page checks `process.env.REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY` — if both are set it shows ✓. If it still shows incomplete, check:

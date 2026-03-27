@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../contexts/PremiumContext';
 import { useAuth }    from '../contexts/AuthContext';
-import FridgePhotoUpload from '../components/FridgePhotoUpload';
-import IngredientInput   from '../components/IngredientInput';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -150,10 +148,6 @@ export default function Plans() {
   const { isPremium } = usePremium();
   const { pantry, profile } = useAuth();
 
-  const [fridgeItems,  setFridgeItems]  = useState([]);
-  const [pantryItems,  setPantryItems]  = useState([]);
-  const ingredients = [...new Set([...fridgeItems, ...pantryItems])];
-  const [pantryLoaded, setPantryLoaded] = useState(false);
   const [servings,     setServings]     = useState(2);
   const [generating,   setGenerating]   = useState(null);
 
@@ -180,7 +174,7 @@ export default function Plans() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ingredients: ingredients.length ? ingredients : ['rice', 'lentils', 'vegetables', 'eggs'],
+          ingredients: pantry?.length ? pantry : ['rice', 'lentils', 'vegetables', 'eggs'],
           diet: planConfig.id === 'vegetarian' ? 'vegetarian' : 'none',
           cuisine: planConfig.cuisine,
           mealTypes: MEAL_TYPES,
@@ -247,45 +241,46 @@ export default function Plans() {
           )}
         </div>
 
-        {/* Fridge + Pantry + Servings */}
+        {/* Profile-based generation info */}
         <div style={{ background: 'white', border: '1px solid ' + C.border, borderRadius: 18, padding: '20px 22px', marginBottom: 32, boxShadow: C.shadow }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, alignItems: 'start' }}>
-            <div>
-              {/* What's in your fridge */}
-              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginBottom: 6 }}>
-                What's in your fridge?
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16 }}>
+            <div style={{ flex:1, minWidth:200 }}>
+              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginBottom: 10 }}>
+                Based on your preferences
               </div>
-              <div style={{ fontSize: 11, color: C.muted, fontWeight: 300, marginBottom: 8 }}>Vegetables, proteins and main ingredients</div>
-              <FridgePhotoUpload
-                onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
-                existingIngredients={fridgeItems}
-              />
-              <div style={{ fontSize: 11, color: C.muted, textAlign: 'center', margin: '5px 0', letterSpacing: '0.5px' }}>— or type below —</div>
-              <IngredientInput
-                ingredients={fridgeItems}
-                onChange={setFridgeItems}
-                pantryIngredients={[]}
-                placeholder="cabbage, chicken, eggs, potatoes…"
-              />
-
-              {/* Pantry & Spices */}
-              <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginTop: 14, marginBottom: 6 }}>
-                Pantry &amp; Spices
-                {pantry?.length > 0 && <span style={{ fontSize: 10, fontWeight: 400, color: C.muted, marginLeft: 8, textTransform: 'none', letterSpacing: 0 }}>Pre-filled from your pantry</span>}
+              <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                {profile?.preferred_cuisines?.length > 0 && (
+                  <span style={{ fontSize:12, background:'rgba(255,69,0,0.08)', color:C.jiff, padding:'3px 10px', borderRadius:20, fontWeight:400 }}>
+                    🌍 {profile.preferred_cuisines.slice(0,3).join(', ')}
+                  </span>
+                )}
+                {profile?.food_type?.length > 0 && (
+                  <span style={{ fontSize:12, background:'rgba(28,10,0,0.06)', color:C.ink, padding:'3px 10px', borderRadius:20, fontWeight:400 }}>
+                    🍽️ {(Array.isArray(profile.food_type) ? profile.food_type : [profile.food_type]).join(', ')}
+                  </span>
+                )}
+                {profile?.spice_level && (
+                  <span style={{ fontSize:12, background:'rgba(28,10,0,0.06)', color:C.ink, padding:'3px 10px', borderRadius:20, fontWeight:400 }}>
+                    🌶️ {profile.spice_level}
+                  </span>
+                )}
+                {pantry?.length > 0 && (
+                  <span style={{ fontSize:12, background:'rgba(28,10,0,0.06)', color:C.ink, padding:'3px 10px', borderRadius:20, fontWeight:400 }}>
+                    🧂 {pantry.length} pantry items
+                  </span>
+                )}
               </div>
-              <IngredientInput
-                ingredients={pantryItems}
-                onChange={setPantryItems}
-                pantryIngredients={pantry || []}
-                placeholder="salt, oil, cumin, turmeric, garlic…"
-              />
-              <p style={{ fontSize: 11, color: C.muted, marginTop: 6, fontWeight: 300 }}>Leave blank and Jiff will choose the best ingredients for your goal</p>
+              {(!profile?.preferred_cuisines?.length && !profile?.food_type?.length) && (
+                <div style={{ fontSize:12, color:C.muted, fontWeight:300, marginTop:8 }}>
+                  No preferences set. <button onClick={()=>navigate('/profile')} style={{ background:'none', border:'none', color:C.jiff, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:500, textDecoration:'underline' }}>Set them now →</button>
+                </div>
+              )}
             </div>
             <div>
               <div style={{ fontSize: 11, letterSpacing: '2px', textTransform: 'uppercase', color: C.jiff, fontWeight: 500, marginBottom: 10 }}>Servings</div>
               <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid ' + C.borderMid, borderRadius: 10, overflow: 'hidden' }}>
                 <button onClick={() => setServings(s => Math.max(1, s - 1))} disabled={servings <= 1} style={{ width: 34, height: 34, background: 'white', border: 'none', fontSize: 18, color: C.jiff, cursor: 'pointer' }}>−</button>
-                <div style={{ minWidth: 42, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 500, borderLeft: '1px solid ' + C.borderMid, borderRight: '1px solid ' + C.borderMid }}>{servings}</div>
+                <div style={{ padding: '0 14px', fontSize: 15, fontWeight: 500, color: C.ink }}>{servings}</div>
                 <button onClick={() => setServings(s => Math.min(12, s + 1))} disabled={servings >= 12} style={{ width: 34, height: 34, background: 'white', border: 'none', fontSize: 18, color: C.jiff, cursor: 'pointer' }}>+</button>
               </div>
             </div>
