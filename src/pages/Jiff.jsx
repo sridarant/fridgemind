@@ -631,7 +631,18 @@ export default function Jiff() {
   const { isPremium, trial, trialActive, trialExpired, trialDaysLeft, recipeCount, plans, checkAccess, recordUsage, startTrial, openCheckout, activateTestPremium, showGate, setShowGate, gateReason, razorpayEnabled, TRIAL_DAYS, PAID_RECIPE_CAP } = usePremium();
   const { lang, units, setUnits, setLang, t, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, INDIAN_CUISINES, GLOBAL_CUISINES, supportedLanguages } = useLocale();
 
-  const [ingredients,  setIngredients]  = useState([]);
+  const [fridgeItems,  setFridgeItems]  = useState([]);
+  const [pantryItems,  setPantryItems]  = useState([]);
+  // ingredients = merged fridgeItems + pantryItems — used for API calls
+  const ingredients = [...new Set([...fridgeItems, ...pantryItems])];
+  const setIngredients = (val) => {
+    // Legacy setter: used by reset and history re-use — splits back into fridge
+    if (typeof val === 'function') {
+      setFridgeItems(prev => val([...new Set([...prev, ...pantryItems])]).filter(i => !pantryItems.includes(i)));
+    } else {
+      setFridgeItems(val.filter(i => !pantryItems.includes(i)));
+    }
+  };
   const [inputVal,     setInputVal]     = useState('');
   const [time,         setTime]         = useState('30 min');
   const [diet,         setDiet]         = useState('none');
@@ -662,9 +673,9 @@ export default function Jiff() {
   const inputRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Pre-fill pantry on load
+  // Pre-fill pantry on load into pantryItems
   useEffect(() => {
-    if (!pantryLoaded && pantry?.length) { setIngredients(pantry); setPantryLoaded(true); }
+    if (!pantryLoaded && pantry?.length) { setPantryItems(pantry); setPantryLoaded(true); }
   }, [pantry, pantryLoaded]);
 
   // h. Non-veg detection — if non-veg ingredient added, disable vegetarian diet
@@ -771,7 +782,7 @@ export default function Jiff() {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [user, supabaseEnabled]);
 
-  const reset = () => { setView('input'); setMeals([]); setIngredients(pantry||[]); setInputVal(''); setShowFavs(false); setPantryLoaded(true); };
+  const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); setInputVal(''); setShowFavs(false); setPantryLoaded(true); };
 
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
@@ -920,30 +931,43 @@ export default function Jiff() {
                   </div>
                 )}
 
-                {/* ── What's in your fridge? — photo upload section ── */}
+                {/* ── What's in your fridge? — photo + text input for veg/meat/main items ── */}
                 <div className="section">
                   <div className="section-label" style={{marginBottom:6}}>What's in your fridge?</div>
+                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:10}}>
+                    Add your vegetables, proteins and main ingredients
+                  </div>
                   <FridgePhotoUpload
-                    onIngredientsDetected={detected => setIngredients(prev => [...new Set([...prev, ...detected])])}
-                    existingIngredients={ingredients}
+                    onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
+                    existingIngredients={fridgeItems}
+                  />
+                  <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',margin:'8px 0',fontWeight:400,letterSpacing:'0.5px'}}>— or type below —</div>
+                  <IngredientInput
+                    ingredients={fridgeItems}
+                    onChange={setFridgeItems}
+                    pantryIngredients={[]}
+                    placeholder="cabbage, chicken, eggs, potatoes…"
                   />
                 </div>
 
-                {/* ── Ingredients Available — type / autocomplete ── */}
+                {/* ── Pantry & Spices — pre-populated from profile ── */}
                 <div className="section">
                   <div className="section-label">
-                    {t('section_ingredients')}
+                    Pantry &amp; Spices
                     {pantry?.length > 0 && (
                       <span style={{fontSize:10,fontWeight:400,color:'var(--muted)',marginLeft:8,textTransform:'none',letterSpacing:0}}>
                         {t('pantry_prepopulated')}
                       </span>
                     )}
                   </div>
+                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:8}}>
+                    Oils, spices, condiments and staples you always have
+                  </div>
                   <IngredientInput
-                    ingredients={ingredients}
-                    onChange={setIngredients}
+                    ingredients={pantryItems}
+                    onChange={setPantryItems}
                     pantryIngredients={pantry || []}
-                    placeholder={t('ingPlaceholder')}
+                    placeholder="salt, oil, cumin, turmeric, garlic…"
                   />
                 </div>
 
@@ -978,43 +1002,6 @@ export default function Jiff() {
                   <div className="chips">{TIME_OPTIONS.map(o=><button key={o.id} className={`chip ${time===o.id?'active':''}`} onClick={()=>setTime(o.id)}>{o.label}</button>)}</div>
                 </div>
 
-                {/* d. Cuisine — shows Indian as a gateway to sub-cuisines */}
-                <div className="section">
-                  <div className="section-label">{t('section_cuisine')}</div>
-                  {showIndianSub ? (
-                    <div>
-                      <button onClick={()=>setShowIndianSub(false)} style={{fontSize:11,color:'var(--muted)',background:'none',border:'none',cursor:'pointer',marginBottom:8,padding:0,fontFamily:"'DM Sans',sans-serif"}}>
-                        {t('back_to_cuisines')}
-                      </button>
-                      <div className="cuisine-chips">
-                        {INDIAN_CUISINES.map(o=>(
-                          <button key={o.id} className={`cuisine-chip ${cuisine===o.id?'active':''}`} onClick={()=>{setCuisine(o.id);setShowIndianSub(false);}}>
-                            <span style={{fontSize:14}}>{o.flag}</span><span>{o.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="cuisine-chips">
-                      {/* Any */}
-                      <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`} onClick={()=>setCuisine('any')}>
-                        <span style={{fontSize:14}}>🌍</span><span>{t('cuisine_any')}</span>
-                      </button>
-                      {/* Indian — opens sub-menu */}
-                      <button className={`cuisine-chip ${INDIAN_CUISINES.some(c=>c.id===cuisine)?'active':''}`} onClick={()=>setShowIndianSub(true)}>
-                        <span style={{fontSize:14}}>🇮🇳</span>
-                        <span>{INDIAN_CUISINES.some(c=>c.id===cuisine) ? cuisine : 'Indian'}</span>
-                        <span style={{fontSize:10,marginLeft:2}}>▸</span>
-                      </button>
-                      {/* Global cuisines */}
-                      {GLOBAL_CUISINES.map(o=>(
-                        <button key={o.id} className={`cuisine-chip ${cuisine===o.id?'active':''}`} onClick={()=>setCuisine(o.id)}>
-                          <span style={{fontSize:14}}>{o.flag}</span><span>{o.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
 
                 <div className="cta-wrap">
                   <button className="cta-btn" onClick={handleSubmit} disabled={!ingredients.length || !user}>
@@ -1075,7 +1062,7 @@ export default function Jiff() {
                 </div>
               </div>
 
-              {/* Dietary preference card — moved from main form */}
+              {/* Dietary preference card */}
               <div className="sidebar-card">
                 <div className="sidebar-card-title">{t('section_diet')}</div>
                 {hasNonVeg && (
@@ -1096,6 +1083,41 @@ export default function Jiff() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Cuisine card — below dietary preference */}
+              <div className="sidebar-card">
+                <div className="sidebar-card-title">{t('section_cuisine')}</div>
+                {showIndianSub ? (
+                  <div>
+                    <button onClick={()=>setShowIndianSub(false)} style={{fontSize:11,color:'var(--muted)',background:'none',border:'none',cursor:'pointer',marginBottom:8,padding:0,fontFamily:"'DM Sans',sans-serif"}}>
+                      {t('back_to_cuisines')}
+                    </button>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                      {INDIAN_CUISINES.map(o=>(
+                        <button key={o.id} className={`cuisine-chip ${cuisine===o.id?'active':''}`} onClick={()=>{setCuisine(o.id);setShowIndianSub(false);}}>
+                          <span style={{fontSize:13}}>{o.flag}</span><span style={{fontSize:12}}>{o.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                    <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`} onClick={()=>setCuisine('any')}>
+                      <span style={{fontSize:13}}>🌍</span><span style={{fontSize:12}}>{t('cuisine_any')}</span>
+                    </button>
+                    <button className={`cuisine-chip ${INDIAN_CUISINES.some(c=>c.id===cuisine)?'active':''}`} onClick={()=>setShowIndianSub(true)}>
+                      <span style={{fontSize:13}}>🇮🇳</span>
+                      <span style={{fontSize:12}}>{INDIAN_CUISINES.some(c=>c.id===cuisine) ? cuisine : 'Indian'}</span>
+                      <span style={{fontSize:10,marginLeft:2}}>▸</span>
+                    </button>
+                    {GLOBAL_CUISINES.map(o=>(
+                      <button key={o.id} className={`cuisine-chip ${cuisine===o.id?'active':''}`} onClick={()=>setCuisine(o.id)}>
+                        <span style={{fontSize:13}}>{o.flag}</span><span style={{fontSize:12}}>{o.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
