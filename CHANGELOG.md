@@ -7,6 +7,24 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v16.6 — Critical crash fix: recipe generation & Favourites
+**Date:** March 2026
+
+### Root Cause Analysis
+Two standalone function components (`MealCard`, `ShareDrawer`) were calling `t()` — the i18n translation function — but neither had a `useLocale()` React hook. They sit outside the main `Jiff` component and cannot access its scope. Every time a recipe card rendered (after generation, or when Favourites opened), React threw `ReferenceError: t is not defined`, which the ErrorBoundary caught and displayed as "Something went wrong".
+
+### Fixes
+- **`MealCard`** — Added `const { t } = useLocale()` as first line of the component
+- **`ShareDrawer`** — Added `const { t } = useLocale()` as first line of the component
+- **Country flag circle** — Removed orange `background:'var(--jiff)'`. Now uses transparent background with subtle border. Flag emoji at `fontSize:20` renders correctly at full size.
+- **Landing "3 Real recipes"** → `"5 Full recipes every single search"` (matches actual app behaviour)
+- **SUPABASE_SETUP.md** — Complete rewrite: removed duplicate Phase 3 section, merged into one clean linear guide, added "Why Admin shows Phase 3 not complete" troubleshooting section with `/api/stats` test link.
+
+### Analysis method
+Deep scan of all top-level function components that call `t()` without a local `useLocale()` hook. Components affected: MealCard (calls `t('see_full_recipe')`, `t('servings_label')`, `t('recipe_ingredients')`, etc.), ShareDrawer (calls `t('share_title')`). GroceryPanel was already fixed in a prior session.
+
+---
+
 ## v16.5 — i18n completion, History fix, cuisine multi-pref, profile nav
 **Date:** March 2026
 

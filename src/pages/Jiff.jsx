@@ -510,6 +510,7 @@ function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }
 
 // ── ShareDrawer ───────────────────────────────────────────────────
 function ShareDrawer({ meal }) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const text = buildShareText(meal);
   const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -529,6 +530,7 @@ function ShareDrawer({ meal }) {
 
 // ── MealCard ──────────────────────────────────────────────────────
 function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='' }) {
+  const { t } = useLocale();
   const baseServings = parseInt(meal.servings) || defaultServings;
   const [expanded, setExpanded]       = useState(false);
   const [shareOpen, setShareOpen]     = useState(false);
@@ -928,16 +930,13 @@ export default function Jiff() {
                 style={{display:'flex',alignItems:'center',gap:6,paddingLeft:4}}>
                 <span style={{
                   width:26, height:26, borderRadius:'50%',
-                  background:'var(--jiff)',
+                  background:'rgba(255,255,255,0.15)',
+                  border:'1.5px solid rgba(255,69,0,0.3)',
                   display:'inline-flex', alignItems:'center', justifyContent:'center',
-                  fontSize:15, lineHeight:1, flexShrink:0,
-                  boxShadow:'0 1px 4px rgba(255,69,0,0.35)',
-                  overflow:'hidden',
+                  fontSize:20, lineHeight:1, flexShrink:0,
+                  overflow:'visible',
                 }}>
-                  {/* Flag emoji in a circle — uses CSS to scale up so it fills the circle */}
-                  <span style={{fontSize:18,lineHeight:1,display:'block',transform:'scale(1.3)'}}>
-                    {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','US':'🇺🇸','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '👤'}
-                  </span>
+                  {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','US':'🇺🇸','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '👤'}
                 </span>
                 {profile?.name?.split(' ')[0]||t('profile_nav')}
               </button>

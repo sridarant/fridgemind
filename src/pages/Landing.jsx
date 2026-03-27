@@ -196,7 +196,7 @@ export default function Landing() {
         <div style={s.statBarInner}>
           {[
             { num: '10s', label: 'To get your first meal idea' },
-            { num: '3', label: 'Real recipes every single time' },
+            { num: '5', label: 'Full recipes every single search' },
             { num: '400+', label: 'Hours saved per year per person' },
             { num: '0', label: 'Grocery runs you didn\'t need to make' },
           ].map((item, i) => (

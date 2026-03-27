@@ -201,10 +201,16 @@ export default function Admin() {
               </div>
             </AdminCard>
             <AdminCard title="Supabase status" accent={C.green}>
-              <div style={{ fontSize:13, color:C.muted, fontWeight:300, lineHeight:1.8 }}>
-                <div>REACT_APP_SUPABASE_URL: <code style={{ background:'rgba(28,10,0,0.05)', padding:'2px 6px', borderRadius:4, fontSize:11 }}>{process.env.REACT_APP_SUPABASE_URL ? '✓ Set' : '✗ Not set'}</code></div>
-                <div>Supabase anon key: <code style={{ background:'rgba(28,10,0,0.05)', padding:'2px 6px', borderRadius:4, fontSize:11 }}>{process.env.REACT_APP_SUPABASE_ANON_KEY ? '✓ Set' : '✗ Not set'}</code></div>
-                <div style={{ marginTop:8, fontSize:12 }}>For full admin functionality, complete Supabase Phase 3 setup (see SUPABASE_SETUP.md)</div>
+              <div style={{ fontSize:13, color:C.muted, fontWeight:300, lineHeight:2 }}>
+                {[
+                  ['REACT_APP_SUPABASE_URL',      !!process.env.REACT_APP_SUPABASE_URL],
+                  ['REACT_APP_SUPABASE_ANON_KEY', !!process.env.REACT_APP_SUPABASE_ANON_KEY],
+                ].map(([k,v])=>(
+                  <div key={k}>{k}: <code style={{ background: v?'rgba(29,158,117,0.1)':'rgba(229,62,62,0.1)', color: v?C.green:C.red, padding:'2px 7px', borderRadius:4, fontSize:11 }}>{v?'✓ Set':'✗ Not set — add to Vercel env vars'}</code></div>
+                ))}
+                <div style={{ marginTop:10, padding:'8px 12px', background:'rgba(29,158,117,0.07)', borderRadius:8, fontSize:12, color:C.green, borderLeft:'3px solid '+C.green }}>
+                  All variables set? Test by visiting <a href="/api/stats" target="_blank" style={{color:C.green}}>/api/stats</a> — if it returns JSON, Supabase is connected. If you see an error, check SUPABASE_SERVICE_ROLE_KEY is also set.
+                </div>
               </div>
             </AdminCard>
           </>
