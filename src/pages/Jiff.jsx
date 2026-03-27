@@ -204,6 +204,7 @@ const styles = `
   .cuisine-chip{border:1.5px solid var(--border-mid);border-radius:10px;padding:6px 12px;font-size:12px;cursor:pointer;transition:all 0.18s;font-family:'DM Sans',sans-serif;background:white;color:var(--muted);display:flex;align-items:center;gap:5px;}
   .cuisine-chip:hover{border-color:var(--jiff);color:var(--ink);}
   .cuisine-chip.active{background:var(--jiff);border-color:var(--jiff);color:white;font-weight:500;box-shadow:0 3px 10px rgba(255,69,0,0.25);}
+  .cuisine-chip.pref-highlight{border-color:var(--jiff);color:var(--jiff);background:rgba(255,69,0,0.06);font-weight:500;}
   .cuisine-chip.active-any{background:var(--ink);border-color:var(--ink);color:white;font-weight:500;}
 
   /* Meal type chips */
@@ -467,11 +468,11 @@ function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }
   return(
     <div className="grocery-panel" onClick={e=>e.stopPropagation()}>
       <div className="grocery-header">
-        <div className="grocery-header-left"><span style={{fontSize:14}}>🛒</span><div><div className="grocery-header-title">Grocery list</div><div className="grocery-header-sub">{need.length===0?'You have everything!':`${need.length} to buy · ${have.length} in fridge`}</div></div></div>
+        <div className="grocery-header-left"><span style={{fontSize:14}}>🛒</span><div><div className="grocery-header-title">{t('grocery_title')}</div><div className="grocery-header-sub">{need.length===0?'You have everything!':`${need.length} to buy · ${have.length} in fridge`}</div></div></div>
         <button className="grocery-close" onClick={e=>{e.stopPropagation();onClose();}}>×</button>
       </div>
       <div className="grocery-section">
-        <div className="grocery-section-title need"><span>Need to buy</span><span className="grocery-count need">{need.length}</span></div>
+        <div className="grocery-section-title need"><span>{t('need_to_buy')}</span><span className="grocery-count need">{need.length}</span></div>
         {need.length===0?<div className="grocery-empty">🎉 Nothing — you have it all!</div>:(
           <div className="grocery-items">{need.map((ing,i)=>(
             <div key={i} className="grocery-item need" onClick={()=>toggle(`n-${i}`)}>
@@ -489,7 +490,7 @@ function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }
           ))}</div>
         )}
       </div>
-      {have.length>0&&<div className="grocery-section"><div className="grocery-section-title have"><span>In fridge</span><span className="grocery-count have">{have.length}</span></div><div className="grocery-items">{have.map((ing,i)=><div key={i} className="grocery-item have"><div className="grocery-dot"/><div className="grocery-item-text">{ing}</div></div>)}</div></div>}
+      {have.length>0&&<div className="grocery-section"><div className="grocery-section-title have"><span>{t('in_fridge')}</span><span className="grocery-count have">{have.length}</span></div><div className="grocery-items">{have.map((ing,i)=><div key={i} className="grocery-item have"><div className="grocery-dot"/><div className="grocery-item-text">{ing}</div></div>)}</div></div>}
       <div className="grocery-actions">
         <button className={`grocery-action-btn copy ${copied?'copied':''}`} onClick={handleCopy}>{copied?<IconCheck/>:<IconCopy/>}{copied?'Copied!':'Copy list'}</button>
         <a className="grocery-action-btn wa" href={waUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><IconWA/>WhatsApp</a>
@@ -516,7 +517,7 @@ function ShareDrawer({ meal }) {
   const handleCopy=async e=>{e.stopPropagation();try{await navigator.clipboard.writeText(text);}catch{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);}setCopied(true);setTimeout(()=>setCopied(false),2500);};
   return(
     <div className="share-drawer" onClick={e=>e.stopPropagation()}>
-      <div className="share-drawer-label">Share this recipe</div>
+      <div className="share-drawer-label">{t('share_title')}</div>
       <div className="share-actions">
         <a className="share-wa" href={waUrl} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}><IconWA/>WhatsApp</a>
         <button className={`share-copy ${copied?'copied':''}`} onClick={handleCopy}>{copied?<IconCheck/>:<IconCopy/>}{copied?'Copied!':'Copy'}</button>
@@ -564,17 +565,17 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
       {shareOpen&&<ShareDrawer meal={meal}/>}
       {!groceryOpen?(
         <button className="grocery-trigger" onClick={e=>{e.stopPropagation();setGroceryOpen(true);}}>
-          <span style={{display:'flex',alignItems:'center',gap:5}}><IconCart/>What do I need to buy?</span>
-          <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>See list →</span>
+          <span style={{display:'flex',alignItems:'center',gap:5}}><IconCart/>{t('what_to_buy')}</span>
+          <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>{t('see_list')}</span>
         </button>
       ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)} country={country}/>}
       {!expanded?(
-        <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(true);}}><span>See full recipe</span><span>→</span></button>
+        <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(true);}}><span>{t('see_full_recipe')}</span><span>→</span></button>
       ):(
         <div className="recipe" onClick={e=>e.stopPropagation()}>
           {/* Scaler */}
           <div className="scaler-bar">
-            <div className="scaler-label"><IconScaler/>Servings</div>
+            <div className="scaler-label"><IconScaler/>{t('servings_label')}</div>
             <div className="scaler-controls">
               <button className="scaler-btn" disabled={servings<=1} onClick={e=>{e.stopPropagation();setServings(s=>Math.max(1,s-1));}}>−</button>
               <div className="scaler-count">{servings}</div>
@@ -582,9 +583,9 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
             </div>
             {isScaled?<span className="scaler-badge">×{(ratio%1===0?ratio:ratio.toFixed(2).replace(/\.?0+$/,''))}</span>:<span className="scaler-orig">Base: {baseServings} servings</span>}
           </div>
-          <div className="recipe-sec" style={{marginTop:0,paddingTop:12,borderTop:'1px solid rgba(255,69,0,0.12)'}}>Ingredients</div>
+          <div className="recipe-sec" style={{marginTop:0,paddingTop:12,borderTop:'1px solid rgba(255,69,0,0.12)'}}>{t('recipe_ingredients')}</div>
           <ul className="ing-list">{scaledIngs.map((ing,j)=><li key={j}><span className={ing!==(meal.ingredients?.[j]||'')&&isScaled?'scaled-highlight':''}>{ing}</span></li>)}</ul>
-          <div className="recipe-sec">Method</div>
+          <div className="recipe-sec">{t('recipe_method')}</div>
           <ol className="steps-list">{meal.steps?.map((s,j)=><StepWithTimer key={j} text={s}/>)}</ol>
           <div className="recipe-sec">Nutrition{isScaled&&<span style={{marginLeft:7,fontSize:9,color:'var(--muted)',fontWeight:400,textTransform:'none',letterSpacing:0}}>scaled for {servings}</span>}</div>
           <div className="nutr-grid">
@@ -592,7 +593,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
               <div key={lbl} className="nutr-item"><div className={`nutr-val ${isScaled?'scaled-highlight':''}`}>{val}</div><div className="nutr-lbl">{lbl}</div></div>
             ))}
           </div>
-          <button className="collapse-btn" onClick={()=>setExpanded(false)}><span>Collapse</span><span>↑</span></button>
+          <button className="collapse-btn" onClick={()=>setExpanded(false)}><span>{t('collapse')}</span><span>↑</span></button>
         </div>
       )}
     </div>
@@ -699,11 +700,11 @@ export default function Jiff() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   useEffect(() => {
     if (profile && !profileLoaded) {
-      // Pre-fill dietary from food_type (first entry takes precedence)
+      // Pre-fill dietary from food_type
       const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
       if (ft === 'vegan') setDiet('vegan');
       else if (ft === 'veg' || ft === 'eggetarian' || ft === 'jain') setDiet('vegetarian');
-      // Pre-fill cuisine from first preferred cuisine
+      // Pre-fill cuisine — use first preferred cuisine as default
       if (profile.preferred_cuisines?.length) setCuisine(profile.preferred_cuisines[0]);
       setProfileLoaded(true);
     }
@@ -762,7 +763,7 @@ export default function Jiff() {
         // Auto-save to meal history (localStorage + API)
         const histEntry = {
           id: Date.now().toString(),
-          meals: data.meals,
+          meal: data.meals,  // 'meal' matches Supabase schema and History.jsx
           mealType, cuisine,
           servings: defaultServings,
           ingredients,
@@ -850,12 +851,12 @@ export default function Jiff() {
           <div className="auth-gate">
             <div className="auth-card">
               <div className="auth-icon">⚡</div>
-              <div className="auth-title">Welcome to Jiff</div>
+              <div className="auth-title">{t('auth_title')}</div>
               <div className="auth-sub">Sign in to start your free {TRIAL_DAYS}-day trial. No credit card needed.</div>
               <div className="auth-perks">
                 <div className="auth-perk"><div className="auth-perk-icon">🎁</div>Free {TRIAL_DAYS}-day trial — full access</div>
-                <div className="auth-perk"><div className="auth-perk-icon">☁️</div>Favourites & pantry synced across devices</div>
-                <div className="auth-perk"><div className="auth-perk-icon">👤</div>Personalised recipes based on your taste</div>
+                <div className="auth-perk"><div className="auth-perk-icon">☁️</div>{t('auth_perk_favs')}</div>
+                <div className="auth-perk"><div className="auth-perk-icon">👤</div>{t('auth_perk_taste')}</div>
                 <div className="auth-perk"><div className="auth-perk-icon">🔒</div>No spam — ever</div>
               </div>
               {supabaseEnabled ? (
@@ -868,7 +869,7 @@ export default function Jiff() {
                   ) : (
                     <div className="auth-email-row">
                       <input className="auth-email-input" placeholder="Or enter your email" value={emailInput} onChange={e=>setEmailInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleEmailSignIn()}/>
-                      <button className="auth-email-go" onClick={handleEmailSignIn}>Send link</button>
+                      <button className="auth-email-go" onClick={handleEmailSignIn}>{t('auth_send')}</button>
                     </div>
                   )}
                 </>
@@ -924,13 +925,19 @@ export default function Jiff() {
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {user && (
               <button className="hdr-btn profile" onClick={()=>navigate('/profile')}
-                style={{display:'flex',alignItems:'center',gap:6}}>
+                style={{display:'flex',alignItems:'center',gap:6,paddingLeft:4}}>
                 <span style={{
-                  width:22, height:22, borderRadius:'50%', background:'var(--jiff)',
+                  width:26, height:26, borderRadius:'50%',
+                  background:'var(--jiff)',
                   display:'inline-flex', alignItems:'center', justifyContent:'center',
-                  fontSize:13, lineHeight:1, flexShrink:0,
+                  fontSize:15, lineHeight:1, flexShrink:0,
+                  boxShadow:'0 1px 4px rgba(255,69,0,0.35)',
+                  overflow:'hidden',
                 }}>
-                  {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','US':'🇺🇸','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '👤'}
+                  {/* Flag emoji in a circle — uses CSS to scale up so it fills the circle */}
+                  <span style={{fontSize:18,lineHeight:1,display:'block',transform:'scale(1.3)'}}>
+                    {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','US':'🇺🇸','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '👤'}
+                  </span>
                 </span>
                 {profile?.name?.split(' ')[0]||t('profile_nav')}
               </button>
@@ -943,11 +950,11 @@ export default function Jiff() {
         {showFavs && user && (
           <div className="favs-panel">
             <div className="favs-panel-header">
-              <div><div className="favs-panel-title"><IconHeart filled/>Your favourites</div><div className="favs-panel-sub">{favourites.length===0?'Nothing saved yet':`${favourites.length} saved recipe${favourites.length>1?'s':''}`}</div></div>
+              <div><div className="favs-panel-title"><IconHeart filled/>{t('favs_title')}</div><div className="favs-panel-sub">{favourites.length===0?'Nothing saved yet':`${favourites.length} saved recipe${favourites.length>1?'s':''}`}</div></div>
               <button className="favs-close-btn" onClick={()=>setShowFavs(false)}>Close ×</button>
             </div>
             {favourites.length===0?(
-              <div className="favs-empty"><div className="favs-empty-icon">🤍</div><div className="favs-empty-title">Nothing saved yet</div><div className="favs-empty-sub">Tap ♥ on any recipe card to save it here.</div></div>
+              <div className="favs-empty"><div className="favs-empty-icon">🤍</div><div className="favs-empty-title">{t('favs_empty_title')}</div><div className="favs-empty-sub">Tap ♥ on any recipe card to save it here.</div></div>
             ):(
               <div className="favs-grid">{favourites.map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} defaultServings={defaultServings} showFavTag animDelay={i*0.05}/>)}</div>
             )}
@@ -997,7 +1004,7 @@ export default function Jiff() {
               )}
               <div style={{marginBottom:6}}>
                 <h1 style={{fontFamily:"'Fraunces', serif",fontSize:'clamp(26px,4vw,40px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-1px',lineHeight:1.05,marginBottom:6}}>
-                  What can I make <em style={{fontStyle:'italic',color:'var(--jiff)'}}>right now?</em>
+                  {t('main_heading')}
                 </h1>
                 <p style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20}}>
                   {isPremium ? `⚡ Premium · ${PAID_RECIPE_CAP} recipes per search` : trialActive ? `🎁 Free trial · 1 recipe preview · ${trialDaysLeft} days left` : ''}
@@ -1007,15 +1014,13 @@ export default function Jiff() {
 
                 {/* ── What's in your fridge? — photo + text input for veg/meat/main items ── */}
                 <div className="section">
-                  <div className="section-label" style={{marginBottom:6}}>What's in your fridge?</div>
-                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:10}}>
-                    Add your vegetables, proteins and main ingredients
-                  </div>
+                  <div className="section-label" style={{marginBottom:6}}>{t('fridge_label')}</div>
+                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:10}}>{t('fridge_sub')}</div>
                   <FridgePhotoUpload
                     onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
                     existingIngredients={fridgeItems}
                   />
-                  <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',margin:'8px 0',fontWeight:400,letterSpacing:'0.5px'}}>— or type below —</div>
+                  <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',margin:'8px 0',fontWeight:400,letterSpacing:'0.5px'}}>{t('or_type_below')}</div>
                   <IngredientInput
                     ingredients={fridgeItems}
                     onChange={setFridgeItems}
@@ -1027,16 +1032,14 @@ export default function Jiff() {
                 {/* ── Pantry & Spices — pre-populated from profile ── */}
                 <div className="section">
                   <div className="section-label">
-                    Pantry &amp; Spices
+                    {t('pantry_label')}
                     {pantry?.length > 0 && (
                       <span style={{fontSize:10,fontWeight:400,color:'var(--muted)',marginLeft:8,textTransform:'none',letterSpacing:0}}>
                         {t('pantry_prepopulated')}
                       </span>
                     )}
                   </div>
-                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:8}}>
-                    Oils, spices, condiments and staples you always have
-                  </div>
+                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:8}}>{t('pantry_sub')}</div>
                   <IngredientInput
                     ingredients={pantryItems}
                     onChange={setPantryItems}
@@ -1082,7 +1085,7 @@ export default function Jiff() {
                     <span>⚡</span>
                     <span>Jiff it now!</span>
                   </button>
-                  {!ingredients.length && <p className="cta-note">Add at least one ingredient to get started</p>}
+                  {!ingredients.length && <p className="cta-note">{t('cta_note')}</p>}
                   {trialActive && !isPremium && <p className="trial-note">🎁 Trial mode — you'll see 1 recipe preview. <button onClick={()=>navigate('/pricing')} style={{background:'none',border:'none',color:'#854F0B',cursor:'pointer',fontWeight:600,fontFamily:"'DM Sans',sans-serif",fontSize:'inherit',textDecoration:'underline'}}>Upgrade for {PAID_RECIPE_CAP} recipes →</button></p>}
                 </div>
               </div>
@@ -1102,7 +1105,7 @@ export default function Jiff() {
 
               {/* Your preferences card — includes language & units */}
               <div className="sidebar-card">
-                <div className="sidebar-card-title">Your preferences</div>
+                <div className="sidebar-card-title">{t('your_prefs')}</div>
                 {profile && profilePrefs.map(p=>(
                   <div key={p.key} className="sidebar-pref">
                     <span className="sidebar-pref-key">{p.key}</span>
@@ -1111,14 +1114,14 @@ export default function Jiff() {
                 ))}
                 {/* Language — inline in preferences */}
                 <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:4,marginTop:4}}>
-                  <span className="sidebar-pref-key">Language</span>
+                  <span className="sidebar-pref-key">{t('language_label')}</span>
                   <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'5px 9px',fontSize:12,fontFamily:"'DM Sans',sans-serif",color:'var(--ink)',background:'white',cursor:'pointer'}}>
                     {supportedLanguages.map(l=><option key={l.id} value={l.id}>{l.flag} {l.label}</option>)}
                   </select>
                 </div>
                 {/* Units — inline in preferences */}
                 <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:4,marginTop:4}}>
-                  <span className="sidebar-pref-key">Units</span>
+                  <span className="sidebar-pref-key">{t('units_label')}</span>
                   <div style={{display:'flex',width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,overflow:'hidden'}}>
                     {[{id:'metric',label:'Metric'},{id:'imperial',label:'Imperial'}].map(u=>(
                       <button key={u.id} onClick={()=>setUnits(u.id)} style={{flex:1,padding:'5px',fontSize:12,fontFamily:"'DM Sans',sans-serif",border:'none',cursor:'pointer',background:units===u.id?'var(--ink)':'white',color:units===u.id?'white':'var(--muted)',fontWeight:units===u.id?500:400,transition:'all 0.15s'}}>
@@ -1127,7 +1130,7 @@ export default function Jiff() {
                     ))}
                   </div>
                 </div>
-                {profile && <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>Edit preferences →</button>}
+                {profile && <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>{t('edit_prefs')}</button>}
               </div>
 
               {/* Dietary preference card */}
@@ -1163,7 +1166,9 @@ export default function Jiff() {
                     </button>
                     <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                       {INDIAN_CUISINES.map(o=>(
-                        <button key={o.id} className={`cuisine-chip ${cuisine===o.id?'active':''}`} onClick={()=>{setCuisine(o.id);setShowIndianSub(false);}}>
+                        <button key={o.id}
+                          className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
+                          onClick={()=>{setCuisine(o.id);setShowIndianSub(false);}}>
                           <span style={{fontSize:13}}>{o.flag}</span><span style={{fontSize:12}}>{o.label}</span>
                         </button>
                       ))}
@@ -1171,16 +1176,26 @@ export default function Jiff() {
                   </div>
                 ) : (
                   <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                    {/* Preferred cuisines from profile shown highlighted */}
+                    {profile?.preferred_cuisines?.length > 1 && (
+                      <div style={{fontSize:10,color:'var(--muted)',width:'100%',marginBottom:4,fontWeight:300}}>
+                        Your preferences: tap to select
+                      </div>
+                    )}
                     <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`} onClick={()=>setCuisine('any')}>
                       <span style={{fontSize:13}}>🌍</span><span style={{fontSize:12}}>{t('cuisine_any')}</span>
                     </button>
-                    <button className={`cuisine-chip ${INDIAN_CUISINES.some(c=>c.id===cuisine)?'active':''}`} onClick={()=>setShowIndianSub(true)}>
+                    <button
+                      className={`cuisine-chip ${INDIAN_CUISINES.some(c=>c.id===cuisine)?'active':profile?.preferred_cuisines?.some(p=>INDIAN_CUISINES.some(c=>c.id===p))?'pref-highlight':''}`}
+                      onClick={()=>setShowIndianSub(true)}>
                       <span style={{fontSize:13}}>🇮🇳</span>
                       <span style={{fontSize:12}}>{INDIAN_CUISINES.some(c=>c.id===cuisine) ? cuisine : 'Indian'}</span>
                       <span style={{fontSize:10,marginLeft:2}}>▸</span>
                     </button>
                     {GLOBAL_CUISINES.map(o=>(
-                      <button key={o.id} className={`cuisine-chip ${cuisine===o.id?'active':''}`} onClick={()=>setCuisine(o.id)}>
+                      <button key={o.id}
+                        className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
+                        onClick={()=>setCuisine(o.id)}>
                         <span style={{fontSize:13}}>{o.flag}</span><span style={{fontSize:12}}>{o.label}</span>
                       </button>
                     ))}
@@ -1239,7 +1254,7 @@ export default function Jiff() {
         {view === 'error' && (
           <div className="error-wrap">
             <div className="error-icon">😕</div>
-            <div className="error-title">Something went wrong</div>
+            <div className="error-title">{t('error_title_app')}</div>
             <div className="error-msg">{errorMsg}</div>
             <button className="cta-btn" onClick={reset}>← Start over</button>
           </div>

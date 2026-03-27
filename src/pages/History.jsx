@@ -86,7 +86,7 @@ export default function History() {
   // Filter + search
   const filtered = history.filter(h => {
     const mealNames = Array.isArray(h.meal)
-      ? h.meal.map(m => m.name).join(' ')
+      ? (Array.isArray(h.meal) ? h.meal : h.meals || [h.meal]).filter(Boolean).map(m => m?.name||'').join(' ')
       : (h.meal?.name || '');
     const matchSearch = !search || mealNames.toLowerCase().includes(search.toLowerCase())
       || (h.ingredients || []).some(i => i.toLowerCase().includes(search.toLowerCase()));
@@ -206,7 +206,7 @@ export default function History() {
 
         {/* History cards */}
         {filtered.map(entry => {
-          const meals    = Array.isArray(entry.meal) ? entry.meal : [entry.meal];
+          const meals    = Array.isArray(entry.meal) ? entry.meal : entry.meals ? entry.meals : [entry.meal].filter(Boolean);
           const mt       = entry.meal_type || 'any';
           const color    = MEAL_COLORS[mt] || MEAL_COLORS.any;
           const isOpen   = expanded === entry.id;
@@ -220,7 +220,7 @@ export default function History() {
                 </div>
                 <div style={{flex:1, minWidth:0}}>
                   <div style={{fontSize:13, fontWeight:500, color:C.ink, marginBottom:3}}>
-                    {meals.slice(0,3).map(m => m.name).join(' · ')}
+                    {meals.slice(0,3).map(m => m?.name||'').filter(Boolean).join(' · ')}
                     {meals.length > 3 && <span style={{color:C.muted}}> +{meals.length-3} more</span>}
                   </div>
                   <div style={{display:'flex', gap:8, flexWrap:'wrap', alignItems:'center'}}>

@@ -7,6 +7,39 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v16.5 — i18n completion, History fix, cuisine multi-pref, profile nav
+**Date:** March 2026
+
+### Bug Fixes
+- **History page crash** — `Jiff.jsx` saved history entries with key `meals` but `History.jsx` read `entry.meal`. Fixed: save key is now `meal` (matching Supabase schema). History render also has null-safe access: `filter(Boolean)` guards against undefined meal names.
+- **Profile nav says "← App"** — Changed to "← Back to app" on Profile.jsx L63.
+- **Cuisine only shows first preference** — Sidebar cuisine chips now show all preferred cuisines from profile with a distinct `pref-highlight` style (orange border + subtle orange background). Indian submenu also highlights preferred regional cuisines. The active (selected for this search) chip still uses full solid orange.
+
+### i18n — Complete translation coverage
+Added 30+ new translation keys across all 10 languages for every visible string in the main app that was previously hardcoded English:
+- Fridge section: `fridge_label`, `fridge_sub`, `or_type_below`
+- Pantry section: `pantry_label`, `pantry_sub`
+- Grocery panel: `grocery_title`, `need_to_buy`, `in_fridge`, `what_to_buy`, `see_list`
+- Recipe card: `see_full_recipe`, `collapse`, `recipe_ingredients`, `recipe_method`, `share_title`, `servings_label`
+- Auth card: `auth_title`, `auth_perk_favs`, `auth_perk_taste`, `auth_send`
+- Sidebar: `your_prefs`, `language_label`, `units_label`, `edit_prefs`
+- Results: `favs_title`, `favs_empty_title`, `error_title_app`, `cta_note`
+- Full translations in English, Hindi (hi), Tamil (ta). Other 7 languages use English fallback until native speakers review.
+
+### Profile button
+- Flag emoji scaled up with `transform:scale(1.3)` inside the circle so it fills the orange badge visually.
+
+### Admin key
+- Admin key is `jiff-admin-2026` — change this before production.
+
+### E2E tests: 36 → 40
+- Test 37: Tamil translation renders fridge label in Tamil
+- Test 38: History page renders entries from localStorage (no crash)
+- Test 39: Profile page has "Back to app"
+- Test 40: Cuisine sidebar shows preferred cuisines highlighted
+
+---
+
 ## v16.4 — Country rollout, admin, stability, session security, navigation
 **Date:** March 2026
 

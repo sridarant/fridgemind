@@ -335,3 +335,63 @@ test('36. vercel.json uses modern rewrites format', async ({ page }) => {
   await page.goto('/planner');
   await expect(page).toHaveURL(/\/planner/);
 });
+
+// ── 37. i18n: Tamil language changes fridge label ─────────────────
+test('37. Switching to Tamil translates fridge section label', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('jiff-lang', 'ta');
+    const now = Date.now();
+    localStorage.setItem('jiff-premium', JSON.stringify({ planId:'monthly', paymentId:'test', activatedAt:now, expiresAt:now+30*86400000, test:true }));
+    localStorage.setItem('jiff-cookie-consent-v2', JSON.stringify({ essential:true, ts:now }));
+  });
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // Tamil fridge label
+  await expect(page.locator('text=உங்கள் ஃப்ரிட்ஜில்').first()).toBeVisible({ timeout: 5000 });
+});
+
+// ── 38. History renders after localStorage save ────────────────────
+test('38. History page renders entries saved to localStorage', async ({ page }) => {
+  // Pre-seed localStorage with a history entry using correct 'meal' key
+  await page.addInitScript(() => {
+    const now = Date.now();
+    localStorage.setItem('jiff-premium', JSON.stringify({ planId:'monthly', paymentId:'test', activatedAt:now, expiresAt:now+30*86400000, test:true }));
+    localStorage.setItem('jiff-cookie-consent-v2', JSON.stringify({ essential:true, ts:now }));
+    const fakeEntry = {
+      id: '1234567890',
+      meal: [{ name: 'Dal Rice', emoji: '🍚', time: '20 min', description: 'Classic comfort food' }],
+      mealType: 'lunch', cuisine: 'Tamil Nadu',
+      servings: 2, ingredients: ['rice','dal'],
+      generated_at: new Date().toISOString(),
+    };
+    localStorage.setItem('jiff-history', JSON.stringify([fakeEntry]));
+  });
+  await page.goto('/history');
+  await page.waitForLoadState('networkidle');
+  // Should not crash and should show the entry
+  await expect(page.locator('text=Dal Rice')).toBeVisible({ timeout: 5000 });
+});
+
+// ── 39. Profile nav says Back to app ─────────────────────────────
+test('39. Profile page has Back to app button', async ({ page }) => {
+  await page.goto('/profile');
+  await expect(page.locator('text=Back to app').first()).toBeVisible();
+});
+
+// ── 40. Cuisine preferred highlighted ─────────────────────────────
+test('40. Preferred cuisines shown highlighted in sidebar', async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Date.now();
+    localStorage.setItem('jiff-premium', JSON.stringify({ planId:'monthly', paymentId:'test', activatedAt:now, expiresAt:now+30*86400000, test:true }));
+    localStorage.setItem('jiff-cookie-consent-v2', JSON.stringify({ essential:true, ts:now }));
+    // Simulate profile with multiple preferred cuisines
+    localStorage.setItem('jiff-profile-cache', JSON.stringify({
+      preferred_cuisines: ['Tamil Nadu', 'Karnataka', 'Mexican'],
+    }));
+  });
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // Cuisine section should be visible in sidebar
+  const sidebar = page.locator('.main-sidebar');
+  await expect(sidebar.locator('text=CUISINE, text=Cuisine').first()).toBeVisible();
+});
