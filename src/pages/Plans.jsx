@@ -208,7 +208,7 @@ export default function Plans() {
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
       <header style={hdr}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate('/')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate('/app')}>
           <span style={{ fontSize: 22 }}>⚡</span>
           <span style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 900, color: C.ink, letterSpacing: '-0.5px' }}>
             <span style={{ color: C.jiff }}>J</span>iff

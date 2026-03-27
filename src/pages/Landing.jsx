@@ -162,7 +162,7 @@ export default function Landing() {
       <section style={s.hero}>
         <div style={s.heroPill}>
           <div style={s.heroPillDot} />
-          <span style={s.heroPillText}>AI-powered · 7-day free trial · Sign in to sync</span>
+          <span style={s.heroPillText}>AI-powered · 7-day free trial · No credit card needed</span>
         </div>
         <h1 style={s.h1}>
           Any meal.
@@ -183,7 +183,7 @@ export default function Landing() {
           </button>
         </div>
         <div style={s.heroBadges}>
-          {['5 free meals daily', null, '28 cuisines', null, '10 languages', null, 'Works globally'].map((item, i) =>
+          {['5 recipes per search', null, '28 cuisines', null, '10 languages', null, 'Works globally'].map((item, i) =>
             item === null
               ? <div key={i} style={s.heroBadgeLine} />
               : <span key={i} style={s.heroBadgeItem}>⚡ {item}</span>
@@ -348,7 +348,7 @@ export default function Landing() {
         <button style={s.ctaBtn} onClick={() => navigate('/app')}
           onMouseEnter={e => Object.assign(e.currentTarget.style, { transform: 'translateY(-2px)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' })}
           onMouseLeave={e => Object.assign(e.currentTarget.style, { transform: 'none', boxShadow: 'none' })}>
-          <span>⚡</span> Jiff it now — it's free
+          <span>⚡</span> Try Jiff — 7 days free
         </button>
       </section>
 

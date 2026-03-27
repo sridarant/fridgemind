@@ -64,9 +64,23 @@ function BarRow({ label, pct, count, color = C.jiff }) {
 export default function Stats() {
   const navigate = useNavigate();
   const [animated, setAnimated] = useState(false);
-  const maxWeekly = Math.max(...MOCK_STATS.weeklyTrend.map(d => d.users));
+  const [stats, setStats] = useState(MOCK_STATS);
+  const [loading, setLoading] = useState(true);
+  const [isLive, setIsLive] = useState(false);
+  const maxWeekly = Math.max(...stats.weeklyTrend.map(d => d.users));
 
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 300); return () => clearTimeout(t); }, []);
+
+  useEffect(() => {
+    // Try to fetch real stats from Supabase via API
+    fetch('/api/stats')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.totalUsers) { setStats(data); setIsLive(true); }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans', sans-serif", color:C.ink }}>
@@ -84,22 +98,22 @@ export default function Stats() {
         <div style={{ marginBottom:32 }}>
           <p style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.jiff, fontWeight:500, marginBottom:6 }}>Live stats</p>
           <h1 style={{ fontFamily:"'Fraunces', serif", fontSize:'clamp(28px,5vw,44px)', fontWeight:900, color:C.ink, letterSpacing:'-1px', marginBottom:8 }}>Jiff — by the numbers</h1>
-          <p style={{ fontSize:14, color:C.muted, fontWeight:300 }}>Home cooks from {MOCK_STATS.countriesCount} countries use Jiff to turn fridge ingredients into real meals.</p>
+          <p style={{ fontSize:14, color:C.muted, fontWeight:300 }}>Home cooks from {stats.countriesCount} countries use Jiff to turn fridge ingredients into real meals.</p>
         </div>
 
         {/* Summary stats */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:14, marginBottom:32 }}>
-          <StatCard n={MOCK_STATS.totalUsers.toLocaleString()} label="Total users" sub="across all countries" />
-          <StatCard n={MOCK_STATS.totalMeals.toLocaleString()} label="Meals generated" sub="and counting" color="#1D9E75" />
-          <StatCard n={MOCK_STATS.countriesCount} label="Countries" sub="and growing" color="#3949AB" />
-          <StatCard n={`+${MOCK_STATS.growthPct}%`} label="Month-on-month" sub="user growth" color="#FF9800" />
+          <StatCard n={stats.totalUsers.toLocaleString()} label="Total users" sub="across all countries" />
+          <StatCard n={stats.totalMeals.toLocaleString()} label="Meals generated" sub="and counting" color="#1D9E75" />
+          <StatCard n={stats.countriesCount} label="Countries" sub="and growing" color="#3949AB" />
+          <StatCard n={`+${stats.growthPct}%`} label="Month-on-month" sub="user growth" color="#FF9800" />
         </div>
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24 }}>
           {/* Countries */}
           <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:18, padding:'22px 22px', boxShadow:C.shadow }}>
             <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.jiff, fontWeight:500, marginBottom:16 }}>Users by country</div>
-            {MOCK_STATS.topCountries.map(c => (
+            {stats.topCountries.map(c => (
               <div key={c.code} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:9 }}>
                 <span style={{ fontSize:18 }}>{c.flag}</span>
                 <div style={{ flex:1 }}>
@@ -118,7 +132,7 @@ export default function Stats() {
           {/* Top cuisines */}
           <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:18, padding:'22px 22px', boxShadow:C.shadow }}>
             <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.jiff, fontWeight:500, marginBottom:16 }}>Top cuisines requested</div>
-            {MOCK_STATS.topCuisines.map((c,i) => (
+            {stats.topCuisines.map((c,i) => (
               <BarRow key={c.name} label={c.name} pct={animated ? c.pct : 0} count={c.count} color={i === 0 ? C.jiff : i === 1 ? '#FF9800' : '#1D9E75'} />
             ))}
           </div>
@@ -128,7 +142,7 @@ export default function Stats() {
         <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:18, padding:'22px 22px', boxShadow:C.shadow }}>
           <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.jiff, fontWeight:500, marginBottom:20 }}>Active users — this week</div>
           <div style={{ display:'flex', alignItems:'flex-end', gap:10, height:100 }}>
-            {MOCK_STATS.weeklyTrend.map((d,i) => (
+            {stats.weeklyTrend.map((d,i) => (
               <div key={d.day} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
                 <span style={{ fontSize:11, color:C.muted }}>{d.users}</span>
                 <div style={{

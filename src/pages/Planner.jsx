@@ -376,6 +376,36 @@ export default function Planner() {
   // Pre-fill pantry
   useEffect(() => { if(!pantryLoaded&&pantry?.length){setPantryItems(pantry);setPantryLoaded(true);} }, [pantry,pantryLoaded]);
 
+  const toggleType = (id) => setSelectedTypes(prev =>
+    prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
+  );
+
+  const handleSubmit = async () => {
+    if (!ingredients.length || selectedTypes.length === 0) return;
+    setView('loading'); setErrorMsg(''); setPlan(null);
+    try {
+      const res = await fetch('/api/planner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients,
+          mealTypes: selectedTypes,
+          servings,
+          cuisine,
+          diet,
+          preferences: {
+            spice_level: profile?.spice_level,
+            allergies: profile?.allergies,
+            skill_level: profile?.skill_level,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.plan) { setPlan(data.plan); setView('results'); }
+      else { setErrorMsg(data.error || 'Could not generate plan. Please try again.'); setView('error'); }
+    } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
+  };
+
   useEffect(() => {
     if (view==='loading') {
       let d=0; timerRef.current=setInterval(()=>{d++;setLoadingDay(d);if(d>=7)clearInterval(timerRef.current);},1100);
@@ -397,8 +427,7 @@ export default function Planner() {
         <header className="header">
           <div className="logo" onClick={()=>navigate('/')}><span style={{fontSize:22}}>⚡</span><span className="logo-name"><span>J</span>iff</span></div>
           <div className="nav-links">
-            <button className="nav-link" onClick={()=>navigate('/')}>🏠 Home</button>
-            <button className="nav-link" onClick={()=>navigate('/app')}>⚡ Quick meal</button>
+            <button className="nav-link" onClick={()=>navigate('/app')}>← Back to app</button>
             <button className="nav-link active">📅 Week planner</button>
           </div>
         </header>

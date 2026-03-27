@@ -1,28 +1,51 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "package.json",              "use": "@vercel/static-build", "config": { "distDir": "build" } },
-    { "src": "api/suggest.js",            "use": "@vercel/node" },
-    { "src": "api/planner.js",            "use": "@vercel/node" },
-    { "src": "api/create-order.js",       "use": "@vercel/node" },
-    { "src": "api/verify-payment.js",     "use": "@vercel/node" },
-    { "src": "api/meal-history.js",       "use": "@vercel/node" },
-    { "src": "api/detect-ingredients.js", "use": "@vercel/node" },
-    { "src": "api/feedback.js",           "use": "@vercel/node" },
-    { "src": "api/email-subscribe.js",    "use": "@vercel/node" },
-    { "src": "api/v1/suggest.js",         "use": "@vercel/node" }
-  ],
-  "routes": [
-    { "src": "/api/suggest",              "dest": "/api/suggest.js" },
-    { "src": "/api/planner",              "dest": "/api/planner.js" },
-    { "src": "/api/create-order",         "dest": "/api/create-order.js" },
-    { "src": "/api/verify-payment",       "dest": "/api/verify-payment.js" },
-    { "src": "/api/meal-history",         "dest": "/api/meal-history.js" },
-    { "src": "/api/detect-ingredients",   "dest": "/api/detect-ingredients.js" },
-    { "src": "/api/feedback",             "dest": "/api/feedback.js" },
-    { "src": "/api/email-subscribe",      "dest": "/api/email-subscribe.js" },
-    { "src": "/api/v1/suggest",           "dest": "/api/v1/suggest.js" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "framework": "create-react-app",
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "rewrites": [
+    {
+      "source": "/api/suggest",
+      "destination": "/api/suggest.js"
+    },
+    {
+      "source": "/api/planner",
+      "destination": "/api/planner.js"
+    },
+    {
+      "source": "/api/create-order",
+      "destination": "/api/create-order.js"
+    },
+    {
+      "source": "/api/verify-payment",
+      "destination": "/api/verify-payment.js"
+    },
+    {
+      "source": "/api/meal-history",
+      "destination": "/api/meal-history.js"
+    },
+    {
+      "source": "/api/detect-ingredients",
+      "destination": "/api/detect-ingredients.js"
+    },
+    {
+      "source": "/api/feedback",
+      "destination": "/api/feedback.js"
+    },
+    {
+      "source": "/api/email-subscribe",
+      "destination": "/api/email-subscribe.js"
+    },
+    {
+      "source": "/api/v1/suggest",
+      "destination": "/api/v1/suggest.js"
+    },
+    {
+      "source": "/api/stats",
+      "destination": "/api/stats.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

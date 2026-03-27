@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../contexts/PremiumContext';
-import { useLocale, CURRENCY_MAP } from '../contexts/LocaleContext';
+import { useLocale, CURRENCY_MAP, ENABLED_COUNTRIES } from '../contexts/LocaleContext';
 
 const C = {
   jiff: '#FF4500', jiffDark: '#CC3700', ink: '#1C0A00',
@@ -56,6 +56,7 @@ export default function Pricing() {
   }, [handleStripeSuccess]);
 
   const planList = Object.values(plans);
+  const countryLive = ENABLED_COUNTRIES.includes(country);
 
   const handleComingSoon = () => {
     if (!comingSoonEmail || !comingSoonEmail.includes('@')) return;

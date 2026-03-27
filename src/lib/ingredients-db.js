@@ -1,3 +1,17 @@
+
+// Common pantry staples for auto-suggestion in Pantry & Spices section
+export const PANTRY_STAPLES = [
+  'salt', 'pepper', 'sugar', 'jaggery', 'oil', 'olive oil', 'coconut oil',
+  'ghee', 'butter', 'all-purpose flour', 'rice flour', 'cornflour',
+  'baking soda', 'baking powder', 'vinegar', 'honey', 'turmeric powder',
+  'cumin seeds', 'coriander powder', 'red chilli powder', 'garam masala',
+  'cardamom', 'cloves', 'cinnamon', 'bay leaves', 'mustard seeds',
+  'fenugreek seeds', 'asafoetida', 'black pepper', 'garlic powder',
+  'paprika', 'oregano', 'mixed herbs', 'soy sauce', 'tomato ketchup',
+  'tamarind paste', 'coconut milk', 'sesame oil', 'chilli flakes',
+  'rice vinegar', 'sriracha', 'hot sauce',
+];
+
 // src/lib/ingredients-db.js — Common ingredient database for autocomplete
 // Covers Indian pantry staples, global ingredients, proteins, veg, dairy, grains
 

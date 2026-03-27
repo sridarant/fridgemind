@@ -7,6 +7,43 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v16.4 — Country rollout, admin, stability, session security, navigation
+**Date:** March 2026
+
+### Critical Fixes
+- **Week Plan crash fixed** — `toggleType` and `handleSubmit` were completely missing from `Planner.jsx` (accidentally removed during a dead-code cleanup pass). Both functions fully restored with proper API call to `/api/planner`.
+- **History not showing** — History now saves to `localStorage` (`jiff-history`) immediately on generation, independent of Supabase. History page merges localStorage + server data on load.
+- **Favourites not responding** — Button was hidden behind `{user && ...}` guard. Now always visible; shows a sign-in prompt if unauthenticated.
+- **Planner stale variable** — `setIngredients(pantry)` in pantry pre-fill replaced with `setPantryItems(pantry)`.
+- **Profile pantry stale ref** — `pantryRef` useRef removed from Profile.jsx.
+
+### New Features
+- **Country rollout gating** — `ENABLED_COUNTRIES = ['IN','SG','GB','AU','US']` exported from LocaleContext. Pricing page shows a "Coming to your region soon" page with waitlist email capture for users outside these countries.
+- **Admin page** (`/admin`) — Password-protected admin dashboard with Overview (stats), Waitlist management (CSV export), Feedback viewer, and Tools panel.
+- **Real stats API** (`/api/stats`) — Pulls live data from Supabase (user count, meal count, country breakdown, cuisine trends, weekly activity). Falls back to preview data if Supabase not configured. Stats page shows ● Live / ● Preview badge.
+- **Error boundary** — `ErrorBoundary` component wraps all routes. Any render crash shows a friendly "Something went wrong" page with Back to app, Refresh, and Report issue buttons.
+- **Session security** — Enhanced session management: `sessionStorage` flag tracks active session, `visibilitychange` event fires signout when tab is hidden, not just on close.
+
+### UI Improvements
+- **Profile button** — Country flag displayed in a 22px circular orange badge (not inline text). Cleaner and more international-friendly.
+- **AI chip removed** — `<div className="header-tag">AI</div>` removed from app header.
+- **CTA text** — Changed from confusing cuisine+mealtype combo (`"Jiff Tamil Nadu lunch!"`) to clean `"Jiff it now!"`.
+- **Navigation standardised** — All secondary pages (Planner, Plans, History, Profile) use "← Back to app" consistently.
+- **Landing copy** — "Jiff it now — it's free" → "Try Jiff — 7 days free"; stats bar updated.
+- **Pantry tab (Profile)** — Now uses `IngredientInput` with full autocomplete + 20 quick-add staple buttons (salt, pepper, turmeric, ghee, etc.).
+- **Profile completion banner** — Has a "Later" dismiss button using `sessionStorage` so it doesn't pester on every page load.
+
+### Build Warning Fixes
+- **`vercel.json` `builds` warning** — Migrated from legacy `"builds"` format to modern `"framework"`, `"buildCommand"`, `"outputDirectory"`, `"rewrites"` format. Eliminates the Vercel CLI warning about build config override.
+- **ESM→CommonJS warning** — Inherent to Vercel's Node.js runtime compilation of API files; no code change needed as this is expected behaviour.
+
+### Documents & Tests
+- `tests/jiff.spec.js` — Full rewrite, 32 → 36 tests
+- `CHANGELOG.md` — This entry
+- `SUPABASE_SETUP.md` — No new tables needed for v16.4
+
+---
+
 ## v16.3 — Planner/Plans fixed, pantry pre-fill, Goal Plans fridge section
 **Date:** March 2026
 

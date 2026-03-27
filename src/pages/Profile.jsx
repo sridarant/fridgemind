@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }   from '../contexts/AuthContext';
 import { useLocale, FOOD_TYPE_OPTIONS, DIET_REQUIREMENTS, INDIAN_CUISINES, GLOBAL_CUISINES } from '../contexts/LocaleContext';
+import IngredientInput from '../components/IngredientInput';
+import { PANTRY_STAPLES } from '../lib/ingredients-db';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5', muted:'#7C6A5E', border:'rgba(28,10,0,0.10)', borderMid:'rgba(28,10,0,0.18)', shadow:'0 4px 28px rgba(28,10,0,0.08)', green:'#1D9E75', greenBg:'rgba(29,158,117,0.08)' };
 const PALETTE = ['#E53E3E','#DD6B20','#38A169','#3182CE','#805AD5','#D69E2E','#319795','#E91E63'];
@@ -35,9 +37,7 @@ export default function Profile() {
   const [dietReqs,      setDietReqs]      = useState(profile?.diet_requirements || []);
   const [prefCuisines,  setPrefCuisines]  = useState(profile?.preferred_cuisines || []);
   const [pantryItems,   setPantryItems]   = useState(pantry || []);
-  const [pantryInput,   setPantryInput]   = useState('');
   const allergyRef = useRef(null);
-  const pantryRef  = useRef(null);
 
   const addTag = (setArr, arr, v) => { const t=v.trim().toLowerCase().replace(/,$/,''); if(t&&!arr.includes(t)) setArr(p=>[...p,t]); };
   const toggleArr = (setArr, arr, id) => setArr(p => p.includes(id) ? p.filter(x=>x!==id) : [...p,id]);
@@ -55,7 +55,7 @@ export default function Profile() {
     <div style={{minHeight:'100vh',background:C.cream,fontFamily:"'DM Sans', sans-serif",color:C.ink}}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
       <header style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px 28px',borderBottom:'1px solid ' + C.border,position:'sticky',top:0,zIndex:10,background:'rgba(255,250,245,0.95)',backdropFilter:'blur(12px)'}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>navigate('/')}>
+        <div style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer'}} onClick={()=>navigate('/app')}>
           <span style={{fontSize:22}}>⚡</span>
           <span style={{fontFamily:"'Fraunces', serif",fontSize:22,fontWeight:900,color:C.ink}}><span style={{color:C.jiff}}>J</span>iff</span>
         </div>
@@ -206,24 +206,25 @@ export default function Profile() {
         {activeTab==='pantry' && (
           <div style={{background:'white',border:'1px solid ' + C.border,borderRadius:20,padding:22,boxShadow:C.shadow}}>
             <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:4}}>🧂 Your pantry</div>
-            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:16}}>Ingredients always in your kitchen. These pre-fill every search automatically.</div>
-            <div style={ingBox} onClick={()=>pantryRef.current?.focus()}>
-              {pantryItems.map(item=>(
-                <span key={item} style={{...tag,background:'#5C6BC0'}}>
-                  {item}<button onClick={()=>setPantryItems(p=>p.filter(x=>x!==item))} style={{background:'none',border:'none',color:'rgba(255,255,255,0.7)',cursor:'pointer',fontSize:14,padding:0}}>×</button>
-                </span>
-              ))}
-              <input ref={pantryRef} style={tagInput} value={pantryInput}
-                onChange={e=>setPantryInput(e.target.value)}
-                onKeyDown={e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();addTag(setPantryItems,pantryItems,pantryInput);setPantryInput('');}}}
-                onBlur={()=>{if(pantryInput.trim()){addTag(setPantryItems,pantryItems,pantryInput);setPantryInput('');}}}
-                placeholder={pantryItems.length===0?'salt, oil, onion, garlic…':'add more…'}
-              />
-            </div>
-            <div style={{marginTop:8,display:'flex',flexWrap:'wrap',gap:5}}>
-              {['salt','oil','onion','garlic','ginger','cumin','turmeric','chilli powder','sugar'].map(s_=> !pantryItems.includes(s_) &&
-                <button key={s_} onClick={()=>addTag(setPantryItems,pantryItems,s_)} style={{background:'none',border:'1px dashed ' + C.borderMid,borderRadius:20,padding:'3px 10px',fontSize:11,color:C.muted,cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>+ {s_}</button>
-              )}
+            <div style={{fontSize:13,color:C.muted,fontWeight:300,lineHeight:1.6,marginBottom:16}}>Items always in your kitchen. These pre-fill every search automatically.</div>
+            <IngredientInput
+              ingredients={pantryItems}
+              onChange={setPantryItems}
+              pantryIngredients={[]}
+              placeholder="salt, oil, cumin, turmeric, garlic…"
+            />
+            <div style={{marginTop:12}}>
+              <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:500,marginBottom:8}}>Quick add common staples</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                {PANTRY_STAPLES.filter(s => !pantryItems.map(p=>p.toLowerCase()).includes(s.toLowerCase())).slice(0,20).map(s=>(
+                  <button key={s} onClick={()=>!pantryItems.includes(s)&&setPantryItems(p=>[...p,s])}
+                    style={{background:'none',border:'1px dashed ' + C.borderMid,borderRadius:20,padding:'3px 10px',fontSize:11,color:C.muted,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",transition:'all 0.12s'}}
+                    onMouseEnter={e=>{e.target.style.borderColor=C.jiff;e.target.style.color=C.jiff;}}
+                    onMouseLeave={e=>{e.target.style.borderColor=C.borderMid;e.target.style.color=C.muted;}}>
+                    + {s}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

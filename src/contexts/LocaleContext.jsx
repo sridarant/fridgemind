@@ -4,6 +4,9 @@ import { translate, SUPPORTED_LANGUAGES } from '../i18n';
 const LocaleContext = createContext(null);
 export const useLocale = () => useContext(LocaleContext);
 
+// Countries where Jiff is fully live with payments
+export const ENABLED_COUNTRIES = ['IN', 'SG', 'GB', 'AU', 'US'];
+
 export const CURRENCY_MAP = {
   IN: { code:'INR', symbol:'₹', plans:{ monthly:'₹99', annual:'₹799', lifetime:'₹2,999' }, amounts:{ monthly:9900, annual:79900, lifetime:299900 }, gateway:'razorpay' },
   SG: { code:'SGD', symbol:'S$', plans:{ monthly:'S$3', annual:'S$24', lifetime:'S$49' }, amounts:{ monthly:300, annual:2400, lifetime:4900 }, gateway:'stripe' },

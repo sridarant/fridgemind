@@ -13,7 +13,9 @@ import History   from './pages/History';
 import Plans     from './pages/Plans';
 import Privacy   from './pages/Privacy';
 import Stats     from './pages/Stats';
-import ApiDocs   from './pages/ApiDocs';
+import ApiDocs      from './pages/ApiDocs';
+import Admin        from './pages/Admin';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   return (
@@ -21,6 +23,7 @@ export default function App() {
       <AuthProvider>
         <PremiumProvider>
           <BrowserRouter>
+            <ErrorBoundary>
             <Routes>
               <Route path="/"         element={<Landing />}  />
               <Route path="/app"      element={<Jiff />}     />
@@ -32,7 +35,9 @@ export default function App() {
               <Route path="/privacy"  element={<Privacy />}  />
               <Route path="/stats"    element={<Stats />}    />
               <Route path="/api-docs" element={<ApiDocs />}  />
+              <Route path="/admin"    element={<Admin />}     />
             </Routes>
+            </ErrorBoundary>
             <CookieBanner />
             <FeedbackWidget />
           </BrowserRouter>

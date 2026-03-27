@@ -759,20 +759,25 @@ export default function Jiff() {
         if (typeof window !== 'undefined' && window._jiffGA) {
           window._jiffGA('meal_generated', { cuisine, mealType, ingredient_count: ingredients.length, is_premium: isPremium });
         }
-        // Auto-save to meal history
+        // Auto-save to meal history (localStorage + API)
+        const histEntry = {
+          id: Date.now().toString(),
+          meals: data.meals,
+          mealType, cuisine,
+          servings: defaultServings,
+          ingredients,
+          generated_at: new Date().toISOString(),
+        };
+        try {
+          const existing = JSON.parse(localStorage.getItem('jiff-history') || '[]');
+          localStorage.setItem('jiff-history', JSON.stringify([histEntry, ...existing].slice(0, 50)));
+        } catch {}
         if (user) {
           fetch('/api/meal-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.id,
-              meals: data.meals,
-              mealType,
-              cuisine,
-              servings: defaultServings,
-              ingredients,
-            }),
-          }).catch(() => {}); // non-critical — ignore failures
+            body: JSON.stringify({ userId: user.id, meals: data.meals, mealType, cuisine, servings: defaultServings, ingredients }),
+          }).catch(() => {});
         }
       }
       else { setErrorMsg(data.error||'Could not generate suggestions.'); setView('error'); }
@@ -792,19 +797,34 @@ export default function Jiff() {
     finally { setGateLoading(false); }
   };
 
-  // Auto-logout on window/tab close (item s)
+  // Session security: clear auth state on tab/browser close
+  // Uses sessionStorage (cleared on close) to track the session flag
+  useEffect(() => {
+    if (user) sessionStorage.setItem('jiff-session-active', '1');
+    else sessionStorage.removeItem('jiff-session-active');
+  }, [user]);
+
   useEffect(() => {
     const handleUnload = () => {
       try {
-        // Use Supabase signOut — best effort on unload
+        sessionStorage.removeItem('jiff-session-active');
         if (user && supabaseEnabled) {
+          // Best-effort Supabase signout on close
           const sb = window._supabaseClient;
           if (sb) sb.auth.signOut();
         }
       } catch {}
     };
     window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
+    // Also handle visibility change (tab hidden / app backgrounded)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') handleUnload();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [user, supabaseEnabled]);
 
   const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); setShowFavs(false); setPantryLoaded(true); };
@@ -895,27 +915,27 @@ export default function Jiff() {
           <JiffLogo size="md" spinning={view==='loading'} onClick={()=>navigate('/')} />
           <div className="header-right">
             {trialActive && <div className="trial-badge">⏳ Trial: {trialDaysLeft}d left</div>}
-            {user && (
-              <button className={`hdr-btn ${favourites.length>0?'fav-active':''}`} onClick={()=>setShowFavs(p=>!p)}>
+            <button className={`hdr-btn ${favourites.length>0?'fav-active':''}`} onClick={()=>{if(!user){alert('Sign in to save and view your favourite recipes.');return;}setShowFavs(p=>!p);}}>
                 <IconHeart filled={favourites.length>0}/>Favourites{favourites.length>0&&<span className="fav-badge">{favourites.length}</span>}
               </button>
-            )}
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {user && (
               <button className="hdr-btn profile" onClick={()=>navigate('/profile')}
-                style={{position:'relative', paddingLeft: country && country !== 'US' ? '28px' : undefined}}>
-                {country && country !== 'US' && country !== 'DEFAULT' && (
-                  <span style={{position:'absolute',left:7,top:'50%',transform:'translateY(-50%)',fontSize:14,lineHeight:1}}>
-                    {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','US':'🇺🇸','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '🌍'}
-                  </span>
-                )}
-                {!country || country === 'US' ? '👤 ' : ''}{profile?.name?.split(' ')[0]||t('profile_nav')}
+                style={{display:'flex',alignItems:'center',gap:6}}>
+                <span style={{
+                  width:22, height:22, borderRadius:'50%', background:'var(--jiff)',
+                  display:'inline-flex', alignItems:'center', justifyContent:'center',
+                  fontSize:13, lineHeight:1, flexShrink:0,
+                }}>
+                  {{'IN':'🇮🇳','SG':'🇸🇬','GB':'🇬🇧','AU':'🇦🇺','DE':'🇩🇪','FR':'🇫🇷','ES':'🇪🇸','JP':'🇯🇵','CN':'🇨🇳','US':'🇺🇸','CA':'🇨🇦','NZ':'🇳🇿','AE':'🇦🇪','MY':'🇲🇾','TH':'🇹🇭'}[country] || '👤'}
+                </span>
+                {profile?.name?.split(' ')[0]||t('profile_nav')}
               </button>
             )}
-            <div className="header-tag">AI</div>
+
           </div>
         </header>
 
@@ -938,16 +958,24 @@ export default function Jiff() {
         {view === 'input' && (
           <div className="main-layout">
             <div className="main-form">
-              {/* Post-login profile completion banner — prominent, above everything */}
-              {user && profile && !profile.spice_level && !profile.preferred_cuisines?.length && (
+              {/* Post-login profile completion banner */}
+              {user && profile && !profile.spice_level && !profile.preferred_cuisines?.length &&
+               !sessionStorage.getItem('jiff-prefs-dismissed') && (
                 <div style={{background:'rgba(255,69,0,0.07)',border:'1.5px solid rgba(255,69,0,0.25)',borderRadius:12,padding:'12px 16px',marginBottom:16,display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
                   <div>
-                    <div style={{fontSize:13,fontWeight:500,color:'#CC3700',marginBottom:2}}>👋 Welcome! Complete your profile</div>
-                    <div style={{fontSize:12,color:'#CC3700',fontWeight:300}}>Set your food type, cuisine preferences and pantry so Jiff personalises every recipe for you.</div>
+                    <div style={{fontSize:13,fontWeight:500,color:'#CC3700',marginBottom:2}}>👋 Personalise your experience</div>
+                    <div style={{fontSize:12,color:'#CC3700',fontWeight:300}}>Set your food type, cuisine and pantry so every recipe is tailored to you.</div>
                   </div>
-                  <button onClick={()=>navigate('/profile')} style={{background:'#CC3700',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",whiteSpace:'nowrap',flexShrink:0}}>
-                    Set preferences →
-                  </button>
+                  <div style={{display:'flex',gap:8,flexShrink:0}}>
+                    <button onClick={()=>navigate('/profile')} style={{background:'#CC3700',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",whiteSpace:'nowrap'}}>
+                      Set up profile →
+                    </button>
+                    <button onClick={e=>{e.stopPropagation();sessionStorage.setItem('jiff-prefs-dismissed','1');e.target.closest('[data-dismiss]').remove();}}
+                      data-dismiss="1"
+                      style={{background:'none',border:'1px solid rgba(204,55,0,0.3)',borderRadius:8,padding:'7px 10px',fontSize:12,color:'#CC3700',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",whiteSpace:'nowrap'}}>
+                      Later
+                    </button>
+                  </div>
                 </div>
               )}
               {/* Smart greeting with weather/time/location */}
@@ -1052,7 +1080,7 @@ export default function Jiff() {
                 <div className="cta-wrap">
                   <button className="cta-btn" onClick={handleSubmit} disabled={!ingredients.length || !user}>
                     <span>⚡</span>
-                    <span>{cuisine==='any'?`Jiff ${mealType==='any'?'a meal':mealType}!`:`Jiff ${cuisine} ${mealType==='any'?'meal':''}${mealType!=='any'?' '+mealType:''}!`}</span>
+                    <span>Jiff it now!</span>
                   </button>
                   {!ingredients.length && <p className="cta-note">Add at least one ingredient to get started</p>}
                   {trialActive && !isPremium && <p className="trial-note">🎁 Trial mode — you'll see 1 recipe preview. <button onClick={()=>navigate('/pricing')} style={{background:'none',border:'none',color:'#854F0B',cursor:'pointer',fontWeight:600,fontFamily:"'DM Sans',sans-serif",fontSize:'inherit',textDecoration:'underline'}}>Upgrade for {PAID_RECIPE_CAP} recipes →</button></p>}

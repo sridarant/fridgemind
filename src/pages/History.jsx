@@ -41,10 +41,24 @@ export default function History() {
   const [deleting, setDeleting] = useState(null);
 
   useEffect(() => {
+    // Always load localStorage history first (instant, works offline)
+    const local = JSON.parse(localStorage.getItem('jiff-history') || '[]');
+    if (local.length) setHistory(local);
+
     if (!user) { setLoading(false); return; }
+    // Also fetch from server if available
     fetch(`/api/meal-history?userId=${user.id}`)
       .then(r => r.json())
-      .then(d => { setHistory(d.history || []); setLoading(false); })
+      .then(d => {
+        if (d.history?.length) {
+          // Merge: server records take priority, local fills in any gaps
+          const serverIds = new Set(d.history.map(h => h.id));
+          const merged = [...d.history, ...local.filter(h => !serverIds.has(h.id))];
+          merged.sort((a, b) => new Date(b.generated_at) - new Date(a.generated_at));
+          setHistory(merged);
+        }
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [user]);
 
@@ -119,7 +133,7 @@ export default function History() {
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
       <header style={s.header}>
-        <div style={s.logo} onClick={() => navigate('/')}>
+        <div style={s.logo} onClick={() => navigate('/app')}>
           <span style={{fontSize:22}}>⚡</span>
           <span style={s.logoName}><span style={{color:C.jiff}}>J</span>iff</span>
         </div>
