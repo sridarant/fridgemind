@@ -27,27 +27,31 @@ const DIETARY_LABELS = {
   'pescatarian':'Pescatarian',
 };
 function getDietaryLabel(food_type) {
-  const toLabel = id => DIETARY_LABELS[(id||'').toLowerCase().trim()] || id || '';
+  const toLabel = id => {
+    if (!id) return '';
+    const clean = String(id).toLowerCase().trim().replace(/^"+|"+$/g, '');
+    return DIETARY_LABELS[clean] || clean;
+  };
+  // Recursively unwrap until we have a flat array of IDs
+  const unwrap = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.flatMap(unwrap);
+    if (typeof val !== 'string') return [String(val)];
+    const s = val.trim();
+    // Postgres wire format: {veg} or {"non-veg","veg"}
+    if (s.startsWith('{') && s.endsWith('}')) {
+      return s.slice(1,-1).split(',').map(x => x.replace(/^"+|"+$/g,'').trim()).filter(Boolean);
+    }
+    // JSON encoded (possibly double-encoded): ["veg"] or "veg" or [["veg"]]
+    if (s.startsWith('[') || s.startsWith('"')) {
+      try { return unwrap(JSON.parse(s)); } catch {}
+    }
+    return [s];
+  };
   try {
-    if (!food_type) return 'Not set';
-    if (Array.isArray(food_type)) {
-      const labels = food_type.map(toLabel).filter(Boolean);
-      return labels.length ? labels.join(', ') : 'Not set';
-    }
-    if (typeof food_type !== 'string') return 'Not set';
-    // JSON string: '["veg"]' or '"veg"'
-    if (food_type.startsWith('[') || food_type.startsWith('"')) {
-      const parsed = JSON.parse(food_type);
-      const arr = Array.isArray(parsed) ? parsed : [parsed];
-      return arr.map(toLabel).filter(Boolean).join(', ') || 'Not set';
-    }
-    // Postgres wire format: '{veg}' or '{"non-veg","veg"}'
-    if (food_type.startsWith('{') && food_type.endsWith('}')) {
-      const items = food_type.slice(1,-1).split(',')
-        .map(s => toLabel(s.replace(/^"|"$/g,'').trim())).filter(Boolean);
-      return items.length ? items.join(', ') : 'Not set';
-    }
-    return toLabel(food_type) || 'Not set';
+    const ids = unwrap(food_type).filter(Boolean);
+    if (!ids.length) return 'Not set';
+    return ids.map(toLabel).filter(Boolean).join(', ') || 'Not set';
   } catch { return 'Not set'; }
 }
 
@@ -1311,7 +1315,7 @@ export default function Jiff() {
               </button>
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>
+            {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
