@@ -1224,8 +1224,8 @@ export default function Jiff() {
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
     { key: 'Spice',          val: profile.spice_level || 'Medium' },
-    { key: 'Dietary',        val: getDietaryLabel(profile.food_type),
-        { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
+    { key: 'Dietary',        val: getDietaryLabel(profile.food_type) },
+    { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
   ] : [];
 
   // Show mandatory sign-in gate
