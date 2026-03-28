@@ -56,6 +56,7 @@ export default function Admin() {
   const [feedback, setFeedback] = useState([]);
   const [loading,  setLoading]  = useState(false);
   const [activeTab,setActiveTab]= useState('overview');
+  const supabaseEnabled = !!process.env.REACT_APP_SUPABASE_URL;
   const [toast,    setToast]    = useState('');
 
   const tabs = [
@@ -200,12 +201,29 @@ export default function Admin() {
   if (!authed) return (
     <div style={{ minHeight:'100vh', background:C.cream, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans',sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-      {/* Toast */}
-      {toast && (
-        <div style={{ position:'fixed',top:20,right:20,background:C.green,color:'white',padding:'10px 20px',borderRadius:12,boxShadow:'0 4px 16px rgba(0,0,0,0.15)',zIndex:9999,fontSize:13,fontWeight:500 }}>{toast}</div>
-      )}
+      {toast && <div style={{ position:'fixed',top:20,right:20,background:C.green,color:'white',padding:'10px 20px',borderRadius:12,zIndex:9999,fontSize:13,fontWeight:500 }}>{toast}</div>}
+      <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:20, padding:'40px 36px', width:340, boxShadow:C.shadow }}>
+        <div style={{ fontFamily:"'Fraunces',serif", fontSize:28, fontWeight:900, color:C.ink, marginBottom:4 }}>⚡ Jiff Admin</div>
+        <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginBottom:24 }}>Enter the admin key to continue</div>
+        <input value={pass} onChange={e=>setPass(e.target.value)}
+          onKeyDown={e=>{ if(e.key==='Enter') pass===ADMIN_KEY?(sessionStorage.setItem('jiff-admin-auth','1'),setAuthed(true)):showToast('Wrong key'); }}
+          placeholder="Admin key" type="password"
+          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid '+C.borderMid, borderRadius:10, fontSize:13, fontFamily:"'DM Sans',sans-serif", boxSizing:'border-box', marginBottom:12, outline:'none' }}
+          autoFocus />
+        <button onClick={()=>pass===ADMIN_KEY?(sessionStorage.setItem('jiff-admin-auth','1'),setAuthed(true)):showToast('Wrong key')}
+          style={{ width:'100%', background:C.jiff, color:'white', border:'none', borderRadius:10, padding:'11px', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          Sign in
+        </button>
+      </div>
+    </div>
+  );
 
-      {/* Top bar */}
+  return (
+    <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+      {toast && <div style={{ position:'fixed',top:20,right:20,background:C.green,color:'white',padding:'10px 20px',borderRadius:12,zIndex:9999,fontSize:13,fontWeight:500 }}>{toast}</div>}
+
+      {/* ── Top bar ── full width, sticky */}
       <header style={{ padding:'12px 24px', borderBottom:'1px solid '+C.border, background:'white',
         display:'flex', alignItems:'center', justifyContent:'space-between',
         position:'sticky', top:0, zIndex:20, boxShadow:'0 2px 8px rgba(28,10,0,0.04)' }}>
