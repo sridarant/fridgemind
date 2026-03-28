@@ -7,6 +7,16 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v18.4 -- Fix Insights.jsx build error
+**Date:** March 2026  |  **Package:** 1.18.4
+
+### Fix
+- Insights.jsx: async `loadData` function was missing its closing `}` and `loadData()` call,
+  causing ESLint error "Missing initializer in destructuring declaration" at line 141.
+  Introduced when the Supabase fallback block was added in v18.2.
+
+---
+
 ## v18.3 -- Admin sidebar nav, Home button, Supabase cleanup
 **Date:** March 2026  |  **Package:** 1.18.3
 
