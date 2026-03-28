@@ -212,7 +212,7 @@ export default function Plans() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => navigate('/planner')} style={{ fontSize: 12, color: C.muted, background: 'none', border: '1.5px solid ' + C.borderMid, borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
-            📅 Custom planner
+            📅 Week Plan
           </button>
           <button onClick={() => navigate('/app')} style={{ fontSize: 12, color: C.muted, background: 'none', border: '1.5px solid ' + C.borderMid, borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
             ← Back to app

@@ -537,3 +537,52 @@ test('60. All 8 pages load without JS errors', async ({ page }) => {
   if (jsErrors.length > 0) console.log('JS errors:', jsErrors);
   expect(jsErrors).toHaveLength(0);
 });
+
+// ── v17.4 fixes ──────────────────────────────────────────────────
+
+// 61. No Dietary Preferences duplicate card in sidebar
+test('61. Dietary Preferences card not in sidebar', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // There should be at most ONE dietary section — the one inside Your Preferences
+  const dietaryCards = page.locator('.sidebar-card-title').filter({ hasText: /dietary/i });
+  const count = await dietaryCards.count();
+  expect(count).toBeLessThanOrEqual(1);
+});
+
+// 62. Dietary shows clean food type text not JSON/Postgres chars
+test('62. Your Preferences Dietary shows clean text', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  const sidebar = page.locator('.main-sidebar');
+  const dietaryRow = sidebar.locator('text=Dietary').first();
+  if (await dietaryRow.isVisible()) {
+    const text = await dietaryRow.textContent();
+    expect(text).not.toMatch(/[{\["\]/); // no JSON/Postgres format chars
+  }
+});
+
+// 63. Rating row visible without expanding card
+test('63. Rating stars visible on collapsed recipe card', async ({ page }) => {
+  await genMeals(page, ['rice', 'dal', 'onion']);
+  const firstCard = page.locator('.meal-card').first();
+  await expect(firstCard).toBeVisible();
+  // Rating stars should be visible without clicking to expand
+  await expect(firstCard.locator('button:has-text("⭐")').first()).toBeVisible({ timeout: 5000 });
+});
+
+// 64. Planner header has no duplicate Week plan chip
+test('64. Planner header does not have active Week plan chip', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/planner');
+  await page.waitForLoadState('networkidle');
+  // Should not have TWO nav buttons with week plan text
+  const weekPlanBtns = page.locator('button').filter({ hasText: /week plan/i });
+  const count = await weekPlanBtns.count();
+  expect(count).toBeLessThanOrEqual(1);
+  // Should have Goal Planner and Back to app
+  await expect(page.locator('text=Goal Planner').first()).toBeVisible();
+  await expect(page.locator('text=Back to app').first()).toBeVisible();
+});

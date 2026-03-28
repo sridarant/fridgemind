@@ -549,47 +549,105 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
 
   // ── Share card — canvas PNG download ───────────────────────────
   const generateShareCard = () => {
+    const SIZE = 1080;
     const canvas = document.createElement('canvas');
-    canvas.width = 1080; canvas.height = 1080; // Square for Instagram
+    canvas.width = SIZE; canvas.height = SIZE;
     const cx = canvas.getContext('2d');
-    const grad = cx.createLinearGradient(0, 0, 800, 450);
-    grad.addColorStop(0, '#1C0A00'); grad.addColorStop(1, '#3D1500');
-    cx.fillStyle = grad; cx.fillRect(0, 0, 1080, 1080);
-    // Orange accent bar top
-    cx.fillStyle = '#FF4500'; cx.fillRect(0, 0, 1080, 8);
-    // Subtle grid pattern overlay
-    cx.strokeStyle = 'rgba(255,255,255,0.03)'; cx.lineWidth = 1;
-    for(let x=0;x<1080;x+=60){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,1080);cx.stroke();}
-    for(let y=0;y<1080;y+=60){cx.beginPath();cx.moveTo(0,y);cx.lineTo(1080,y);cx.stroke();}
-    // Jiff wordmark top-left
-    cx.font = 'bold 28px Georgia, serif'; cx.fillStyle = '#FF4500'; cx.textAlign = 'left';
-    cx.fillText('⚡ Jiff', 60, 70);
-    // Meal emoji — large
-    cx.font = '180px serif'; cx.textAlign = 'center';
-    cx.fillText(meal.emoji || '🍽️', 540, 380);
-    // Meal name
-    cx.font = 'bold 64px Georgia, serif'; cx.fillStyle = 'white'; cx.textAlign = 'center';
-    const title = (meal.name || 'Recipe');
-    const titleLines = title.length > 22 ? [title.slice(0,22), title.slice(22)] : [title];
-    titleLines.forEach((line, i) => cx.fillText(line, 540, 500 + i*72));
-    // Description
-    cx.font = '28px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.65)';
-    const desc = (meal.description||'').slice(0,55);
-    cx.fillText(desc, 540, 620 + (titleLines.length-1)*72);
-    // Divider
-    cx.fillStyle = 'rgba(255,69,0,0.6)'; cx.fillRect(340, 670 + (titleLines.length-1)*72, 400, 2);
-    // Stats row
-    cx.font = '26px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.5)'; cx.textAlign = 'center';
-    cx.fillText('⏱ '+(meal.time||'?')+'     🔥 '+(meal.calories||'?')+' cal     💪 '+(meal.protein||'?'), 540, 730 + (titleLines.length-1)*72);
-    // Bottom branding
-    cx.fillStyle = 'rgba(255,255,255,0.15)'; cx.fillRect(0, 980, 1080, 100);
-    cx.font = 'bold 24px Georgia, serif'; cx.fillStyle = '#FF4500'; cx.textAlign = 'center';
-    cx.fillText('Made with ⚡ Jiff', 540, 1020);
-    cx.font = '18px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.4)';
-    cx.fillText('jiff-ecru.vercel.app', 540, 1050);
+
+    // ── Background ──────────────────────────────────────────────
+    // Rich dark gradient
+    const bg = cx.createRadialGradient(SIZE/2, SIZE*0.4, 0, SIZE/2, SIZE*0.4, SIZE*0.85);
+    bg.addColorStop(0, '#2D1000');
+    bg.addColorStop(0.6, '#1C0A00');
+    bg.addColorStop(1, '#0D0500');
+    cx.fillStyle = bg; cx.fillRect(0, 0, SIZE, SIZE);
+
+    // Warm glow behind emoji
+    const glow = cx.createRadialGradient(SIZE/2, SIZE*0.38, 0, SIZE/2, SIZE*0.38, 260);
+    glow.addColorStop(0, 'rgba(255,69,0,0.18)');
+    glow.addColorStop(1, 'rgba(255,69,0,0)');
+    cx.fillStyle = glow; cx.fillRect(0, 0, SIZE, SIZE);
+
+    // ── Top bar ──────────────────────────────────────────────────
+    cx.fillStyle = '#FF4500'; cx.fillRect(0, 0, SIZE, 6);
+
+    // ── Jiff wordmark ────────────────────────────────────────────
+    cx.font = '500 32px Arial, sans-serif';
+    cx.fillStyle = 'rgba(255,255,255,0.35)';
+    cx.textAlign = 'left';
+    cx.fillText('⚡ JIFF', 60, 72);
+
+    // ── Meal emoji ───────────────────────────────────────────────
+    cx.font = '200px serif';
+    cx.textAlign = 'center';
+    cx.fillText(meal.emoji || '🍽️', SIZE/2, 390);
+
+    // ── Meal name ────────────────────────────────────────────────
+    cx.textAlign = 'center';
+    const name = (meal.name || 'Recipe').toUpperCase();
+    // Auto-size font to fit
+    let fontSize = 72;
+    cx.font = `900 ${fontSize}px Arial, sans-serif`;
+    while (cx.measureText(name).width > SIZE - 100 && fontSize > 36) {
+      fontSize -= 4;
+      cx.font = `900 ${fontSize}px Arial, sans-serif`;
+    }
+    cx.fillStyle = 'white';
+    cx.fillText(name, SIZE/2, 490);
+
+    // ── Thin orange divider ──────────────────────────────────────
+    cx.strokeStyle = '#FF4500'; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(SIZE/2 - 120, 520); cx.lineTo(SIZE/2 + 120, 520); cx.stroke();
+
+    // ── Description ──────────────────────────────────────────────
+    const desc = (meal.description || '').slice(0, 72);
+    cx.font = '300 28px Arial, sans-serif';
+    cx.fillStyle = 'rgba(255,255,255,0.55)';
+    cx.fillText(desc, SIZE/2, 575);
+
+    // ── Stats chips ──────────────────────────────────────────────
+    const stats = [
+      { icon:'⏱', val: meal.time || '?' },
+      { icon:'🔥', val: (meal.calories || '?') + ' cal' },
+      { icon:'💪', val: meal.protein || '?' },
+      { icon:'📊', val: meal.difficulty || 'Easy' },
+    ];
+    const chipW = 200, chipH = 68, chipGap = 20;
+    const totalW = stats.length * chipW + (stats.length - 1) * chipGap;
+    const startX = (SIZE - totalW) / 2;
+    stats.forEach((s, idx) => {
+      const x = startX + idx * (chipW + chipGap);
+      const y = 630;
+      // Chip background
+      cx.fillStyle = 'rgba(255,255,255,0.07)';
+      cx.beginPath();
+      cx.roundRect(x, y, chipW, chipH, 14);
+      cx.fill();
+      cx.strokeStyle = 'rgba(255,255,255,0.12)'; cx.lineWidth = 1;
+      cx.stroke();
+      // Icon + value
+      cx.font = '22px serif'; cx.textAlign = 'center';
+      cx.fillStyle = 'rgba(255,255,255,0.5)';
+      cx.fillText(s.icon, x + chipW/2, y + 26);
+      cx.font = '600 22px Arial, sans-serif';
+      cx.fillStyle = 'white';
+      cx.fillText(s.val, x + chipW/2, y + 54);
+    });
+
+    // ── Bottom branding strip ────────────────────────────────────
+    cx.fillStyle = 'rgba(255,69,0,0.12)';
+    cx.fillRect(0, SIZE - 100, SIZE, 100);
+    cx.fillStyle = '#FF4500';
+    cx.font = '700 30px Arial, sans-serif'; cx.textAlign = 'center';
+    cx.fillText('Made with ⚡ Jiff', SIZE/2, SIZE - 55);
+    cx.font = '300 20px Arial, sans-serif';
+    cx.fillStyle = 'rgba(255,255,255,0.3)';
+    cx.fillText('jiff-ecru.vercel.app', SIZE/2, SIZE - 22);
+
+    // ── Download ─────────────────────────────────────────────────
     const link = document.createElement('a');
-    link.download = 'jiff-'+(meal.name||'recipe').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-1080.png';
-    link.href = canvas.toDataURL('image/png');
+    link.download = 'jiff-' + (meal.name || 'recipe').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.png';
+    link.href = canvas.toDataURL('image/png', 0.95);
     link.click();
   };
 
@@ -612,13 +670,6 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
         </div>
       </div>
       <div className="meal-desc">{meal.description}</div>
-      {shareOpen&&<ShareDrawer meal={meal}/>}
-      {!groceryOpen?(
-        <button className="grocery-trigger" onClick={e=>{e.stopPropagation();setGroceryOpen(true);}}>
-          <span style={{display:'flex',alignItems:'center',gap:5}}><IconCart/>{t('what_to_buy')}</span>
-          <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>{t('see_list')}</span>
-        </button>
-      ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)} country={country}/>}
       {/* ── Rating + Share row ── */}
       <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 0 4px',borderTop:'1px solid rgba(28,10,0,0.06)',marginTop:4}}>
         <div style={{display:'flex',gap:2,alignItems:'center'}}>
@@ -643,6 +694,14 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           📤 Share
         </button>
       </div>
+
+      {shareOpen&&<ShareDrawer meal={meal}/>}
+      {!groceryOpen?(
+        <button className="grocery-trigger" onClick={e=>{e.stopPropagation();setGroceryOpen(true);}}>
+          <span style={{display:'flex',alignItems:'center',gap:5}}><IconCart/>{t('what_to_buy')}</span>
+          <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>{t('see_list')}</span>
+        </button>
+      ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)} country={country}/>}
       {!expanded?(
         <button className="expand-btn" onClick={e=>{e.stopPropagation();setExpanded(true);}}><span>{t('see_full_recipe')}</span><span>→</span></button>
       ):(
@@ -1014,7 +1073,23 @@ export default function Jiff() {
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
     { key: 'Spice',          val: profile.spice_level || 'Medium' },
-    { key: 'Dietary',        val: (() => { try { const raw = profile.food_type; if (!raw) return 'Not set'; if (Array.isArray(raw)) return raw.join(', '); if (typeof raw === 'string') { const parsed = raw.startsWith('[') ? JSON.parse(raw) : [raw]; return parsed.join(', '); } return String(raw); } catch { return 'Not set'; } })() },
+    { key: 'Dietary',        val: (() => {
+        try {
+          const raw = profile.food_type;
+          if (!raw) return 'Not set';
+          if (Array.isArray(raw)) return raw.join(', ');
+          if (typeof raw === 'string') {
+            // Postgres text[] format: {non-veg} or {"non-veg","veg"}
+            if (raw.startsWith('{') && raw.endsWith('}')) {
+              return raw.slice(1,-1).split(',').map(s=>s.replace(/^"|"$/g,'').trim()).filter(Boolean).join(', ') || 'Not set';
+            }
+            // JSON array format: ["non-veg"]
+            if (raw.startsWith('[')) return JSON.parse(raw).join(', ');
+            return raw; // plain string
+          }
+          return 'Not set';
+        } catch { return 'Not set'; }
+      })() },
     { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
   ] : [];
 
@@ -1411,30 +1486,7 @@ export default function Jiff() {
                 {profile && <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>{t('edit_prefs')}</button>}
               </div>
 
-              {/* Dietary preference card */}
-              <div className="sidebar-card">
-                <div className="sidebar-card-title">{t('section_diet')}</div>
-                {hasNonVeg && (
-                  <div style={{fontSize:11,color:'#CC3700',marginBottom:6,fontWeight:300}}>
-                    ⚠ {t('veg_disabled_msg')}
-                  </div>
-                )}
-                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-                  {DIET_OPTIONS.map(o=>{
-                    const disabled = hasNonVeg && o.id === 'vegetarian';
-                    return (
-                      <button key={o.id}
-                        disabled={disabled}
-                        className={`chip diet ${diet===o.id?'active':''}`}
-                        onClick={()=>!disabled&&setDiet(o.id)}
-                        style={disabled?{opacity:0.35,cursor:'not-allowed'}:{}}
-                      >{o.label}</button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Cuisine card — grouped: Indian Regional + International */}
+    {/* Cuisine card — grouped: Indian Regional + International */}
               <div className="sidebar-card">
                 <div className="sidebar-card-title">{t('section_cuisine')}</div>
                 <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`}

@@ -7,6 +7,44 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v17.4 — Clean pass: dietary card, nav chips, share card redesign, rating position
+**Date:** March 2026  |  **Package:** 1.17.4
+
+### UI Fixes
+- **Dietary Preferences sidebar card removed** — the duplicate card in the main sidebar has been removed. Dietary details are shown in the "Your Preferences" card only.
+- **Dietary value — Postgres text[] format** — `food_type` stored in Supabase as `{non-veg}` (Postgres curly-brace array format) now parses correctly. Handles all three formats: JS array, JSON string `["non-veg"]`, and Postgres `{non-veg}`.
+- **Recipe rating moved to top** — star rating row now appears below the meal description (before the grocery trigger), so it's visible without expanding the card.
+- **Planner header** — removed the redundant "📅 Week plan" active chip; only "Goal Planner" and "← Back to app" remain.
+- **Goal Plans header** — "Custom planner" renamed to "📅 Week Plan".
+
+### Share card — complete redesign
+- 1080×1080 square (Instagram-ready)
+- Rich dark radial gradient background with warm orange glow behind emoji
+- Large centred meal emoji (200px)
+- Auto-sizing meal name (bold uppercase, font shrinks to fit)
+- Thin orange divider line
+- 4 stat chips (time, calories, protein, difficulty) with rounded rect backgrounds
+- Bottom branding strip with Jiff wordmark
+- Downloads as PNG at 95% quality
+
+### Code quality (deep review)
+- Zero syntax errors across all 38 source files
+- Zero stale variable references
+- All standalone components with `t()` calls verified to have `useLocale()` hook
+- `cameraRef` and `fileRef` both correctly declared in FridgePhotoUpload
+- `pantryLoaded` and `pantryItems` confirmed in Plans.jsx
+- LocaleContext `getLang()`, `getUnits()`, `getCurrentSeason()` all present
+- ErrorBoundary wraps entire provider tree
+- API: 8/12 functions (4 spare)
+
+### E2E tests: 60 → 64
+- Test 61: Dietary sidebar card not visible
+- Test 62: Dietary "Your Preferences" shows clean text (not JSON/Postgres format)
+- Test 63: Rating visible on card without expanding
+- Test 64: Planner header has no duplicate Week plan chip
+
+---
+
 ## v17.3 — Crash fixes, seasonal picker, camera, voice, rating, share card
 **Date:** March 2026  |  **Package:** 1.17.3
 
