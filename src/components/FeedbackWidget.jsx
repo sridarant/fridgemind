@@ -27,7 +27,7 @@ export default function FeedbackWidget() {
     if (!message.trim() && rating === 0) return;
     setState('sending');
     try {
-      const res = await fetch('/api/feedback', {
+      const res = await fetch('/api/comms?action=feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -8,16 +8,16 @@
       "destination": "/api/suggest.js"
     },
     {
+      "source": "/api/v1/suggest",
+      "destination": "/api/suggest.js?v=1"
+    },
+    {
       "source": "/api/planner",
       "destination": "/api/planner.js"
     },
     {
-      "source": "/api/create-order",
-      "destination": "/api/create-order.js"
-    },
-    {
-      "source": "/api/verify-payment",
-      "destination": "/api/verify-payment.js"
+      "source": "/api/payments",
+      "destination": "/api/payments.js"
     },
     {
       "source": "/api/meal-history",
@@ -28,16 +28,8 @@
       "destination": "/api/detect-ingredients.js"
     },
     {
-      "source": "/api/feedback",
-      "destination": "/api/feedback.js"
-    },
-    {
-      "source": "/api/email-subscribe",
-      "destination": "/api/email-subscribe.js"
-    },
-    {
-      "source": "/api/v1/suggest",
-      "destination": "/api/v1/suggest.js"
+      "source": "/api/comms",
+      "destination": "/api/comms.js"
     },
     {
       "source": "/api/stats",

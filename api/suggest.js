@@ -1,6 +1,75 @@
-// api/suggest.js — Jiff secure server-side proxy — returns 5 meal suggestions
+// api/suggest.js — Internal suggest + Public API v1 (?v=1 + X-API-Key)
+
+import crypto from 'crypto';
+
+const DAILY_LIMITS = { free: 10, starter: 500, pro: 5000 };
+
+async function validateApiKey(apiKey, supabaseUrl, serviceKey) {
+  if (!supabaseUrl || !serviceKey) return { ok: false, error: 'Key validation unavailable' };
+  try {
+    const r = await fetch(`${supabaseUrl}/rest/v1/api_keys?key=eq.${encodeURIComponent(apiKey)}&limit=1`, {
+      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+    });
+    const keys = await r.json();
+    if (!Array.isArray(keys) || !keys.length) return { ok: false, error: 'Invalid API key.' };
+    const rec = keys[0];
+    const today = new Date().toISOString().slice(0, 10);
+    const limit = DAILY_LIMITS[rec.tier] || 10;
+    if (rec.usage_date === today && rec.usage_count >= limit) {
+      return { ok: false, error: `Daily limit reached (${limit}/day for ${rec.tier} tier).`, status: 429 };
+    }
+    // Increment usage
+    const newCount = rec.usage_date === today ? (rec.usage_count || 0) + 1 : 1;
+    await fetch(`${supabaseUrl}/rest/v1/api_keys?id=eq.${rec.id}`, {
+      method: 'PATCH',
+      headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usage_count: newCount, usage_date: today }),
+    });
+    return { ok: true, record: rec, remaining: limit - newCount };
+  } catch { return { ok: false, error: 'Key validation error.' }; }
+}
 
 export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const isPublicV1 = req.query.v === '1';
+
+  // ── Public API v1 path ──────────────────────────────────────────
+  if (isPublicV1) {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) return res.status(401).json({ error: 'Missing X-API-Key header.', docs: 'https://jiff-ecru.vercel.app/api-docs' });
+
+    const validation = await validateApiKey(apiKey, process.env.REACT_APP_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    if (!validation.ok) return res.status(validation.status || 401).json({ error: validation.error });
+
+    const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric' } = req.body;
+    if (!ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
+    const maxCount = Math.min(count, validation.record?.tier === 'pro' ? 5 : 3);
+    const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
+    const dietLabel    = (!diet    || diet    === 'none') ? 'no dietary restrictions' : diet;
+    const langMap = { en:'English', hi:'Hindi', ta:'Tamil', es:'Spanish', fr:'French', de:'German' };
+    const langName = langMap[language] || 'English';
+    const prompt = `You are a creative chef. Suggest ${maxCount} meals.
+Ingredients: ${ingredients.join(', ')}.
+Time: ${time}. Diet: ${dietLabel}. ${cuisineLabel?`All meals MUST be ${cuisineLabel} cuisine.`:''} Servings: ${servings}. ${units==='imperial'?'Use imperial measurements.':'Use metric measurements.'} ${langName!=='English'?`Respond entirely in ${langName}.`:''}
+Respond ONLY with valid JSON array:
+[{"name":"..","emoji":"..","time":"..","servings":"${servings}","difficulty":"..","description":"..","ingredients":[],"steps":[],"calories":"..","protein":"..","carbs":"..","fat":".."}]`;
+    try {
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const data = await aiRes.json();
+      if (!aiRes.ok) return res.status(aiRes.status).json({ error: data.error?.message || 'AI error' });
+      const match = data.content?.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim().match(/\[[\s\S]*\]/);
+      const meals = match ? JSON.parse(match[0]) : null;
+      return res.status(200).json({ meals, meta: { count: meals?.length||0, language, cuisine: cuisine||'any', generated: new Date().toISOString(), tier: validation.record?.tier||'free', remaining: validation.remaining } });
+    } catch { return res.status(500).json({ error: 'Internal server error.' }); }
+  }
+
+  // ── Internal app path (existing logic below) ────────────────────
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

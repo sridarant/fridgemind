@@ -7,6 +7,28 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v17.2 — API consolidation: 11 → 8 serverless functions
+**Date:** March 2026  |  **Package:** 1.17.2
+
+### Serverless function consolidation (Vercel Hobby: 12 fn hard limit)
+
+| Before | After | Saving |
+|---|---|---|
+| `api/feedback.js` + `api/email-subscribe.js` | `api/comms.js` (?action=feedback\|email) | −1 |
+| `api/create-order.js` + `api/verify-payment.js` | `api/payments.js` (?action=create\|verify) | −1 |
+| `api/v1/suggest.js` | merged into `api/suggest.js` (?v=1) | −1 |
+
+**Result: 11 → 8 functions (4 spare for future features)**
+
+All existing routes preserved for backward compatibility via vercel.json rewrites:
+- `POST /api/v1/suggest` still works (maps to `suggest.js?v=1`)
+- All payment, feedback, and email flows unchanged for the frontend
+- Public API docs updated: endpoint is now `/api/suggest?v=1` with `X-API-Key` header
+
+No user-facing changes.
+
+---
+
 ## v17.1 — Quick wins + medium features: Surprise me, ratings, voice, streaks, seasonal
 **Date:** March 2026  |  **Package:** 1.17.1
 

@@ -55,7 +55,7 @@ export default function ApiDocs() {
           <h2 style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink, marginBottom:12 }}>Quick start</h2>
           <p style={{ fontSize:13, color:C.muted, marginBottom:12 }}>1. Get a free API key by emailing <a href="mailto:api@getjiff.in" style={{ color:C.jiff }}>api@getjiff.in</a></p>
           <p style={{ fontSize:13, color:C.muted, marginBottom:8 }}>2. Make your first call:</p>
-          <Code>{`curl -X POST https://jiff-ecru.vercel.app/api/v1/suggest \\
+          <Code>{`curl -X POST https://jiff-ecru.vercel.app/api/suggest?v=1 \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -d '{
@@ -68,7 +68,7 @@ export default function ApiDocs() {
 
         {/* Endpoint */}
         <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:18, padding:'24px', marginBottom:24, boxShadow:C.shadow }}>
-          <h2 style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink, marginBottom:16 }}>POST /api/v1/suggest</h2>
+          <h2 style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink, marginBottom:16 }}>POST /api/suggest?v=1</h2>
 
           <h3 style={{ fontSize:14, fontWeight:500, color:C.ink, marginBottom:10 }}>Request body</h3>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, marginBottom:20 }}>

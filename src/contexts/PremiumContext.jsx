@@ -124,7 +124,7 @@ export function PremiumProvider({ children }) {
       document.head.appendChild(s);
     });
 
-    const orderRes = await fetch('/api/create-order', {
+    const orderRes = await fetch('/api/payments?action=create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ planId }),
@@ -139,7 +139,7 @@ export function PremiumProvider({ children }) {
         order_id: orderId, theme: { color: '#FF4500' },
         handler: async (response) => {
           try {
-            const verifyRes = await fetch('/api/verify-payment', {
+            const verifyRes = await fetch('/api/payments?action=verify', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ ...response, planId }),
