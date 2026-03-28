@@ -102,6 +102,14 @@ export function getCurrentSeason() {
   return { month: mon, ...INDIA_SEASONAL[mon] };
 }
 
+function getLang() {
+  try { return localStorage.getItem('jiff-lang') || 'en'; } catch { return 'en'; }
+}
+
+function getUnits() {
+  try { return localStorage.getItem('jiff-units') || 'metric'; } catch { return 'metric'; }
+}
+
 export function LocaleProvider({ children }) {
   const [lang,    setLangState]    = useState(getLang);
   const [units,   setUnitsState]   = useState(getUnits);

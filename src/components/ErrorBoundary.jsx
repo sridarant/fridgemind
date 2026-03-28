@@ -9,7 +9,24 @@ export default class ErrorBoundary extends Component {
     this.state = { hasError: false, error: null, errorInfo: null, reported: false };
   }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, errorInfo) { this.setState({ errorInfo }); }
+  componentDidCatch(error, errorInfo) {
+    this.setState({ errorInfo });
+    // Send crash log to admin
+    try {
+      fetch('/api/comms?action=feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'crash',
+          rating: 1,
+          message: `CRASH: ${error?.message}\nStack: ${errorInfo?.componentStack?.slice(0,400)}`,
+          page: window.location.pathname,
+          ua: navigator.userAgent.slice(0, 150),
+          ts: Date.now(),
+        }),
+      }).catch(() => {});
+    } catch {}
+  }
 
   handleReport = () => {
     const body = encodeURIComponent(

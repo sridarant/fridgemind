@@ -284,13 +284,14 @@ export default function Admin() {
             {feedback.length===0 ? (
               <div style={{ color:C.muted, fontSize:13, fontWeight:300 }}>No feedback yet. Requires Supabase Phase 3 <code style={{ fontSize:11 }}>feedback</code> table and <code style={{ fontSize:11 }}>SUPABASE_SERVICE_ROLE_KEY</code>.</div>
             ) : feedback.map((f,i)=>(
-              <div key={i} style={{ borderBottom:'1px solid rgba(28,10,0,0.06)', padding:'10px 0' }}>
+              <div key={i} style={{ borderBottom:'1px solid rgba(28,10,0,0.06)', padding:'10px 0', background: f.category==='crash' ? 'rgba(229,62,62,0.04)' : 'transparent', marginLeft: f.category==='crash' ? -8 : 0, paddingLeft: f.category==='crash' ? 8 : 0, borderLeft: f.category==='crash' ? '3px solid #E53E3E' : 'none' }}>
                 <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:4 }}>
-                  <span style={{ fontSize:13 }}>{'⭐'.repeat(f.rating||0)}</span>
-                  <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', borderRadius:20, padding:'2px 8px' }}>{f.category}</span>
+                  <span style={{ fontSize:13 }}>{f.category==='crash' ? '💥' : '⭐'.repeat(f.rating||0)}</span>
+                  <span style={{ fontSize:11, color: f.category==='crash' ? C.red : C.muted, background: f.category==='crash' ? 'rgba(229,62,62,0.1)' : 'rgba(28,10,0,0.05)', borderRadius:20, padding:'2px 8px', fontWeight: f.category==='crash' ? 600 : 400 }}>{f.category}</span>
+                  <span style={{ fontSize:11, color:C.muted }}>{f.page||''}</span>
                   <span style={{ fontSize:11, color:C.muted, marginLeft:'auto' }}>{f.created_at ? new Date(f.created_at).toLocaleDateString() : ''}</span>
                 </div>
-                <div style={{ fontSize:13, color:C.ink, fontWeight:300, lineHeight:1.6 }}>{f.message}</div>
+                <div style={{ fontSize:12, color: f.category==='crash' ? C.red : C.ink, fontWeight:300, lineHeight:1.6, fontFamily:"'DM Sans',sans-serif" }}>{f.message}</div>
               </div>
             ))}
           </Card>
