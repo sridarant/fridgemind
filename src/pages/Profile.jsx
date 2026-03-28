@@ -30,6 +30,14 @@ export default function Profile() {
     : profile?.food_type ? [profile.food_type]
     : ['veg']
   );
+  const [familyMembers, setFamilyMembers] = useState(
+    Array.isArray(profile?.family_members) ? profile.family_members : []
+  );
+  const [newMemberName,     setNewMemberName]     = useState('');
+  const [newMemberDietary,  setNewMemberDietary]  = useState('veg');
+  const [nutritionGoals,    setNutritionalGoals]  = useState(
+    profile?.nutrition_goals || { calories: 2000, protein: 80 }
+  );
   const [spiceLevel,    setSpiceLevel]    = useState(profile?.spice_level || 'medium');
   const [skillLevel,    setSkillLevel]    = useState(profile?.skill_level || 'intermediate');
   const [allergies,     setAllergies]     = useState(profile?.allergies || []);
@@ -44,12 +52,12 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateProfile({ food_type:foodType, spice_level:spiceLevel, allergies, diet_requirements:dietReqs, preferred_cuisines:prefCuisines, skill_level:skillLevel });
+    await updateProfile({ food_type:foodType, spice_level:spiceLevel, allergies, diet_requirements:dietReqs, preferred_cuisines:prefCuisines, skill_level:skillLevel, family_members:familyMembers, nutrition_goals:nutritionGoals });
     await savePantry(pantryItems);
     setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),3000);
   };
 
-  const TABS = [{id:'food',l:'🍽️ Food type'},{id:'dietary',l:'💊 Dietary'},{id:'pantry',l:'🧂 Pantry'},{id:'prefs',l:'⚙️ Settings'}];
+  const TABS = [{id:'food',l:'🍽️ Food type'},{id:'dietary',l:'💊 Dietary'},{id:'family',l:'👨‍👩‍👧 Family'},{id:'pantry',l:'🧂 Pantry'},{id:'prefs',l:'⚙️ Settings'}];
 
   return (
     <div style={{minHeight:'100vh',background:C.cream,fontFamily:"'DM Sans', sans-serif",color:C.ink}}>
@@ -230,7 +238,56 @@ export default function Profile() {
         )}
 
         {/* PREFERENCES TAB */}
-        {activeTab==='prefs' && (
+        {activeTab==='family' && (
+        <div>
+          <p style={{fontSize:13,color:'#7C6A5E',fontWeight:300,marginBottom:16,lineHeight:1.6}}>
+            Add family members so Jiff can generate meals that work for everyone eating tonight.
+          </p>
+          {/* Add member */}
+          <div style={{display:'flex',gap:8,marginBottom:16,flexWrap:'wrap'}}>
+            <input value={newMemberName} onChange={e=>setNewMemberName(e.target.value)}
+              placeholder="Name (e.g. Amma)" maxLength={20}
+              style={{flex:1,minWidth:120,padding:'8px 12px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:'none'}}
+              onKeyDown={e=>e.key==='Enter'&&newMemberName.trim()&&(setFamilyMembers(f=>[...f,{name:newMemberName.trim(),dietary:newMemberDietary,allergies:[]}]),setNewMemberName(''))}
+            />
+            <select value={newMemberDietary} onChange={e=>setNewMemberDietary(e.target.value)}
+              style={{padding:'8px 10px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:12,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none'}}>
+              {[['veg','Vegetarian'],['non-veg','Non-veg'],['vegan','Vegan'],['jain','Jain'],['eggetarian','Eggetarian'],['halal','Halal'],['pescatarian','Pescatarian']].map(([v,l])=>(
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+            <button onClick={()=>{if(newMemberName.trim()){setFamilyMembers(f=>[...f,{name:newMemberName.trim(),dietary:newMemberDietary,allergies:[]}]);setNewMemberName('');}}}
+              style={{background:'#FF4500',color:'white',border:'none',borderRadius:10,padding:'8px 16px',fontSize:13,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>
+              + Add
+            </button>
+          </div>
+          {/* Member list */}
+          {familyMembers.length === 0 ? (
+            <div style={{padding:'24px',textAlign:'center',background:'rgba(28,10,0,0.03)',borderRadius:12,color:'#7C6A5E',fontSize:13,fontWeight:300}}>
+              No family members added yet.<br/>Add members to enable family mode.
+            </div>
+          ) : (
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {familyMembers.map((m,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:'white',border:'1px solid rgba(28,10,0,0.10)',borderRadius:12}}>
+                  <span style={{fontSize:18}}>{{'veg':'🥦','non-veg':'🍗',vegan:'🌱',jain:'🙏',eggetarian:'🥚',halal:'☪️',pescatarian:'🐟'}[m.dietary]||'👤'}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:500,color:'#1C0A00'}}>{m.name}</div>
+                    <div style={{fontSize:11,color:'#7C6A5E',textTransform:'capitalize'}}>{m.dietary}</div>
+                  </div>
+                  <button onClick={()=>setFamilyMembers(f=>f.filter((_,j)=>j!==i))}
+                    style={{background:'none',border:'none',color:'rgba(28,10,0,0.35)',cursor:'pointer',fontSize:16,padding:'2px 6px'}}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <p style={{fontSize:11,color:'#7C6A5E',marginTop:12,fontWeight:300}}>
+            When you select family members before generating, Jiff uses the most restrictive diet to keep everyone happy.
+          </p>
+        </div>
+      )}
+
+      {activeTab==='prefs' && (
           <div style={{background:'white',border:'1px solid ' + C.border,borderRadius:20,padding:22,boxShadow:C.shadow}}>
             <div style={{fontFamily:"'Fraunces', serif",fontSize:18,fontWeight:700,color:C.ink,marginBottom:16}}>⚙️ App preferences</div>
             <span style={label}>Display language (10 available)</span>
@@ -242,10 +299,31 @@ export default function Profile() {
               ))}
             </div>
             <span style={label}>Measurement units</span>
-            <div style={{display:'flex',flexWrap:'wrap',gap:7}}>
+            <div style={{display:'flex',flexWrap:'wrap',gap:7}}>\
               {[{id:'metric',label:'⚖️ Metric (g, ml, kg)'},{id:'imperial',label:'🥛 Imperial (oz, cups, lbs)'}].map(u=>(
                 <button key={u.id} style={pill(units===u.id)} onClick={()=>setUnits(u.id)}>{u.label}</button>
               ))}
+            </div>
+            {/* Nutrition Goals */}
+            <div style={{marginTop:20}}>
+              <span style={label}>Daily nutrition goals</span>
+              <div style={{display:'flex',gap:12,flexWrap:'wrap',marginTop:8}}>
+                <div style={{flex:1,minWidth:140}}>
+                  <div style={{fontSize:11,color:'#7C6A5E',marginBottom:4}}>🔥 Calories (kcal)</div>
+                  <input type="number" value={nutritionGoals.calories} min={500} max={5000} step={50}
+                    onChange={e=>setNutritionalGoals(g=>({...g,calories:parseInt(e.target.value)||2000}))}
+                    style={{width:'100%',padding:'8px 10px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:'none',boxSizing:'border-box'}}/>
+                </div>
+                <div style={{flex:1,minWidth:140}}>
+                  <div style={{fontSize:11,color:'#7C6A5E',marginBottom:4}}>💪 Protein (g)</div>
+                  <input type="number" value={nutritionGoals.protein} min={20} max={300} step={5}
+                    onChange={e=>setNutritionalGoals(g=>({...g,protein:parseInt(e.target.value)||80}))}
+                    style={{width:'100%',padding:'8px 10px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:13,fontFamily:"'DM Sans',sans-serif",outline:'none',boxSizing:'border-box'}}/>
+                </div>
+              </div>
+              <p style={{fontSize:11,color:'#9E9E9E',marginTop:6,fontWeight:300}}>
+                Recipe cards will show how each meal compares to your daily targets.
+              </p>
             </div>
           </div>
         )}

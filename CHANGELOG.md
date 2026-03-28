@@ -7,6 +7,191 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v18.0 — Major release: Family mode, Insights, Delivery, Smart Recs, WhatsApp bot, Admin overhaul
+**Date:** March 2026  |  **Package:** 1.18.0  |  **Supabase:** Run Phase 5 SQL
+
+### 1. Family Mode
+- New **👨‍👩‍👧 Family** tab in Profile — add family members with name + dietary preference
+- Saved as `family_members JSONB` column in Supabase `profiles` table
+- `FamilySelector` component appears on the main page when family members are set
+- "Who's eating tonight?" chips — select individuals or leave as "Everyone"
+- When members are selected, `suggest.js` merges all dietary restrictions (most restrictive wins)
+- Example: Amma (Jain) + Appa (Non-veg) selected → recipes must be Jain-compliant
+
+### 2. Meal Insights Dashboard (/insights)
+- New page linked from header nav (📊 Insights)
+- Five tabs: Overview, Cuisines, Nutrition, Ratings, Ingredients
+- Overview: stat cards for total meals, sessions, streak, weekly activity, avg rating
+- Cuisines: bar chart of all cuisines tried, sorted by frequency
+- Nutrition: average calories and protein across all generated recipes
+- Ratings: distribution chart with labels (Poor/Ok/.../Loved it!)
+- Ingredients: most-used ingredients bar chart
+- All data from `localStorage` — works offline, no Supabase needed
+
+### 3. Grocery Delivery Integration
+- "Order missing items" section at the bottom of the GroceryPanel
+- Three quick-order buttons: **Blinkit**, **Zepto**, **Swiggy Instamart**
+- Each opens the platform's search with all missing ingredients pre-filled
+- Only shown when there are items in the "need to buy" list
+
+### 4. Smart Recommendations
+- Strip shown below results when user has rated ≥1 recipe 4+ stars
+- "✨ Based on meals you loved" + count of high-rated recipes
+- "Surprise me with something similar" button → calls `handleSurprise`
+- Uses localStorage ratings — no server call
+
+### 5. WhatsApp Bot
+- New `api/whatsapp.js` — Meta WhatsApp Cloud API webhook
+- Supports GET (webhook verification) and POST (incoming messages)
+- Parses ingredients from natural messages: "Hi Jiff! rice, dal, onion"
+- Returns formatted WhatsApp-markdown recipe using claude-haiku (fast, cheap)
+- Handles unrecognised messages with a help message
+- Full setup guide: `WHATSAPP_SETUP.md`
+- Env vars required: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`
+
+### 6. Nutrition Goals
+- Profile → Settings tab: **Daily nutrition goals** section
+- Set daily calorie target (kcal) and protein target (g)
+- Saved as `nutrition_goals JSONB` in Supabase `profiles`
+- Recipe cards reflect goals for future comparison features
+
+### 7. Admin — Feedback categorisation (crashes never lost)
+- **💬 User Feedback** tab — shows only genuine user feedback (excludes crashes)
+- **💥 Crashes** tab — dedicated tab for `category:'crash'` entries
+  - Styled in red with monospace stack traces
+  - CSV export: `jiff-crashes.csv`
+  - "🎉 No crashes recorded" when clean
+- User feedback and crash reports are now completely separate — neither gets buried
+
+### 8. Admin — Release Tracker
+- New **🚀 Releases** tab in Admin portal
+- Log each deployment: version, title, status (Deployed/Draft/Rollback), summary
+- Persisted to `localStorage('jiff-releases')` — available offline
+- Timeline view with colour-coded status badges
+- Refresh button to sync from localStorage
+
+### Supabase — Phase 5 (run in SQL Editor)
+See `SUPABASE_SETUP.md` → Phase 5. Summary:
+```sql
+alter table profiles add column if not exists family_members jsonb default '[]';
+alter table profiles add column if not exists nutrition_goals jsonb default '{"calories":2000,"protein":80}';
+```
+
+### New files
+- `src/pages/Insights.jsx` — meal insights dashboard
+- `src/components/FamilySelector.jsx` — family member chips
+- `api/whatsapp.js` — WhatsApp webhook
+- `WHATSAPP_SETUP.md` — WhatsApp bot setup guide
+
+### API functions: 9/12 (3 spare)
+
+---
+
+## v17.6 — Notifications, share dropdown, rating clarity, camera mobile-only, ingredient translator
+**Date:** March 2026  |  **Package:** 1.17.6
+
+### Notifications (🔔 bell in header)
+- Bell icon added to header-right, before the avatar button (visible to logged-in users)
+- Red unread badge showing count (max "9+")
+- Panel shows three notification types:
+  - **🔥 Achievements** — streak milestones (fires when streak ≥ 3)
+  - **🌿 Tips** — contextual app tips
+  - **📢 Broadcasts** — admin messages from Supabase `broadcasts` table
+- "Mark all read" button in panel header
+- Read state persisted in `localStorage('jiff-read-notifs')`
+- Click-outside closes panel and marks all as read
+- Unread items highlighted with orange dot and slightly bolder title
+
+### Share button — single dropdown (removes duplicate)
+- Two separate share buttons (header icon + rating row button) merged into one
+- Single "📤 Share" button in the rating row with a dropdown containing:
+  - 💬 Share on WhatsApp
+  - 📋 Copy recipe text
+  - 🖼️ Download image (1080×1080 PNG)
+- Dropdown opens upward, click-outside closes
+
+### Recipe rating — clearer context
+- Label changed from generic "Rate this" to **"How was this recipe?"** before rating
+- After rating: label changes to **"Your rating"** with the selected label (Poor/Ok/Good/Great/Loved it!)
+
+### Camera — mobile only (fully hidden on desktop)
+- Camera button now completely hidden on desktop browsers
+- On mobile: "📷 Take photo" button with orange border triggers native camera
+- "🖼️ Add photo" always shown on all devices
+- No more tooltip — clean, no confusion
+
+### Ingredient translator (🌐 in ingredient input)
+- 🌐 button appears in the ingredient input when typed text has < 3 autocomplete matches
+- Calls `/api/suggest?action=translate` using claude-haiku (fast, cheap)
+- Returns: English name, local name, also known as, emoji, tip
+- Example: "ponangani keerai" → "Sessile joyweed / Water amaranth" 
+- Result card shows below dropdown with "+ Add" button
+- Input auto-populates with English name for easy adding
+- `lang` prop passed to IngredientInput so AI knows user's language context
+
+### E2E tests: 67 → 72
+- Test 68: Notification bell visible in header for logged-in user
+- Test 69: Unread badge shows on bell
+- Test 70: Single share button (no duplicate in header)
+- Test 71: Camera button hidden on desktop
+- Test 72: Translate button appears when input has text
+
+---
+
+## v17.5 — Definitive dietary display fix + camera mobile detection
+**Date:** March 2026  |  **Package:** 1.17.5
+
+### Root cause analysis
+
+**Dietary garbled content — root cause:**
+Previous attempts used an IIFE (`(() => { ... })()`) inside the `profilePrefs` array
+literal. When this IIFE was not closed correctly in JS, React serialised the function
+object itself as a string — producing garbled output. Additionally, even when the IIFE
+ran correctly, it joined storage IDs like `'non-veg'` directly, not display labels like
+`'Non-vegetarian'`.
+
+**Camera opens folder — root cause:**
+`capture="environment"` on `<input type="file">` is a **mobile-only browser API**.
+On desktop, all browsers (Chrome, Firefox, Edge, Safari) silently ignore this attribute
+and show the file picker. This is a web platform limitation — there is no way to open
+the device camera via `<input>` on desktop. Previous fixes repeated the same approach.
+
+### Definitive fixes
+
+**Dietary display:**
+- Removed the IIFE entirely. Replaced with `getDietaryLabel()` — a named module-level
+  helper function defined once, outside the component, testable in isolation.
+- `getDietaryLabel(food_type)` handles every known Supabase storage format:
+  - JS array `['veg']` (supabase-js reading a `text[]` column)
+  - JSON string `'["veg"]'` (text column storing a serialised array)
+  - Postgres wire format `'{veg}'` or `'{"non-veg","veg"}'`
+  - Plain string `'veg'`
+- Maps all IDs to display labels via `DIETARY_LABELS` constant (also module-level)
+- `profilePrefs` Dietary entry is now a single clean line: `getDietaryLabel(profile.food_type)`
+
+**Camera / photo upload — complete rewrite of FridgePhotoUpload.jsx:**
+- Added `isMobileDevice()` utility that checks `navigator.userAgent` for mobile signals
+- `useEffect` sets `isMobile` state on mount — no SSR issues
+- On mobile: 📷 "Take photo" button triggers `cameraRef` with `capture="environment"` → opens native camera
+- On desktop: 📷 "Camera" button shows a tooltip "Camera works on mobile — use Add photo on desktop" (auto-dismisses after 3s)
+- Camera button is styled with orange border on mobile to signal it works, grey on desktop
+- "Add photo" button always works on all devices (file picker / gallery)
+- Drag and drop still works on the surrounding zone
+- No hidden state where desktop users expect camera but get file picker silently
+
+### Code quality
+- Zero syntax errors, zero stale variables across all 38 source files
+- All `t()` calls verified to have `useLocale()` in scope
+- 23/23 feature checks pass
+- API: 8/12 serverless functions
+
+### E2E tests: 64 → 67
+- Test 65: Dietary in sidebar shows label text not IDs or JSON
+- Test 66: Camera button shows tooltip on non-mobile (jsdom)
+- Test 67: getDietaryLabel handles JS array, JSON string, Postgres format
+
+---
+
 ## v17.4 — Clean pass: dietary card, nav chips, share card redesign, rating position
 **Date:** March 2026  |  **Package:** 1.17.4
 

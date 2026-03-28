@@ -6,7 +6,8 @@ import { useLocale, getCurrentSeason } from '../contexts/LocaleContext';
 import JiffLogo        from '../components/JiffLogo';
 import SmartGreeting    from '../components/SmartGreeting';
 import IngredientInput  from '../components/IngredientInput';
-import FridgePhotoUpload from '../components/FridgePhotoUpload';
+import FridgePhotoUpload  from '../components/FridgePhotoUpload';
+import FamilySelector    from '../components/FamilySelector';
 
 // ── localStorage helpers (favourites for guest fallback) ─────────
 const STORAGE_KEY = 'jiff-favourites';
@@ -17,6 +18,39 @@ function saveLocalFavs(f) { try { localStorage.setItem(STORAGE_KEY, JSON.stringi
 const FRACTIONS = { '¼':0.25,'½':0.5,'¾':0.75,'⅓':1/3,'⅔':2/3,'⅛':0.125,'⅜':0.375,'⅝':0.625,'⅞':0.875 };
 const FRAC_CHARS = Object.keys(FRACTIONS).join('');
 const QTY_RE = new RegExp(`^(\\*?\\s*)(\\d+(?:\\.\\d+)?)?\\s*([${FRAC_CHARS}])?(?:\\s*(\\d+)\\s*\\/\\s*(\\d+))?`);
+// ── Dietary display helper ────────────────────────────────────────
+// Maps food_type IDs to human labels regardless of how Supabase returns them.
+// Handles: JS array ['veg'], JSON string '["veg"]', Postgres '{veg}', plain 'veg'
+const DIETARY_LABELS = {
+  'non-veg':'Non-vegetarian', 'veg':'Vegetarian', 'eggetarian':'Eggetarian',
+  'vegan':'Vegan', 'jain':'Jain', 'halal':'Halal', 'kosher':'Kosher',
+  'pescatarian':'Pescatarian',
+};
+function getDietaryLabel(food_type) {
+  const toLabel = id => DIETARY_LABELS[(id||'').toLowerCase().trim()] || id || '';
+  try {
+    if (!food_type) return 'Not set';
+    if (Array.isArray(food_type)) {
+      const labels = food_type.map(toLabel).filter(Boolean);
+      return labels.length ? labels.join(', ') : 'Not set';
+    }
+    if (typeof food_type !== 'string') return 'Not set';
+    // JSON string: '["veg"]' or '"veg"'
+    if (food_type.startsWith('[') || food_type.startsWith('"')) {
+      const parsed = JSON.parse(food_type);
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      return arr.map(toLabel).filter(Boolean).join(', ') || 'Not set';
+    }
+    // Postgres wire format: '{veg}' or '{"non-veg","veg"}'
+    if (food_type.startsWith('{') && food_type.endsWith('}')) {
+      const items = food_type.slice(1,-1).split(',')
+        .map(s => toLabel(s.replace(/^"|"$/g,'').trim())).filter(Boolean);
+      return items.length ? items.join(', ') : 'Not set';
+    }
+    return toLabel(food_type) || 'Not set';
+  } catch { return 'Not set'; }
+}
+
 function parseQty(str) {
   const m = str.match(QTY_RE); if (!m) return { value:null, rest:str, prefix:'' };
   const prefix=m[1]||'', whole=m[2]?parseFloat(m[2]):0;
@@ -121,6 +155,15 @@ const styles = `
   .hdr-btn.profile{border-color:rgba(255,69,0,0.2);color:var(--jiff);background:rgba(255,69,0,0.06);}
   .fav-badge{background:var(--fav);color:white;font-size:10px;font-weight:700;border-radius:20px;padding:1px 6px;}
   .trial-badge{background:rgba(255,184,0,0.15);border:1px solid rgba(255,184,0,0.3);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:500;color:#854F0B;white-space:nowrap;}
+  .notif-btn{position:relative;background:none;border:1.5px solid var(--border-mid);border-radius:20px;padding:6px 10px;cursor:pointer;font-size:15px;display:flex;align-items:center;gap:4px;transition:all 0.15s;}
+  .notif-btn:hover{border-color:var(--jiff);color:var(--jiff);}
+  .notif-badge{position:absolute;top:-4px;right:-4px;background:#E53E3E;color:white;font-size:9px;font-weight:700;border-radius:20px;padding:1px 5px;min-width:16px;text-align:center;border:2px solid white;}
+  .notif-panel{position:absolute;right:0;top:calc(100% + 8px);width:320px;background:white;border:1px solid rgba(28,10,0,0.10);border-radius:16px;box-shadow:0 12px 40px rgba(28,10,0,0.14);z-index:200;overflow:hidden;}
+  .notif-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid rgba(28,10,0,0.08);}
+  .notif-item{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(28,10,0,0.05);transition:background 0.1s;cursor:default;}
+  .notif-item.unread{background:rgba(255,69,0,0.03);}
+  .notif-item:hover{background:rgba(28,10,0,0.03);}
+  .notif-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px;font-weight:300;}
 
   /* Auth gate overlay */
   .auth-gate{position:fixed;inset:0;background:rgba(28,10,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;backdrop-filter:blur(4px);}
@@ -524,6 +567,24 @@ function ShareDrawer({ meal }) {
         <button className={`share-copy ${copied?'copied':''}`} onClick={handleCopy}>{copied?<IconCheck/>:<IconCopy/>}{copied?'Copied!':'Copy'}</button>
         {hasNative&&<button className="share-copy" onClick={async e=>{e.stopPropagation();try{await navigator.share({title:`${meal.emoji} ${meal.name}`,text});}catch{}}}><IconShare/>More</button>}
       </div>
+      {/* ── Order delivery ── */}
+      {need.length > 0 && (
+        <div style={{marginTop:10,padding:'10px 14px',background:'rgba(28,10,0,0.03)',borderRadius:10,borderTop:'1px solid rgba(28,10,0,0.06)'}}>
+          <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'#9E9E9E',fontWeight:500,marginBottom:8}}>Order missing items</div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {[
+              {name:'Blinkit', color:'#1A8A3E', url:'https://blinkit.com/s/?q='+encodeURIComponent(need.join(' '))},
+              {name:'Zepto',   color:'#5B21B6', url:'https://zeptonow.com/search?query='+encodeURIComponent(need.join(' '))},
+              {name:'Swiggy',  color:'#FC8019', url:'https://swiggy.com/instamart/search?query='+encodeURIComponent(need.join(' '))},
+            ].map(p=>(
+              <a key={p.name} href={p.url} target="_blank" rel="noopener noreferrer"
+                style={{padding:'6px 14px',borderRadius:8,background:p.color,color:'white',textDecoration:'none',fontSize:11,fontWeight:600,fontFamily:"'DM Sans',sans-serif",display:'inline-block'}}>
+                🛒 {p.name}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -659,7 +720,6 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           <div className="meal-num">{showFavTag?'❤️ Saved':`Option ${index+1}`}</div>
           <div className="meal-hdr-actions">
             <button className={`heart-btn ${isFavourite?'saved':''}`} onClick={e=>{e.stopPropagation();onToggleFav(meal);}}><IconHeart filled={isFavourite}/></button>
-            <button className="share-btn" onClick={e=>{e.stopPropagation();setShareOpen(p=>!p);}}><IconShare/>{shareOpen?'Close':'Share'}</button>
           </div>
         </div>
         <div className="meal-name">{meal.emoji} {meal.name}</div>
@@ -671,9 +731,14 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
       </div>
       <div className="meal-desc">{meal.description}</div>
       {/* ── Rating + Share row ── */}
-      <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 0 4px',borderTop:'1px solid rgba(28,10,0,0.06)',marginTop:4}}>
-        <div style={{display:'flex',gap:2,alignItems:'center'}}>
-          {[1,2,3,4,5].map(s=>(
+      <div style={{padding:'10px 0 4px',borderTop:'1px solid rgba(28,10,0,0.06)',marginTop:4}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+          <div>
+            <div style={{fontSize:10,color:'var(--muted)',fontWeight:300,marginBottom:4,letterSpacing:'0.3px'}}>
+              {rating > 0 ? 'Your rating' : 'How was this recipe?'}
+            </div>
+            <div style={{display:'flex',gap:1,alignItems:'center'}}>
+              {[1,2,3,4,5].map(s=>(
             <button key={s}
               onMouseEnter={()=>setHoverStar(s)}
               onMouseLeave={()=>setHoverStar(0)}
@@ -682,17 +747,47 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
               ⭐
             </button>
           ))}
-          {rating > 0 && (
-            <span style={{fontSize:10,color:'var(--jiff)',fontWeight:600,marginLeft:4,letterSpacing:'0.5px'}}>
-              {['','Poor','Ok','Good','Great','Loved it!'][rating]}
-            </span>
+              {rating > 0 && (
+                <span style={{fontSize:10,color:'var(--jiff)',fontWeight:600,marginLeft:6,letterSpacing:'0.5px'}}>
+                  {['','Poor','Ok','Good','Great','Loved it!'][rating]}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* ── Merged share button ── */}
+        <div style={{marginLeft:'auto',position:'relative'}}>
+          <button onClick={e=>{e.stopPropagation();setShareOpen(p=>!p);}}
+            style={{background:'linear-gradient(135deg,#FF4500,#CC3700)',color:'white',border:'none',borderRadius:8,padding:'4px 12px',fontSize:11,fontWeight:500,cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontFamily:"'DM Sans',sans-serif",boxShadow:'0 2px 6px rgba(255,69,0,0.25)'}}>
+            📤 Share
+          </button>
+          {shareOpen && (
+            <div onClick={e=>e.stopPropagation()} style={{position:'absolute',right:0,bottom:'calc(100% + 6px)',background:'white',border:'1px solid rgba(28,10,0,0.12)',borderRadius:12,boxShadow:'0 8px 24px rgba(28,10,0,0.12)',padding:'8px',zIndex:50,minWidth:180,fontFamily:"'DM Sans',sans-serif"}}>
+              <div style={{fontSize:10,letterSpacing:'1px',textTransform:'uppercase',color:'#9E9E9E',padding:'2px 8px 6px',fontWeight:500}}>Share this recipe</div>
+              {/* WhatsApp */}
+              <a href={`https://wa.me/?text=${encodeURIComponent(buildShareText(meal))}`}
+                target="_blank" rel="noopener noreferrer" onClick={()=>setShareOpen(false)}
+                style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:8,textDecoration:'none',color:'#1C0A00',fontSize:12,transition:'background 0.1s'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(28,10,0,0.05)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <span style={{fontSize:16}}>💬</span> Share on WhatsApp
+              </a>
+              {/* Copy text */}
+              <button onClick={async e=>{e.stopPropagation();try{await navigator.clipboard.writeText(buildShareText(meal));}catch{} setShareOpen(false);}}
+                style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:8,width:'100%',background:'none',border:'none',color:'#1C0A00',fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",textAlign:'left',transition:'background 0.1s'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(28,10,0,0.05)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <span style={{fontSize:16}}>📋</span> Copy recipe text
+              </button>
+              {/* Download image */}
+              <button onClick={e=>{e.stopPropagation();generateShareCard();setShareOpen(false);}}
+                style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:8,width:'100%',background:'none',border:'none',color:'#1C0A00',fontSize:12,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",textAlign:'left',transition:'background 0.1s'}}
+                onMouseEnter={e=>e.currentTarget.style.background='rgba(28,10,0,0.05)'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <span style={{fontSize:16}}>🖼️</span> Download image
+              </button>
+            </div>
           )}
-          {!rating && <span style={{fontSize:10,color:'var(--muted)',marginLeft:2,fontWeight:300}}>Rate this</span>}
         </div>
-        <button onClick={e=>{e.stopPropagation();generateShareCard();}}
-          style={{marginLeft:'auto',background:'linear-gradient(135deg,#FF4500,#CC3700)',color:'white',border:'none',borderRadius:8,padding:'4px 12px',fontSize:11,fontWeight:500,cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontFamily:"'DM Sans',sans-serif",boxShadow:'0 2px 6px rgba(255,69,0,0.25)'}}>
-          📤 Share
-        </button>
       </div>
 
       {shareOpen&&<ShareDrawer meal={meal}/>}
@@ -856,7 +951,10 @@ export default function Jiff() {
   const [pantryLoaded, setPantryLoaded] = useState(false);
   const [gatePlan,     setGatePlan]     = useState('annual');
   const [gateLoading,  setGateLoading]  = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showUserMenu,       setShowUserMenu]       = useState(false);
+  const [showNotifications,  setShowNotifications]  = useState(false);
+  const [notifications,      setNotifications]      = useState([]);
+  const [unreadCount,        setUnreadCount]        = useState(0);
 
   const timerRef = useRef(null);
 
@@ -869,6 +967,7 @@ export default function Jiff() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [streak,         setStreak]         = useState(0);
   const [showSurprise,   setShowSurprise]   = useState(false);
+  const [familySelected, setFamilySelected] = useState([]);  // [] = everyone
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
   const [showSeasonalPicker, setShowSeasonalPicker] = useState(false);
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
@@ -927,6 +1026,11 @@ export default function Jiff() {
             spice_level: profile.spice_level, allergies: profile.allergies,
             preferred_cuisines: profile.preferred_cuisines, skill_level: profile.skill_level,
           } : null,
+          familyMembers: (() => {
+            const members = Array.isArray(profile?.family_members) ? profile.family_members : [];
+            if (!members.length || familySelected.includes('all') || !familySelected.length) return [];
+            return familySelected.map(i => members[i]).filter(Boolean);
+          })(),
           surpriseMode: true,
         }),
       });
@@ -1051,6 +1155,51 @@ export default function Jiff() {
     };
   }, [user, supabaseEnabled]);
 
+  // ── Notifications — load broadcasts + system messages ────────────
+  useEffect(() => {
+    const loadNotifications = async () => {
+      const readKey = 'jiff-read-notifs';
+      const readIds = new Set(JSON.parse(localStorage.getItem(readKey) || '[]'));
+      const all = [];
+
+      // System notifications — streak, tips
+      const streakData = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+      if (streakData.count >= 3) {
+        all.push({ id:'streak-'+streakData.count, type:'achievement', icon:'🔥',
+          title:`${streakData.count}-day cooking streak!`, body:'Keep it up — you're building a great habit.', ts: Date.now()-1000 });
+      }
+      all.push({ id:'tip-season', type:'tip', icon:'🌿',
+        title:'Seasonal produce available', body:'Check the seasonal suggestions at the top of the page for the freshest ingredients.', ts: Date.now()-2000 });
+
+      // Broadcast messages from Supabase (if connected)
+      if (supabaseEnabled) {
+        try {
+          const { data } = await (await import('../lib/supabase')).supabase
+            .from('broadcasts').select('id,message,created_at').eq('active', true)
+            .order('created_at', { ascending: false }).limit(10);
+          (data || []).forEach(b => all.push({
+            id: 'bc-'+b.id, type:'broadcast', icon:'📢',
+            title:'From Jiff', body: b.message, ts: new Date(b.created_at).getTime(),
+          }));
+        } catch {}
+      }
+
+      // Sort newest first, mark read status
+      all.sort((a,b) => b.ts - a.ts);
+      const withRead = all.map(n => ({ ...n, read: readIds.has(n.id) }));
+      setNotifications(withRead);
+      setUnreadCount(withRead.filter(n => !n.read).length);
+    };
+    loadNotifications();
+  }, [user, supabaseEnabled, streak]);
+
+  const markAllRead = () => {
+    const ids = notifications.map(n => n.id);
+    localStorage.setItem('jiff-read-notifs', JSON.stringify(ids));
+    setNotifications(ns => ns.map(n => ({ ...n, read: true })));
+    setUnreadCount(0);
+  };
+
   // ── Streak tracking ──────────────────────────────────────────────
   useEffect(() => {
     try {
@@ -1073,24 +1222,8 @@ export default function Jiff() {
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
     { key: 'Spice',          val: profile.spice_level || 'Medium' },
-    { key: 'Dietary',        val: (() => {
-        try {
-          const raw = profile.food_type;
-          if (!raw) return 'Not set';
-          if (Array.isArray(raw)) return raw.join(', ');
-          if (typeof raw === 'string') {
-            // Postgres text[] format: {non-veg} or {"non-veg","veg"}
-            if (raw.startsWith('{') && raw.endsWith('}')) {
-              return raw.slice(1,-1).split(',').map(s=>s.replace(/^"|"$/g,'').trim()).filter(Boolean).join(', ') || 'Not set';
-            }
-            // JSON array format: ["non-veg"]
-            if (raw.startsWith('[')) return JSON.parse(raw).join(', ');
-            return raw; // plain string
-          }
-          return 'Not set';
-        } catch { return 'Not set'; }
-      })() },
-    { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
+    { key: 'Dietary',        val: getDietaryLabel(profile.food_type),
+        { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
   ] : [];
 
   // Show mandatory sign-in gate
@@ -1176,8 +1309,53 @@ export default function Jiff() {
               </button>
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>}
+            {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>
+            {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
+            {/* ── Notification bell ── */}
+            {user && (
+              <div style={{position:'relative'}}>
+                <button className="notif-btn" onClick={()=>{setShowNotifications(p=>!p);if(showNotifications)markAllRead();}}>
+                  🔔
+                  {unreadCount > 0 && <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+                </button>
+                {showNotifications && (
+                  <>
+                    <div onClick={()=>{setShowNotifications(false);markAllRead();}} style={{position:'fixed',inset:0,zIndex:199}}/>
+                    <div className="notif-panel">
+                      <div className="notif-header">
+                        <span style={{fontFamily:"'Fraunces',serif",fontSize:14,fontWeight:700,color:'var(--ink)'}}>Notifications</span>
+                        {unreadCount > 0 && (
+                          <button onClick={markAllRead} style={{background:'none',border:'none',fontSize:11,color:'var(--jiff)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                            Mark all read
+                          </button>
+                        )}
+                      </div>
+                      <div style={{maxHeight:380,overflowY:'auto'}}>
+                        {notifications.length === 0 ? (
+                          <div className="notif-empty">
+                            <div style={{fontSize:28,marginBottom:8}}>🔔</div>
+                            No notifications yet
+                          </div>
+                        ) : notifications.map(n => (
+                          <div key={n.id} className={`notif-item ${n.read ? '' : 'unread'}`}>
+                            <span style={{fontSize:20,lineHeight:1,marginTop:2,flexShrink:0}}>{n.icon}</span>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,marginBottom:2}}>
+                                <span style={{fontSize:12,fontWeight:n.read?400:600,color:'var(--ink)'}}>{n.title}</span>
+                                {!n.read && <span style={{width:6,height:6,borderRadius:'50%',background:'var(--jiff)',flexShrink:0}}/>}
+                              </div>
+                              <p style={{fontSize:11,color:'var(--muted)',fontWeight:300,lineHeight:1.5,margin:0}}>{n.body}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {user && (
               <div style={{position:'relative'}}>
                 {/* Avatar button */}
@@ -1352,6 +1530,7 @@ export default function Jiff() {
                     onChange={setFridgeItems}
                     pantryIngredients={[]}
                     placeholder="cabbage, chicken, eggs, potatoes…"
+                    lang={lang}
                   />
                 </div>
 
@@ -1424,6 +1603,20 @@ export default function Jiff() {
                     <span>Jiff it now!</span>
                   </button>
                   {!ingredients.length && <p className="cta-note">{t('cta_note')}</p>}
+
+                {/* ── Family selector ── */}
+                {user && Array.isArray(profile?.family_members) && profile.family_members.length > 0 && (
+                  <FamilySelector
+                    members={profile.family_members}
+                    selected={familySelected}
+                    onToggle={(idx) => {
+                      if (idx === 'all') { setFamilySelected([]); return; }
+                      setFamilySelected(prev =>
+                        prev.includes(idx) ? prev.filter(i=>i!==idx) : [...prev, idx]
+                      );
+                    }}
+                  />
+                )}
 
                 {/* Surprise me — one tap, profile-based */}
                 {user && profile && (
@@ -1584,6 +1777,25 @@ export default function Jiff() {
                 />
               ))}
             </div>
+            {/* ── Smart recommendations ── */}
+            {(() => {
+              const ratings = JSON.parse(localStorage.getItem('jiff-ratings')||'{}');
+              const topRated = Object.entries(ratings).filter(([,r])=>r>=4).map(([k])=>k);
+              return topRated.length >= 1 ? (
+                <div style={{background:'rgba(255,69,0,0.04)',border:'1px solid rgba(255,69,0,0.15)',borderRadius:14,padding:'14px 16px',marginBottom:16}}>
+                  <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:500,marginBottom:10}}>
+                    ✨ Based on meals you loved
+                  </div>
+                  <p style={{fontSize:12,color:'var(--muted)',fontWeight:300,margin:'0 0 10px'}}>
+                    You've rated {topRated.length} recipe{topRated.length!==1?'s':''} highly. Generate similar dishes:
+                  </p>
+                  <button onClick={handleSurprise}
+                    style={{background:'var(--jiff)',color:'white',border:'none',borderRadius:10,padding:'8px 18px',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>
+                    ✨ Surprise me with something similar
+                  </button>
+                </div>
+              ) : null;
+            })()}
             <div className="reset-wrap">
               <button className="reset-btn" onClick={reset}>← Try different ingredients</button>
             </div>

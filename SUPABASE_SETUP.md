@@ -40,7 +40,7 @@ create table if not exists profiles (
   allergies    text[] default '{}',
   preferred_cuisines text[] default '{}',
   skill_level  text default 'intermediate',
-  food_type    text[] default '{}',
+  food_type    text[] default '{}',   -- stored as text[] e.g. ARRAY['veg']
   diet_requirements text[] default '{}',
   country      text,
   updated_at   timestamptz default now()
@@ -248,6 +248,44 @@ order by table_name;
 ```
 
 Expected tables: `api_keys`, `broadcasts`, `favourites`, `feedback`, `meal_history`, `pantry`, `profiles`
+
+---
+
+
+## Phase 5 — v18 features (family mode, nutrition goals, releases)
+
+### Step 1 — Add columns to profiles table
+
+```sql
+-- Family members (JSONB array of {name, dietary, allergies})
+alter table profiles add column if not exists family_members jsonb default '[]';
+
+-- Nutrition goals (JSONB: {calories, protein})
+alter table profiles add column if not exists nutrition_goals jsonb default '{"calories":2000,"protein":80}';
+```
+
+### Step 2 — Releases table (admin build tracker)
+
+```sql
+create table if not exists releases (
+  id          uuid primary key default gen_random_uuid(),
+  version     text not null,
+  title       text not null,
+  summary     text,
+  status      text default 'deployed' check (status in ('deployed','draft','rollback')),
+  deployed_at timestamptz default now()
+);
+-- No RLS needed — admin-only via service role
+```
+
+### Step 3 — WhatsApp webhook env vars (add to Vercel)
+
+```
+WHATSAPP_ACCESS_TOKEN=your_meta_access_token
+WHATSAPP_VERIFY_TOKEN=jiff-whatsapp-2026
+WHATSAPP_PHONE_NUMBER_ID=your_phone_number_id
+```
+See `WHATSAPP_SETUP.md` for full configuration.
 
 ---
 

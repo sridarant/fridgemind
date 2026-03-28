@@ -1,7 +1,8 @@
 // src/components/FridgePhotoUpload.jsx
-// "What's in your fridge?" — upload multiple photos OR type below
+// Camera + file upload for ingredient detection
+// Camera button: opens native camera on mobile, shows tooltip on desktop
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5',
@@ -9,150 +10,105 @@ const C = {
   green:'#1D9E75', greenBg:'rgba(29,158,117,0.08)',
 };
 
-export default function FridgePhotoUpload({ onIngredientsDetected, existingIngredients = [] }) {
-  const [state,    setState]    = useState('idle'); // idle | loading | done | error
-  const [detected, setDetected] = useState([]);
-  const [checked,  setChecked]  = useState({});
-  const [errMsg,   setErrMsg]   = useState('');
-  const [previews, setPreviews] = useState([]);
-  const fileRef  = useRef(null);
+// Detect mobile once — camera capture only works on mobile browsers
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  ) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
+}
+
+export default function FridgePhotoUpload({ onIngredients }) {
+  const fileRef   = useRef(null);
   const cameraRef = useRef(null);
+  const [state,    setState]    = useState('idle');   // idle | loading | done | error
+  const [previews, setPreviews] = useState([]);
+  const [dragging, setDragging] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(isMobileDevice());
+  }, []);
 
   const handleFiles = async (files) => {
-    if (!files?.length) return;
-    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/') && f.size < 5*1024*1024);
-    if (!validFiles.length) { setErrMsg('Please upload image files under 5MB each.'); setState('error'); return; }
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (!imageFiles.length) return;
 
-    // Show previews
-    const previewUrls = await Promise.all(validFiles.map(f => new Promise(res => {
-      const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(f);
-    })));
-    setPreviews(previewUrls);
-    setState('loading'); setErrMsg('');
+    // Show previews immediately
+    const urls = imageFiles.map(f => URL.createObjectURL(f));
+    setPreviews(urls);
+    setState('loading');
 
-    // Process each image and collect all detected ingredients
-    const allDetected = new Set();
-    await Promise.all(validFiles.map(async (file) => {
-      try {
-        const base64 = await new Promise(res => {
-          const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.readAsDataURL(file);
-        });
-        const res = await fetch('/api/detect-ingredients', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageBase64: base64, mediaType: file.type }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (data.code === 'not_food') {
-            throw new Error('not_food');
-          }
-        } else if (data.ingredients?.length) {
-          data.ingredients.forEach(i => allDetected.add(i));
-        }
-      } catch (e) {
-        if (e.message === 'not_food') {
-          setErrMsg("That photo doesn't look like food — please upload a fridge, pantry, or ingredients photo.");
-          setState('error'); return;
-        }
+    try {
+      // Convert to base64
+      const base64Images = await Promise.all(imageFiles.map(f => new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = () => res(r.result.split(',')[1]);
+        r.onerror = rej;
+        r.readAsDataURL(f);
+      })));
+
+      const response = await fetch('/api/detect-ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images: base64Images }),
+      });
+
+      const data = await response.json();
+      if (data.ingredients?.length) {
+        onIngredients(data.ingredients);
+        setState('done');
+      } else {
+        setState('error');
       }
-    }));
-
-    // Filter out already-added items
-    const newOnes = [...allDetected].filter(
-      i => !existingIngredients.map(e => e.toLowerCase()).includes(i.toLowerCase())
-    );
-    if (!newOnes.length) {
-      setErrMsg('No new ingredients found. Try a clearer photo.'); setState('error'); return;
+    } catch {
+      setState('error');
     }
-    setDetected(newOnes);
-    const initChecked = {};
-    newOnes.forEach((_, i) => { initChecked[i] = true; }); // all selected by default
-    setChecked(initChecked);
-    setState('done');
   };
 
-  const toggleCheck = (i) => setChecked(p => ({ ...p, [i]: !p[i] }));
+  const onDrop = (e) => {
+    e.preventDefault(); setDragging(false);
+    if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
+  };
+  const onDragOver  = (e) => { e.preventDefault(); setDragging(true); };
+  const onDragLeave = ()  => setDragging(false);
 
-  const addSelected = () => {
-    const selected = detected.filter((_, i) => checked[i] !== false);
-    onIngredientsDetected(selected);
-    setState('idle'); setDetected([]); setChecked({}); setPreviews([]);
+  const handleCameraClick = (e) => {
+    e.stopPropagation();
+    cameraRef.current?.click();
   };
 
-  // Drag-and-drop
-  const [dragging, setDragging] = useState(false);
-  const onDrop = e => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); };
-  const onDragOver = e => { e.preventDefault(); setDragging(true); };
-  const onDragLeave = () => setDragging(false);
-
-  if (state === 'done' && detected.length > 0) {
+  if (state === 'done') {
     return (
-      <div style={{ background:'white', border:'1px solid ' + C.border, borderRadius:14, overflow:'hidden', marginBottom:10 }}>
-        {/* Previews */}
-        {previews.length > 0 && (
-          <div style={{ display:'flex', gap:6, padding:'10px 12px 0', flexWrap:'wrap' }}>
-            {previews.map((src, i) => (
-              <img key={i} src={src} alt="" style={{ width:52, height:52, borderRadius:8, objectFit:'cover', border:'1px solid ' + C.border }}/>
-            ))}
-          </div>
-        )}
-        <div style={{ padding:'10px 12px 6px', borderBottom:'1px solid ' + C.border }}>
-          <div style={{ fontSize:13, fontWeight:500, color:C.ink }}>
-            Found {detected.length} ingredient{detected.length > 1 ? 's' : ''}
-          </div>
-          <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>Tap to deselect any you don't want</div>
-        </div>
-        <div style={{ padding:'8px 12px', display:'flex', flexWrap:'wrap', gap:6 }}>
-          {detected.map((ing, i) => (
-            <button key={ing} onClick={() => toggleCheck(i)} style={{
-              background: checked[i] !== false ? C.ink : 'white',
-              color: checked[i] !== false ? 'white' : C.muted,
-              border: '1.5px solid ' + checked[i] !== false ? C.ink : C.borderMid,
-              borderRadius:20, padding:'4px 11px', fontSize:12, cursor:'pointer',
-              fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
-            }}>
-              {ing}
-            </button>
-          ))}
-        </div>
-        <div style={{ padding:'6px 12px 12px', display:'flex', gap:8 }}>
-          <button onClick={addSelected} style={{
-            background:C.jiff, color:'white', border:'none', borderRadius:9,
-            padding:'8px 18px', fontSize:12, fontWeight:500, cursor:'pointer',
-            fontFamily:"'DM Sans',sans-serif", flex:1,
-          }}>
-            ⚡ Add {detected.filter((_, i) => checked[i] !== false).length} to fridge
-          </button>
-          <button onClick={() => { setState('idle'); setDetected([]); setPreviews([]); }} style={{
-            background:'white', color:C.muted, border:'1.5px solid ' + C.borderMid,
-            borderRadius:9, padding:'8px 14px', fontSize:12, cursor:'pointer',
-            fontFamily:"'DM Sans',sans-serif",
-          }}>
-            Cancel
-          </button>
-        </div>
+      <div style={{ padding:'12px 14px', background:C.greenBg, border:'1px solid rgba(29,158,117,0.25)', borderRadius:12, display:'flex', alignItems:'center', gap:10 }}>
+        <span style={{ fontSize:18 }}>✅</span>
+        <span style={{ fontSize:13, color:C.green, fontWeight:400 }}>Ingredients detected from photo</span>
+        <button onClick={() => { setState('idle'); setPreviews([]); }}
+          style={{ marginLeft:'auto', background:'none', border:'none', color:C.muted, fontSize:12, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          ✕ Clear
+        </button>
       </div>
     );
   }
 
   return (
-    <div style={{ marginBottom:10 }}>
+    <div style={{ marginBottom:10, position:'relative' }}>
+      {/* Hidden file inputs */}
       <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:'none' }}
-        onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ''; }}
+        onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value=''; }}
       />
-      {/* Camera capture — mobile only */}
+      {/* Camera input — capture="environment" triggers native camera on mobile */}
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:'none' }}
-        onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ''; }}
+        onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value=''; }}
       />
+
+
+
       <div
-        onClick={() => state !== 'loading' && fileRef.current?.click()}
         onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave}
         style={{
           border: '1.5px dashed ' + (dragging ? C.jiff : C.borderMid),
           borderRadius:12, padding:'14px 16px',
           background: dragging ? 'rgba(255,69,0,0.04)' : C.cream,
-          cursor: state === 'loading' ? 'not-allowed' : 'pointer',
           textAlign:'center', transition:'all 0.15s',
         }}
       >
@@ -162,33 +118,37 @@ export default function FridgePhotoUpload({ onIngredientsDetected, existingIngre
             <span style={{ fontSize:13, color:C.muted, fontWeight:300 }}>
               Scanning {previews.length > 1 ? `${previews.length} photos` : 'photo'}…
             </span>
+            <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
           </div>
         ) : (
           <div>
-            <div style={{ fontSize:22, marginBottom:4 }}>📸</div>
-            <div style={{ display:'flex', gap:10, marginBottom:6, justifyContent:'center' }}>
-              <button type="button" onClick={e=>{e.stopPropagation();cameraRef.current?.click();}}
-                style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:10, border:'1.5px solid rgba(28,10,0,0.2)', background:'white', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:'#1C0A00' }}>
-                📷 Camera
-              </button>
-              <button type="button" onClick={e=>{e.stopPropagation();fileRef.current?.click();}}
-                style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:10, border:'1.5px solid rgba(28,10,0,0.2)', background:'white', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:'#1C0A00' }}>
+            <div style={{ fontSize:22, marginBottom:8 }}>📸</div>
+            <div style={{ display:'flex', gap:10, marginBottom:8, justifyContent:'center' }}>
+              {/* Camera button — full camera on mobile, tooltip on desktop */}
+              {/* Camera button — mobile only, fully hidden on desktop */}
+              {isMobile && (
+                <button type="button" onClick={handleCameraClick}
+                  style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:10, border:'1.5px solid '+C.jiff, background:'white', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:C.jiff }}>
+                  📷 Take photo
+                </button>
+              )}
+              {/* File picker — always works */}
+              <button type="button" onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+                style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:10, border:'1.5px solid '+C.jiff, background:'white', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:C.jiff }}>
                 🖼️ Add photo
               </button>
             </div>
-            <div style={{ fontSize:11, color:'#7C6A5E', fontWeight:300 }}>
+            <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>
               or drag &amp; drop anywhere above
             </div>
           </div>
         )}
+        {state === 'error' && (
+          <div style={{ marginTop:8, fontSize:12, color:'#E53E3E', fontWeight:300 }}>
+            Could not detect ingredients — try a clearer photo or type them below.
+          </div>
+        )}
       </div>
-      {state === 'error' && (
-        <div style={{ fontSize:11, color:'#E53E3E', marginTop:5, display:'flex', alignItems:'center', gap:6 }}>
-          <span>⚠</span>{errMsg}
-          <button onClick={() => setState('idle')} style={{ background:'none', border:'none', color:'#E53E3E', cursor:'pointer', fontSize:11, padding:0, marginLeft:4 }}>Dismiss</button>
-        </div>
-      )}
-      <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
     </div>
   );
 }

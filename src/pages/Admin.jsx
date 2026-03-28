@@ -47,6 +47,9 @@ export default function Admin() {
   const [resetResult,  setResetResult]  = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastSent,setBroadcastSent]= useState(false);
+  const [releases,      setReleases]     = useState([]);
+  const [newRelease,    setNewRelease]   = useState({ version:'', title:'', summary:'', status:'deployed' });
+  const [feedbackFilter,setFeedbackFilter]=useState('user');  // 'user' | 'crash' | 'rating'
   const [apiUsage,     setApiUsage]     = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -65,6 +68,7 @@ export default function Admin() {
     } catch {}
     // Waitlist from localStorage
     setWaitlist(JSON.parse(localStorage.getItem('jiff-global-waitlist')||'[]'));
+    setReleases(JSON.parse(localStorage.getItem('jiff-releases')||'[]'));
     // Supabase users + feedback via admin API
     try {
       const r = await fetch('/api/admin?action=users');
@@ -141,7 +145,9 @@ export default function Admin() {
     { id:'overview',  label:'📊 Overview' },
     { id:'users',     label:'👥 Users' },
     { id:'waitlist',  label:'📋 Waitlist' },
-    { id:'feedback',  label:'💬 Feedback' },
+    { id:'feedback',  label:'💬 User Feedback' },
+    { id:'crashes',   label:'💥 Crashes' },
+    { id:'releases',  label:'🚀 Releases' },
     { id:'tools',     label:'🔧 Tools' },
     { id:'api',       label:'📡 API Usage' },
   ];
@@ -277,21 +283,44 @@ export default function Admin() {
           </Card>
         )}
 
-        {/* FEEDBACK */}
+        {/* USER FEEDBACK (non-crash) */}
         {activeTab==='feedback' && (
-          <Card title={`Feedback — ${feedback.length} entries`}
-            action={feedback.length>0&&<button onClick={()=>exportCSV(feedback,'jiff-feedback.csv',['rating','category','message','created_at'])} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, border:'1px solid '+C.borderMid, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↓ CSV</button>}>
-            {feedback.length===0 ? (
-              <div style={{ color:C.muted, fontSize:13, fontWeight:300 }}>No feedback yet. Requires Supabase Phase 3 <code style={{ fontSize:11 }}>feedback</code> table and <code style={{ fontSize:11 }}>SUPABASE_SERVICE_ROLE_KEY</code>.</div>
-            ) : feedback.map((f,i)=>(
-              <div key={i} style={{ borderBottom:'1px solid rgba(28,10,0,0.06)', padding:'10px 0', background: f.category==='crash' ? 'rgba(229,62,62,0.04)' : 'transparent', marginLeft: f.category==='crash' ? -8 : 0, paddingLeft: f.category==='crash' ? 8 : 0, borderLeft: f.category==='crash' ? '3px solid #E53E3E' : 'none' }}>
-                <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:4 }}>
-                  <span style={{ fontSize:13 }}>{f.category==='crash' ? '💥' : '⭐'.repeat(f.rating||0)}</span>
-                  <span style={{ fontSize:11, color: f.category==='crash' ? C.red : C.muted, background: f.category==='crash' ? 'rgba(229,62,62,0.1)' : 'rgba(28,10,0,0.05)', borderRadius:20, padding:'2px 8px', fontWeight: f.category==='crash' ? 600 : 400 }}>{f.category}</span>
-                  <span style={{ fontSize:11, color:C.muted }}>{f.page||''}</span>
+          <Card title="User Feedback"
+            action={<button onClick={()=>exportCSV(feedback.filter(f=>f.category!=='crash'),'jiff-user-feedback.csv',['rating','category','message','created_at'])} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, border:'1px solid '+C.borderMid, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↓ CSV</button>}>
+            {feedback.filter(f=>f.category!=='crash').length === 0 ? (
+              <div style={{ color:C.muted, fontSize:13, fontWeight:300 }}>No user feedback yet. Requires Supabase Phase 3 + <code style={{fontSize:11}}>SUPABASE_SERVICE_ROLE_KEY</code>.</div>
+            ) : feedback.filter(f=>f.category!=='crash').map((f,i)=>(
+              <div key={i} style={{ borderBottom:'1px solid rgba(28,10,0,0.05)', padding:'10px 0' }}>
+                <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
+                  <span style={{ fontSize:13 }}>{'⭐'.repeat(f.rating||0)||'💬'}</span>
+                  <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', borderRadius:20, padding:'2px 8px' }}>{f.category||'general'}</span>
                   <span style={{ fontSize:11, color:C.muted, marginLeft:'auto' }}>{f.created_at ? new Date(f.created_at).toLocaleDateString() : ''}</span>
                 </div>
-                <div style={{ fontSize:12, color: f.category==='crash' ? C.red : C.ink, fontWeight:300, lineHeight:1.6, fontFamily:"'DM Sans',sans-serif" }}>{f.message}</div>
+                <div style={{ fontSize:12, color:C.ink, fontWeight:300, lineHeight:1.6 }}>{f.message}</div>
+              </div>
+            ))}
+          </Card>
+        )}
+
+        {/* CRASH REPORTS (separate tab, never lost) */}
+        {activeTab==='crashes' && (
+          <Card title={`Crash Reports — ${feedback.filter(f=>f.category==='crash').length} total`}
+            accent={C.red}
+            action={<button onClick={()=>exportCSV(feedback.filter(f=>f.category==='crash'),'jiff-crashes.csv',['message','page','created_at'])} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, border:'1px solid '+C.borderMid, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↓ CSV</button>}>
+            {feedback.filter(f=>f.category==='crash').length === 0 ? (
+              <div style={{ color:C.muted, fontSize:13, fontWeight:300 }}>
+                🎉 No crashes recorded. ErrorBoundary logs crashes automatically to this table.
+              </div>
+            ) : feedback.filter(f=>f.category==='crash').map((f,i)=>(
+              <div key={i} style={{ borderBottom:'1px solid rgba(229,62,62,0.1)', padding:'10px 0', borderLeft:'3px solid '+C.red, paddingLeft:10, marginLeft:-10, background:'rgba(229,62,62,0.03)' }}>
+                <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
+                  <span>💥</span>
+                  <span style={{ fontSize:11, color:C.muted }}>{f.page||'unknown page'}</span>
+                  <span style={{ fontSize:11, color:C.muted, marginLeft:'auto' }}>{f.created_at ? new Date(f.created_at).toLocaleString() : ''}</span>
+                </div>
+                <div style={{ fontSize:11, color:C.red, fontWeight:300, lineHeight:1.6, fontFamily:'monospace', wordBreak:'break-all', background:'rgba(229,62,62,0.05)', padding:'6px 8px', borderRadius:6 }}>
+                  {f.message}
+                </div>
               </div>
             ))}
           </Card>
@@ -372,6 +401,57 @@ export default function Admin() {
                   Test connectivity: <a href="/api/stats" target="_blank" style={{ color:C.green, fontWeight:500 }}>/api/stats</a> should return JSON. Also ensure <code style={{ fontSize:11 }}>SUPABASE_SERVICE_ROLE_KEY</code> is set (server-side variable, NOT prefixed with REACT_APP_).
                 </div>
               </div>
+            </Card>
+          </>
+        )}
+
+        {/* RELEASES */}
+        {activeTab==='releases' && (
+          <>
+            <Card title="Log New Release">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                <input value={newRelease.version} onChange={e=>setNewRelease(r=>({...r,version:e.target.value}))}
+                  placeholder="v18.0" style={{width:80,padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:'none'}}/>
+                <input value={newRelease.title} onChange={e=>setNewRelease(r=>({...r,title:e.target.value}))}
+                  placeholder="Release title" style={{flex:1,minWidth:180,padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:'none'}}/>
+                <select value={newRelease.status} onChange={e=>setNewRelease(r=>({...r,status:e.target.value}))}
+                  style={{padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none'}}>
+                  {[['deployed','✅ Deployed'],['draft','📝 Draft'],['rollback','⏪ Rollback']].map(([v,l])=>(
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <textarea value={newRelease.summary} onChange={e=>setNewRelease(r=>({...r,summary:e.target.value}))}
+                placeholder="What changed in this release?" rows={3}
+                style={{width:'100%',padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:'none',resize:'vertical',boxSizing:'border-box',marginBottom:8}}/>
+              <button onClick={async()=>{
+                if(!newRelease.version||!newRelease.title) return;
+                const entry={...newRelease,deployed_at:new Date().toISOString()};
+                const saved=JSON.parse(localStorage.getItem('jiff-releases')||'[]');
+                saved.unshift(entry); localStorage.setItem('jiff-releases',JSON.stringify(saved));
+                setReleases(saved); setNewRelease({version:'',title:'',summary:'',status:'deployed'});
+                showToast('✓ Release logged');
+              }} style={{background:C.jiff,color:'white',border:'none',borderRadius:8,padding:'8px 16px',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>
+                Log release
+              </button>
+            </Card>
+            <Card title={`Release history — ${releases.length} entries`}
+              action={<button onClick={()=>{const rs=JSON.parse(localStorage.getItem('jiff-releases')||'[]');setReleases(rs);}} style={{fontSize:11,padding:'4px 10px',borderRadius:8,border:'1px solid '+C.borderMid,background:'white',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>↻ Refresh</button>}>
+              {releases.length===0 ? (
+                <div style={{color:C.muted,fontSize:13,fontWeight:300}}>No releases logged yet.</div>
+              ) : releases.map((r,i)=>(
+                <div key={i} style={{borderBottom:'1px solid rgba(28,10,0,0.06)',padding:'12px 0'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:C.ink}}>{r.version}</span>
+                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:20,background:r.status==='deployed'?'rgba(29,158,117,0.1)':r.status==='rollback'?'rgba(229,62,62,0.1)':'rgba(28,10,0,0.06)',color:r.status==='deployed'?C.green:r.status==='rollback'?C.red:C.muted,fontWeight:500}}>
+                      {r.status==='deployed'?'✅ Deployed':r.status==='rollback'?'⏪ Rollback':'📝 Draft'}
+                    </span>
+                    <span style={{fontSize:11,color:C.muted,marginLeft:'auto'}}>{r.deployed_at?new Date(r.deployed_at).toLocaleDateString():''}</span>
+                  </div>
+                  <div style={{fontSize:13,fontWeight:500,color:C.ink,marginBottom:2}}>{r.title}</div>
+                  {r.summary&&<div style={{fontSize:12,color:C.muted,fontWeight:300,lineHeight:1.5}}>{r.summary}</div>}
+                </div>
+              ))}
             </Card>
           </>
         )}

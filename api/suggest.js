@@ -68,6 +68,29 @@ Respond ONLY with valid JSON array:
     } catch { return res.status(500).json({ error: 'Internal server error.' }); }
   }
 
+  // ── Ingredient translation (?action=translate) ────────────────
+  if (req.query.action === 'translate') {
+    const { term, lang = 'en' } = req.body;
+    if (!term?.trim()) return res.status(400).json({ error: 'term required' });
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+    const langHints = { ta:'Tamil', hi:'Hindi', te:'Telugu', kn:'Kannada', ml:'Malayalam' };
+    const langHint = langHints[lang] ? ` The user may be using ${langHints[lang]} names.` : '';
+    const prompt = `You are an expert in Indian culinary ingredients and regional names.\nUser typed: "${term.trim()}"${langHint}\n\nIdentify this ingredient. Respond ONLY with JSON (no markdown):\n{"found":true,"english":"spinach","local_name":"ponangani keerai (Tamil)","also_known_as":["water amaranth"],"emoji":"🥬","tip":"Rich in iron, great for stir-fries"}\n\nIf unknown: {"found":false,"message":"Could not identify this ingredient"}\nThe "english" field must be the common English grocery store name.`;
+    try {
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const data = await aiRes.json();
+      const raw = (data.content || []).map(c => c.text || '').join('');
+      const m = raw.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+      if (!m) return res.status(200).json({ found: false, message: 'Could not identify ingredient' });
+      return res.status(200).json(JSON.parse(m[0]));
+    } catch { return res.status(500).json({ found: false, message: 'Translation service error' }); }
+  }
+
   // ── Internal app path (existing logic below) ────────────────────
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -138,6 +161,17 @@ Respond ONLY with valid JSON array:
     if (tp.preferred_cuisines?.length && !cuisineLabel) profileLines.push(`User prefers: ${tp.preferred_cuisines.join(', ')} — favour these styles.`);
     if (tp.skill_level === 'beginner') profileLines.push('User is a beginner cook — keep techniques simple.');
     if (tp.skill_level === 'advanced') profileLines.push('Advanced cook — feel free to use sophisticated techniques.');
+
+    // Family mode — merge dietary restrictions from all eating members
+    const familyMembers = req.body.familyMembers || [];
+    if (familyMembers.length > 0) {
+      const allRestrictions = [...new Set(familyMembers.map(m => m.dietary).filter(Boolean))];
+      const allAllergies = [...new Set(familyMembers.flatMap(m => m.allergies || []))];
+      const names = familyMembers.map(m => m.name).join(', ');
+      if (allRestrictions.length) profileLines.push(`Family eating tonight (${names}). Must accommodate ALL: ${allRestrictions.join(', ')}. Use the most restrictive diet.`);
+      if (allAllergies.length) profileLines.push(`Family allergies — NEVER include: ${allAllergies.join(', ')}.`);
+    }
+
     const profileInstruction = profileLines.length
       ? `\nUser taste profile:\n${profileLines.map(l => `- ${l}`).join('\n')}`
       : '';
