@@ -140,6 +140,10 @@ export default function FridgePhotoUpload({ onIngredientsDetected, existingIngre
       <input ref={fileRef} type="file" accept="image/*" multiple style={{ display:'none' }}
         onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ''; }}
       />
+      {/* Camera capture — mobile only */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display:'none' }}
+        onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ''; }}
+      />
       <div
         onClick={() => state !== 'loading' && fileRef.current?.click()}
         onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave}
@@ -161,11 +165,18 @@ export default function FridgePhotoUpload({ onIngredientsDetected, existingIngre
         ) : (
           <div>
             <div style={{ fontSize:22, marginBottom:4 }}>📸</div>
-            <div style={{ fontSize:13, fontWeight:500, color:C.ink, marginBottom:2 }}>
-              Upload fridge photos
+            <div style={{ display:'flex', gap:10, marginBottom:6, justifyContent:'center' }}>
+              <button type="button" onClick={e=>{e.stopPropagation();cameraRef.current?.click();}}
+                style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:10, border:'1.5px solid rgba(28,10,0,0.2)', background:'white', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:'#1C0A00' }}>
+                📷 Camera
+              </button>
+              <button type="button" onClick={e=>{e.stopPropagation();fileRef.current?.click();}}
+                style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 16px', borderRadius:10, border:'1.5px solid rgba(28,10,0,0.2)', background:'white', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:'#1C0A00' }}>
+                🖼️ Add photo
+              </button>
             </div>
-            <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>
-              Click or drag &amp; drop photos of your fridge or ingredients
+            <div style={{ fontSize:11, color:'#7C6A5E', fontWeight:300 }}>
+              or drag &amp; drop anywhere above
             </div>
           </div>
         )}

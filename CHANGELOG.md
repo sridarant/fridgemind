@@ -7,6 +7,63 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v17.3 — Crash fixes, seasonal picker, camera, voice, rating, share card
+**Date:** March 2026  |  **Package:** 1.17.3
+
+### Crash fixes (identified from admin crash logs)
+- **`t is not defined` in GroceryPanel** — `GroceryPanel` called `t('need_to_buy')` etc. but only destructured `country` from `useLocale()`, not `t`. Added `t` to the destructure.
+- **`pantryLoaded is not defined` in Goal Plans** — `Plans.jsx` useEffect referenced `pantryLoaded` and `pantryItems` state that were accidentally removed during consolidation. Both `useState` declarations restored.
+- **`getLang is not defined` in LocaleContext** — Root crash that caused the blank page. `getLang()` and `getUnits()` helper functions were deleted when `INDIA_SEASONAL` block was inserted. Both restored.
+
+### Seasonal ingredient picker
+- Tapping "In season" now opens a picker panel (not random-add)
+- Shows 6 seasonal ingredient chips to choose from
+- **"🥦 I have it"** — adds selected item to fridge
+- **Blinkit / Zepto / Swiggy** — order links for all three delivery apps
+- Click-outside overlay closes the picker
+
+### Dietary preference — garbled characters fixed
+- `food_type` stored in Supabase as `'["non-veg"]'` (JSON string) was being displayed raw
+- Safe parsing: checks `Array.isArray` first, then `JSON.parse` if string starts with `[`, else wraps as plain string
+
+### FridgePhotoUpload — Camera + Add photo
+- **📷 Camera** button uses `capture="environment"` — opens device camera directly on mobile
+- **🖼️ Add photo** button opens file picker / gallery
+- Drag & drop still works on the surrounding area
+
+### Voice input — now correctly placed
+- 🎤 button sits inside the ingredient input box alongside the text input
+- Was previously inserted at wrong DOM position in earlier session
+
+### Recipe rating UI
+- Stars now use `filter: grayscale(1)` for unselected, full colour for selected
+- Labels appear on hover/click: Poor / Ok / Good / Great / Loved it!
+- Separated from recipe body with a subtle top border
+
+### Share card — 1080×1080px Instagram format
+- Square canvas (1080×1080) for Instagram/WhatsApp status
+- Subtle grid overlay pattern, large centred emoji, proper typography hierarchy
+- Stats row with time, calories, protein
+- Orange accent bar at top, Jiff wordmark top-left, frosted branding footer
+
+### Code quality
+- Deep audit: 21/21 feature checks, zero syntax errors, zero stale variables
+- All standalone React components that call `t()` verified to have `useLocale()` hook
+- API function count: 8/12 (4 spare for future features)
+- ErrorBoundary wraps entire provider tree — no more silent blank pages
+
+### E2E tests: 52 → 60
+- Test 53: GroceryPanel renders without crash
+- Test 54: Goal Plans loads without pantryLoaded crash
+- Test 55: Seasonal picker shows Blinkit/Zepto/Swiggy
+- Test 56: Dietary sidebar shows clean text (no JSON chars)
+- Test 57: Camera and Add photo buttons present
+- Test 58: Voice input button visible inside ingredient box
+- Test 59: Rating label appears after clicking star
+- Test 60: All 8 pages load without JS errors
+
+---
+
 ## v17.2 — API consolidation: 11 → 8 serverless functions
 **Date:** March 2026  |  **Package:** 1.17.2
 

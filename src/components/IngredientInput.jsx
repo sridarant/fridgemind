@@ -178,6 +178,15 @@ export default function IngredientInput({ ingredients, onChange, pantryIngredien
             autoComplete="off"
             spellCheck={false}
           />
+          {hasVoice && (
+            <button type="button" className={`voice-btn ${listening?'listening':''}`}
+              onMouseDown={e=>e.preventDefault()}
+              onClick={listening ? ()=>{recognitionRef.current?.stop();setListening(false);} : startVoice}
+              title={listening ? 'Stop listening' : 'Speak ingredients (en-IN)'}
+            >
+              {listening ? '⏹' : '🎤'}
+            </button>
+          )}
         </div>
 
         {/* Autocomplete dropdown */}

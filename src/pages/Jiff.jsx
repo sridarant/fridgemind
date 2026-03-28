@@ -457,7 +457,7 @@ function StepWithTimer({ text }) {
 
 // ── GroceryPanel ──────────────────────────────────────────────────
 function GroceryPanel({ meal, fridgeIngredients, onClose, country: countryProp }) {
-  const { country: ctxCountry } = useLocale();
+  const { country: ctxCountry, t } = useLocale();
   const country = countryProp || ctxCountry;
   const { need, have } = buildGroceryList(meal.ingredients||[], fridgeIngredients);
   const [checked, setChecked] = useState({});
@@ -550,27 +550,45 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
   // ── Share card — canvas PNG download ───────────────────────────
   const generateShareCard = () => {
     const canvas = document.createElement('canvas');
-    canvas.width = 800; canvas.height = 450;
+    canvas.width = 1080; canvas.height = 1080; // Square for Instagram
     const cx = canvas.getContext('2d');
     const grad = cx.createLinearGradient(0, 0, 800, 450);
     grad.addColorStop(0, '#1C0A00'); grad.addColorStop(1, '#3D1500');
-    cx.fillStyle = grad; cx.fillRect(0, 0, 800, 450);
-    cx.fillStyle = '#FF4500'; cx.fillRect(0, 0, 6, 450);
-    cx.font = '80px serif'; cx.textAlign = 'center';
-    cx.fillText(meal.emoji || '🍽️', 400, 120);
-    cx.font = 'bold 36px Georgia, serif'; cx.fillStyle = 'white';
-    const title = meal.name || 'Recipe';
-    cx.fillText(title.length > 32 ? title.slice(0,32)+'…' : title, 400, 190);
-    cx.font = '18px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.6)';
-    cx.fillText((meal.description||'').slice(0,65), 400, 230);
-    cx.font = '16px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.45)';
-    cx.fillText('⏱ '+(meal.time||'?')+'   🔥 '+(meal.calories||'?')+' cal   💪 '+(meal.protein||'?'), 400, 290);
-    cx.font = 'bold 22px Georgia, serif'; cx.fillStyle = '#FF4500';
-    cx.fillText('Made with ⚡ Jiff', 400, 375);
-    cx.font = '14px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.35)';
-    cx.fillText('jiff-ecru.vercel.app', 400, 415);
+    cx.fillStyle = grad; cx.fillRect(0, 0, 1080, 1080);
+    // Orange accent bar top
+    cx.fillStyle = '#FF4500'; cx.fillRect(0, 0, 1080, 8);
+    // Subtle grid pattern overlay
+    cx.strokeStyle = 'rgba(255,255,255,0.03)'; cx.lineWidth = 1;
+    for(let x=0;x<1080;x+=60){cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,1080);cx.stroke();}
+    for(let y=0;y<1080;y+=60){cx.beginPath();cx.moveTo(0,y);cx.lineTo(1080,y);cx.stroke();}
+    // Jiff wordmark top-left
+    cx.font = 'bold 28px Georgia, serif'; cx.fillStyle = '#FF4500'; cx.textAlign = 'left';
+    cx.fillText('⚡ Jiff', 60, 70);
+    // Meal emoji — large
+    cx.font = '180px serif'; cx.textAlign = 'center';
+    cx.fillText(meal.emoji || '🍽️', 540, 380);
+    // Meal name
+    cx.font = 'bold 64px Georgia, serif'; cx.fillStyle = 'white'; cx.textAlign = 'center';
+    const title = (meal.name || 'Recipe');
+    const titleLines = title.length > 22 ? [title.slice(0,22), title.slice(22)] : [title];
+    titleLines.forEach((line, i) => cx.fillText(line, 540, 500 + i*72));
+    // Description
+    cx.font = '28px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.65)';
+    const desc = (meal.description||'').slice(0,55);
+    cx.fillText(desc, 540, 620 + (titleLines.length-1)*72);
+    // Divider
+    cx.fillStyle = 'rgba(255,69,0,0.6)'; cx.fillRect(340, 670 + (titleLines.length-1)*72, 400, 2);
+    // Stats row
+    cx.font = '26px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.5)'; cx.textAlign = 'center';
+    cx.fillText('⏱ '+(meal.time||'?')+'     🔥 '+(meal.calories||'?')+' cal     💪 '+(meal.protein||'?'), 540, 730 + (titleLines.length-1)*72);
+    // Bottom branding
+    cx.fillStyle = 'rgba(255,255,255,0.15)'; cx.fillRect(0, 980, 1080, 100);
+    cx.font = 'bold 24px Georgia, serif'; cx.fillStyle = '#FF4500'; cx.textAlign = 'center';
+    cx.fillText('Made with ⚡ Jiff', 540, 1020);
+    cx.font = '18px Arial, sans-serif'; cx.fillStyle = 'rgba(255,255,255,0.4)';
+    cx.fillText('jiff-ecru.vercel.app', 540, 1050);
     const link = document.createElement('a');
-    link.download = 'jiff-'+(meal.name||'recipe').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
+    link.download = 'jiff-'+(meal.name||'recipe').toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-1080.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -601,24 +619,27 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           <span style={{fontSize:11,color:'var(--muted)',fontWeight:400}}>{t('see_list')}</span>
         </button>
       ):<GroceryPanel meal={meal} fridgeIngredients={fridgeIngredients} onClose={()=>setGroceryOpen(false)} country={country}/>}
-      {/* ── Star rating ── */}
-      <div style={{display:'flex',alignItems:'center',gap:3,marginBottom:4}}>
-        {[1,2,3,4,5].map(s=>(
-          <button key={s}
-            onMouseEnter={()=>setHoverStar(s)}
-            onMouseLeave={()=>setHoverStar(0)}
-            onClick={e=>{e.stopPropagation();onRate&&onRate(s);}}
-            style={{background:'none',border:'none',cursor:onRate?'pointer':'default',fontSize:15,padding:'1px',lineHeight:1,transition:'transform 0.1s',transform:hoverStar>=s?'scale(1.2)':'scale(1)'}}>
-            {(hoverStar||rating)>=s ? '⭐' : '☆'}
-          </button>
-        ))}
-        {rating > 0 && <span style={{fontSize:10,color:'var(--muted)',marginLeft:3,fontWeight:300}}>Rated {rating}/5</span>}
-        {/* Share card button */}
+      {/* ── Rating + Share row ── */}
+      <div style={{display:'flex',alignItems:'center',gap:6,padding:'8px 0 4px',borderTop:'1px solid rgba(28,10,0,0.06)',marginTop:4}}>
+        <div style={{display:'flex',gap:2,alignItems:'center'}}>
+          {[1,2,3,4,5].map(s=>(
+            <button key={s}
+              onMouseEnter={()=>setHoverStar(s)}
+              onMouseLeave={()=>setHoverStar(0)}
+              onClick={e=>{e.stopPropagation();onRate&&onRate(s);}}
+              style={{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'0 1px',lineHeight:1,transition:'transform 0.12s',transform:(hoverStar||rating)>=s?'scale(1.25)':'scale(1)',filter:(hoverStar||rating)>=s?'none':'grayscale(1) opacity(0.4)'}}>
+              ⭐
+            </button>
+          ))}
+          {rating > 0 && (
+            <span style={{fontSize:10,color:'var(--jiff)',fontWeight:600,marginLeft:4,letterSpacing:'0.5px'}}>
+              {['','Poor','Ok','Good','Great','Loved it!'][rating]}
+            </span>
+          )}
+          {!rating && <span style={{fontSize:10,color:'var(--muted)',marginLeft:2,fontWeight:300}}>Rate this</span>}
+        </div>
         <button onClick={e=>{e.stopPropagation();generateShareCard();}}
-          style={{marginLeft:'auto',background:'none',border:'1px solid rgba(28,10,0,0.12)',borderRadius:8,padding:'3px 9px',fontSize:11,color:'var(--muted)',cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontFamily:"'DM Sans',sans-serif",transition:'all 0.15s'}}
-          onMouseEnter={e=>e.currentTarget.style.borderColor='var(--jiff)'}
-          onMouseLeave={e=>e.currentTarget.style.borderColor='rgba(28,10,0,0.12)'}
-          title="Download share image">
+          style={{marginLeft:'auto',background:'linear-gradient(135deg,#FF4500,#CC3700)',color:'white',border:'none',borderRadius:8,padding:'4px 12px',fontSize:11,fontWeight:500,cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontFamily:"'DM Sans',sans-serif",boxShadow:'0 2px 6px rgba(255,69,0,0.25)'}}>
           📤 Share
         </button>
       </div>
@@ -790,6 +811,7 @@ export default function Jiff() {
   const [streak,         setStreak]         = useState(0);
   const [showSurprise,   setShowSurprise]   = useState(false);
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
+  const [showSeasonalPicker, setShowSeasonalPicker] = useState(false);
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
   const season = getCurrentSeason();
   useEffect(() => {
@@ -992,7 +1014,7 @@ export default function Jiff() {
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
     { key: 'Spice',          val: profile.spice_level || 'Medium' },
-    { key: 'Dietary',        val: (() => { const ft = Array.isArray(profile.food_type) ? profile.food_type : (profile.food_type ? [profile.food_type] : []); return ft.length ? ft.join(', ') : 'Not set'; })() },
+    { key: 'Dietary',        val: (() => { try { const raw = profile.food_type; if (!raw) return 'Not set'; if (Array.isArray(raw)) return raw.join(', '); if (typeof raw === 'string') { const parsed = raw.startsWith('[') ? JSON.parse(raw) : [raw]; return parsed.join(', '); } return String(raw); } catch { return 'Not set'; } })() },
     { key: 'Cooking Skill',  val: profile.skill_level || 'Intermediate' },
   ] : [];
 
@@ -1194,9 +1216,39 @@ export default function Jiff() {
                   </div>
                 )}
                 {season?.items?.length > 0 && (
-                  <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(29,158,117,0.08)',border:'1px solid rgba(29,158,117,0.2)',borderRadius:20,padding:'4px 12px',fontSize:12,color:'#1D9E75',fontWeight:300,cursor:'pointer'}}
-                    onClick={()=>{const s=season.items[Math.floor(Math.random()*season.items.length)]; if(!fridgeItems.includes(s)) setFridgeItems(p=>[...p,s]);}}>
-                    {season.emoji} In season: {season.items.slice(0,3).join(', ')} ·<span style={{fontWeight:500,marginLeft:3}}>tap to add</span>
+                  <div style={{position:'relative',display:'inline-block'}}>
+                    <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(29,158,117,0.08)',border:'1px solid rgba(29,158,117,0.2)',borderRadius:20,padding:'4px 12px',fontSize:12,color:'#1D9E75',fontWeight:300,cursor:'pointer'}}
+                      onClick={()=>setShowSeasonalPicker(p=>!p)}>
+                      {season.emoji} In season: {season.items.slice(0,3).join(', ')} · <span style={{fontWeight:500}}>tap to add</span>
+                    </div>
+                    {showSeasonalPicker && (
+                      <>
+                        <div onClick={()=>setShowSeasonalPicker(false)} style={{position:'fixed',inset:0,zIndex:49}}/>
+                        <div style={{position:'absolute',top:'calc(100% + 6px)',left:0,background:'white',border:'1px solid rgba(28,10,0,0.12)',borderRadius:12,boxShadow:'0 8px 24px rgba(28,10,0,0.12)',padding:'12px 14px',zIndex:50,minWidth:260,fontFamily:"'DM Sans',sans-serif"}}>
+                          <div style={{fontSize:11,letterSpacing:'1px',textTransform:'uppercase',color:'#1D9E75',fontWeight:600,marginBottom:8}}>Pick an ingredient to add</div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:10}}>
+                            {season.items.slice(0,6).map(item=>(
+                              <button key={item} onClick={()=>{if(!fridgeItems.includes(item))setFridgeItems(p=>[...p,item]);setShowSeasonalPicker(false);}}
+                                style={{padding:'4px 11px',borderRadius:20,border:'1.5px solid rgba(28,10,0,0.15)',background:'white',fontSize:11,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",transition:'all 0.1s'}}
+                                onMouseEnter={e=>e.target.style.borderColor='#1D9E75'}
+                                onMouseLeave={e=>e.target.style.borderColor='rgba(28,10,0,0.15)'}>
+                                {item}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{borderTop:'1px solid rgba(28,10,0,0.08)',paddingTop:10,fontSize:11,color:'#7C6A5E',marginBottom:6}}>Don't have it? Order now:</div>
+                          <div style={{display:'flex',gap:6}}>
+                            {[['Blinkit','#1A8A3E'],['Zepto','#5B21B6'],['Swiggy','#FC8019']].map(([name,color])=>(
+                              <a key={name} href={'https://'+name.toLowerCase()+'.com/s/?q='+encodeURIComponent(season.items.slice(0,3).join(' '))} target="_blank" rel="noopener noreferrer"
+                                onClick={()=>setShowSeasonalPicker(false)}
+                                style={{flex:1,background:color,color:'white',borderRadius:8,padding:'6px 0',fontSize:10,fontWeight:600,cursor:'pointer',textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                {name}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

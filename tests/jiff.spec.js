@@ -438,3 +438,102 @@ test('52. SUPABASE_SETUP.md has 4 phases documented', async ({ page }) => {
   await page.goto('/app');
   await expect(page.locator('body')).not.toBeEmpty();
 });
+
+// ── v17.2 Bug fixes ───────────────────────────────────────────────
+
+// 53. GroceryPanel renders without crash
+test('53. Grocery panel opens and shows items after generation', async ({ page }) => {
+  await genMeals(page, ['dal', 'rice', 'onion']);
+  const firstCard = page.locator('.meal-card').first();
+  await firstCard.click();
+  await page.locator('text=What do I need to buy').first().click();
+  // Should NOT crash to error boundary
+  await expect(page.locator('text=Something went wrong')).not.toBeVisible({ timeout: 3000 });
+  await expect(page.locator('text=Need to buy, text=NEED TO BUY').first()).toBeVisible({ timeout: 5000 });
+});
+
+// 54. Goal Plans loads without pantryLoaded crash
+test('54. Goal Plans page loads without crashing', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => { if (!e.message.includes('Warning')) errors.push(e.message); });
+  await injectPremium(page);
+  await page.goto('/plans');
+  await page.waitForLoadState('networkidle');
+  expect(errors).toHaveLength(0);
+  await expect(page.locator('text=Something went wrong')).not.toBeVisible();
+  await expect(page.locator('text=Weight Loss, text=Muscle Gain').first()).toBeVisible();
+});
+
+// 55. Seasonal picker shows ingredient chips + order options
+test('55. Seasonal picker shows Blinkit/Zepto/Swiggy order options', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // Click the seasonal chip
+  const chip = page.locator('text=In season').first();
+  await expect(chip).toBeVisible({ timeout: 5000 });
+  await chip.click();
+  // Order links should appear
+  await expect(page.locator('text=Blinkit').first()).toBeVisible({ timeout: 3000 });
+  await expect(page.locator('text=Zepto').first()).toBeVisible({ timeout: 3000 });
+});
+
+// 56. Dietary preference shows readable text not JSON chars
+test('56. Dietary preference in sidebar shows clean text', async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Date.now();
+    localStorage.setItem('jiff-premium', JSON.stringify({ planId:'monthly', paymentId:'test', activatedAt:now, expiresAt:now+30*86400000, test:true }));
+    localStorage.setItem('jiff-cookie-consent-v2', JSON.stringify({ essential:true, ts:now }));
+  });
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // Dietary row should not contain JSON bracket characters
+  const sidebar = page.locator('.main-sidebar');
+  const dietaryText = await sidebar.locator('text=Dietary').first().textContent().catch(() => '');
+  // Should not contain raw JSON like ["\"
+  expect(dietaryText).not.toContain('\\');
+  expect(dietaryText).not.toContain('["');
+});
+
+// 57. Camera button present in fridge upload
+test('57. FridgePhotoUpload shows Camera and Add photo buttons', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('button:has-text("Camera"), button:has-text("📷")').first()).toBeVisible();
+  await expect(page.locator('button:has-text("Add photo"), button:has-text("🖼️")').first()).toBeVisible();
+});
+
+// 58. Voice input button visible in fridge section
+test('58. Voice input 🎤 button visible inside ingredient box', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // Voice button should be inside the ing-box
+  await expect(page.locator('.ing-box button[title]').first()).toBeVisible({ timeout: 5000 });
+});
+
+// 59. Recipe rating shows label text
+test('59. Recipe rating shows label after clicking star', async ({ page }) => {
+  await genMeals(page, ['eggs', 'rice', 'tomato']);
+  const firstCard = page.locator('.meal-card').first();
+  // Find a star button and click it
+  const stars = firstCard.locator('button').filter({ hasText: '⭐' });
+  await stars.nth(4).click(); // click 5th star = "Loved it!"
+  await expect(firstCard.locator('text=Loved it')).toBeVisible({ timeout: 3000 });
+});
+
+// 60. No JS errors across all 8 main pages
+test('60. All 8 pages load without JS errors', async ({ page }) => {
+  const jsErrors = [];
+  page.on('pageerror', e => { if (!e.message.includes('Warning') && !e.message.includes('chrome-extension')) jsErrors.push(e.message); });
+  const urls = ['/app', '/planner', '/plans', '/history', '/profile', '/pricing', '/stats', '/admin'];
+  for (const url of urls) {
+    await injectPremium(page);
+    await page.goto(url);
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(300);
+  }
+  if (jsErrors.length > 0) console.log('JS errors:', jsErrors);
+  expect(jsErrors).toHaveLength(0);
+});
