@@ -1166,7 +1166,7 @@ export default function Jiff() {
       const streakData = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
       if (streakData.count >= 3) {
         all.push({ id:'streak-'+streakData.count, type:'achievement', icon:'🔥',
-          title:`${streakData.count}-day cooking streak!`, body:'Keep it up — you're building a great habit.', ts: Date.now()-1000 });
+          title:`${streakData.count}-day cooking streak!`, body:"Keep it up — you're building a great habit.", ts: Date.now()-1000 });
       }
       all.push({ id:'tip-season', type:'tip', icon:'🌿',
         title:'Seasonal produce available', body:'Check the seasonal suggestions at the top of the page for the freshest ingredients.', ts: Date.now()-2000 });
@@ -1174,7 +1174,8 @@ export default function Jiff() {
       // Broadcast messages from Supabase (if connected)
       if (supabaseEnabled) {
         try {
-          const { data } = await (await import('../lib/supabase')).supabase
+          const { supabase } = await import('../lib/supabase');
+          const { data } = await supabase
             .from('broadcasts').select('id,message,created_at').eq('active', true)
             .order('created_at', { ascending: false }).limit(10);
           (data || []).forEach(b => all.push({
