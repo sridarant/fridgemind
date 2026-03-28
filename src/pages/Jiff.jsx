@@ -789,6 +789,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           )}
         </div>
       </div>
+      </div>
 
       {shareOpen&&<ShareDrawer meal={meal}/>}
       {!groceryOpen?(
