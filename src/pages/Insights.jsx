@@ -140,67 +140,6 @@ export default function Insights() {
     };
     loadData();
   }, [user]);
-    const cuisineMap = {};
-    history.forEach(h => {
-      const c = h.cuisine || 'any';
-      cuisineMap[c] = (cuisineMap[c] || 0) + 1;
-    });
-    const cuisines = Object.entries(cuisineMap)
-      .map(([label, count]) => ({ label, count }))
-      .sort((a,b) => b.count - a.count);
-
-    // Meal type breakdown
-    const mealTypeMap = {};
-    history.forEach(h => {
-      const t = h.mealType || 'any';
-      mealTypeMap[t] = (mealTypeMap[t] || 0) + 1;
-    });
-    const mealTypes = Object.entries(mealTypeMap)
-      .map(([label, count]) => ({ label, count }))
-      .sort((a,b) => b.count - a.count);
-
-    // Top ingredients
-    const ingMap = {};
-    history.forEach(h => {
-      (h.ingredients || []).forEach(ing => {
-        ingMap[ing] = (ingMap[ing] || 0) + 1;
-      });
-    });
-    const topIngs = Object.entries(ingMap)
-      .map(([label, count]) => ({ label, count }))
-      .sort((a,b) => b.count - a.count);
-
-    // Nutrition averages from all meals
-    const allMeals = history.flatMap(h => h.meal || []);
-    const parseNum = v => parseFloat((v||'').toString().replace(/[^0-9.]/g,'')) || 0;
-    const avgNutr = {
-      calories: allMeals.length
-        ? Math.round(allMeals.reduce((s,m) => s + parseNum(m.calories), 0) / allMeals.length)
-        : 0,
-      protein: allMeals.length
-        ? Math.round(allMeals.reduce((s,m) => s + parseNum(m.protein), 0) / allMeals.length)
-        : 0,
-    };
-
-    // Ratings distribution
-    const ratingDist = [1,2,3,4,5].map(s => ({
-      label: ['','Poor','Ok','Good','Great','Loved it!'][s],
-      count: Object.values(ratings).filter(r => r === s).length,
-      stars: s,
-    }));
-    const avgRating = Object.values(ratings).length
-      ? (Object.values(ratings).reduce((s,r) => s+r, 0) / Object.values(ratings).length).toFixed(1)
-      : null;
-
-    // Recent activity (last 7 days)
-    const now = Date.now();
-    const weekAgo = now - 7 * 86400000;
-    const recentCount = history.filter(h => new Date(h.generated_at).getTime() > weekAgo).length;
-
-    setData({ history, cuisines, mealTypes, topIngs, avgNutr, ratingDist, avgRating,
-      streak: streak.count || 0, recentCount, totalMeals: allMeals.length,
-      totalSessions: history.length, ratedCount: Object.values(ratings).length });
-  }, []);
 
   const tabs = [
     { id:'overview',  label:'Overview' },
