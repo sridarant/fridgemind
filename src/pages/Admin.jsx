@@ -80,6 +80,10 @@ export default function Admin() {
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastSent,setBroadcastSent]= useState(false);
   const CHANGELOG_RELEASES = [
+    {version:'v18.5',title:'Fix Insights.jsx build errors - duplicate body + tabs undefined',summary:'',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v18.4',title:'Fix Insights.jsx syntax error - async loadData missing closure',summary:'',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v18.3',title:'Admin sidebar nav, Home button, Supabase cleanup, header fix',summary:'',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v18.2',title:'Crash fixes, sign-out fix, Supabase insights, cross-navigation',summary:'',status:'deployed',deployed_at:'2026-03-01'},
     {version:'v18.1',title:'UX fixes, Little Chefs, Admin overhaul',summary:'',status:'deployed',deployed_at:'2026-03-01'},
     {version:'v18.0',title:'Major release: Family mode, Insights, Delivery, Smart Recs, WhatsApp b',summary:'',status:'deployed',deployed_at:'2026-03-01'},
     {version:'v17.6',title:'Notifications, share dropdown, rating clarity, camera mobile-only, ing',summary:'',status:'deployed',deployed_at:'2026-03-01'},
@@ -513,7 +517,7 @@ export default function Admin() {
         {activeTab==='releases' && (
           <>
             <Card title={`Release history — ${releases.length} entries`}
-              action={<button onClick={()=>{const rs=JSON.parse(localStorage.getItem('jiff-releases')||'[]');setReleases(rs);}} style={{fontSize:11,padding:'4px 10px',borderRadius:8,border:'1px solid '+C.borderMid,background:'white',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>↻ Refresh</button>}>
+              action={<button onClick={()=>{const saved=JSON.parse(localStorage.getItem('jiff-releases')||'[]');const merged=[...saved];CHANGELOG_RELEASES.forEach(r=>{if(!merged.some(m=>m.version===r.version))merged.push(r);});setReleases(merged);}} style={{fontSize:11,padding:'4px 10px',borderRadius:8,border:'1px solid '+C.borderMid,background:'white',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>↻ Refresh</button>}>
               {releases.length===0 ? (
                 <div style={{color:C.muted,fontSize:13,fontWeight:300}}>No releases logged yet.</div>
               ) : releases.map((r,i)=>(
@@ -537,46 +541,37 @@ export default function Admin() {
         {activeTab==='status' && (
           <>
             <Card title="Service Status">
-              {(() => {
-                const [statuses, setStatuses] = [
-                  { name:'Vercel (Hosting)', url:'https://jiff-ecru.vercel.app', status:'checking' },
-                  { name:'Supabase DB', url:null, status:'checking' },
-                  { name:'Anthropic API', url:null, status:'checking' },
-                  { name:'Razorpay', url:null, status:'checking' },
-                  { name:'WhatsApp Bot', url:'/api/whatsapp', status:'checking' },
-                ].map(s => s);
-                return statuses.map((svc,i) => (
-                  <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid rgba(28,10,0,0.05)'}}>
-                    <span style={{fontSize:14}}>
-                      {i===0?'▲':i===1?'🐘':i===2?'🤖':i===3?'💳':'💬'}
-                    </span>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:13,fontWeight:500,color:C.ink}}>{svc.name}</div>
-                      <div style={{fontSize:11,color:C.muted,fontWeight:300}}>
-                        {i===0?'jiff-ecru.vercel.app':i===1?'Supabase PostgreSQL 15':i===2?'Anthropic Claude API':i===3?'Razorpay Payments India':'Meta WhatsApp Cloud API'}
-                      </div>
-                    </div>
-                    <StatusBadge id={i} supabaseEnabled={supabaseEnabled} />
+              {[
+                { name:'Vercel (Hosting)',  icon:'▲', detail:'jiff-ecru.vercel.app' },
+                { name:'Supabase DB',       icon:'🐘', detail:'Supabase PostgreSQL 15' },
+                { name:'Anthropic API',     icon:'🤖', detail:'claude-haiku + claude-opus' },
+                { name:'Razorpay',          icon:'💳', detail:'Payments — India only' },
+                { name:'WhatsApp Bot',      icon:'💬', detail:'Meta WhatsApp Cloud API v18' },
+              ].map((svc, i) => (
+                <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid rgba(28,10,0,0.05)'}}>
+                  <span style={{fontSize:20,flexShrink:0}}>{svc.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:500,color:C.ink}}>{svc.name}</div>
+                    <div style={{fontSize:11,color:C.muted,fontWeight:300}}>{svc.detail}</div>
                   </div>
-                ));
-              })()}
+                  <StatusBadge id={i} supabaseEnabled={supabaseEnabled} />
+                </div>
+              ))}
             </Card>
             <Card title="Environment">
               {[
-                ['ANTHROPIC_API_KEY',      process.env.REACT_APP_ANTHROPIC_CHECK ? '✅ Set' : '⚠️ Check Vercel env'],
-                ['SUPABASE URL',           supabaseEnabled ? '✅ Connected' : '❌ Not configured'],
-                ['RAZORPAY',               '⚠️ Verify in Vercel'],
-                ['WHATSAPP',               '⚠️ Verify in Vercel'],
-                ['MAILCHIMP',              '⚠️ Verify in Vercel'],
+                ['ANTHROPIC_API_KEY',         'Server-side only — verify in Vercel dashboard'],
+                ['REACT_APP_SUPABASE_URL',     supabaseEnabled ? '✅ Configured' : '❌ Missing — add to Vercel env vars'],
+                ['SUPABASE_SERVICE_ROLE_KEY',  supabaseEnabled ? '✅ Present (enables admin data)' : '⚠️ Missing — Users/Feedback tabs need this'],
+                ['RAZORPAY_KEY_SECRET',        'Server-side only — verify in Vercel dashboard'],
+                ['WHATSAPP_ACCESS_TOKEN',      'Server-side only — verify in Vercel dashboard'],
+                ['MAILCHIMP_API_KEY',          'Server-side only — verify in Vercel dashboard'],
               ].map(([k,v])=>(
-                <div key={k} style={{display:'flex',gap:12,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'center'}}>
-                  <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 8px',borderRadius:4,minWidth:160,flexShrink:0}}>{k}</code>
-                  <span style={{fontSize:12,color:v.startsWith('✅')?C.green:v.startsWith('❌')?C.red:'#854F0B',fontWeight:400}}>{v}</span>
+                <div key={k} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'flex-start'}}>
+                  <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 8px',borderRadius:4,minWidth:180,flexShrink:0,lineHeight:1.8}}>{k}</code>
+                  <span style={{fontSize:12,color:v.startsWith('✅')?C.green:v.startsWith('❌')?C.red:v.startsWith('⚠️')?'#854F0B':C.muted,fontWeight:300}}>{v}</span>
                 </div>
               ))}
-              <div style={{marginTop:10,padding:'8px 12px',background:'rgba(28,10,0,0.03)',borderRadius:8,fontSize:11,color:C.muted}}>
-                Server-side env vars (ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY etc.) are not readable client-side. Verify in Vercel dashboard.
-              </div>
             </Card>
           </>
         )}
