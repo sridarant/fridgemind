@@ -67,16 +67,16 @@ export default function Admin() {
     setWaitlist(JSON.parse(localStorage.getItem('jiff-global-waitlist')||'[]'));
     // Supabase users + feedback via admin API
     try {
-      const r = await fetch('/api/admin/users');
+      const r = await fetch('/api/admin?action=users');
       if (r.ok) { const d = await r.json(); setUsers(d.users||[]); }
     } catch {}
     try {
-      const r = await fetch('/api/admin/feedback');
+      const r = await fetch('/api/admin?action=feedback');
       if (r.ok) { const d = await r.json(); setFeedback(d.feedback||[]); }
     } catch {}
     // API usage
     try {
-      const r = await fetch('/api/admin/usage');
+      const r = await fetch('/api/admin?action=usage');
       if (r.ok) { const d = await r.json(); setApiUsage(d); }
     } catch {}
     setLoading(false);
@@ -95,9 +95,9 @@ export default function Admin() {
   const handleResetTrial = async () => {
     if (!resetEmail.includes('@')) { setResetResult('Enter a valid email'); return; }
     try {
-      const r = await fetch('/api/admin/reset-trial', {
+      const r = await fetch('/api/admin', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ email: resetEmail, adminKey: ADMIN_KEY }),
+        body: JSON.stringify({ action: "reset-trial", email: resetEmail, adminKey: ADMIN_KEY }),
       });
       const d = await r.json();
       setResetResult(r.ok ? `✓ Trial reset for ${resetEmail}` : `✗ ${d.error}`);
@@ -107,9 +107,9 @@ export default function Admin() {
   const handleBroadcast = async () => {
     if (!broadcastMsg.trim()) return;
     try {
-      const r = await fetch('/api/admin/broadcast', {
+      const r = await fetch('/api/admin', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ message: broadcastMsg, adminKey: ADMIN_KEY }),
+        body: JSON.stringify({ action: "broadcast", message: broadcastMsg, adminKey: ADMIN_KEY }),
       });
       const d = await r.json();
       if (r.ok) { setBroadcastSent(true); showToast(`✓ Broadcast queued for ${d.recipientCount||0} users`); }
