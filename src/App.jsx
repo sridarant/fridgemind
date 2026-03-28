@@ -19,30 +19,30 @@ import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
   return (
-    <LocaleProvider>
-      <AuthProvider>
-        <PremiumProvider>
-          <BrowserRouter>
-            <ErrorBoundary>
-            <Routes>
-              <Route path="/"         element={<Landing />}  />
-              <Route path="/app"      element={<Jiff />}     />
-              <Route path="/planner"  element={<Planner />}  />
-              <Route path="/profile"  element={<Profile />}  />
-              <Route path="/pricing"  element={<Pricing />}  />
-              <Route path="/history"  element={<History />}  />
-              <Route path="/plans"    element={<Plans />}    />
-              <Route path="/privacy"  element={<Privacy />}  />
-              <Route path="/stats"    element={<Stats />}    />
-              <Route path="/api-docs" element={<ApiDocs />}  />
-              <Route path="/admin"    element={<Admin />}     />
-            </Routes>
-            </ErrorBoundary>
-            <CookieBanner />
-            <FeedbackWidget />
-          </BrowserRouter>
-        </PremiumProvider>
-      </AuthProvider>
-    </LocaleProvider>
+    <ErrorBoundary>
+      <LocaleProvider>
+        <AuthProvider>
+          <PremiumProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/"         element={<Landing />}  />
+                <Route path="/app"      element={<Jiff />}     />
+                <Route path="/planner"  element={<Planner />}  />
+                <Route path="/profile"  element={<Profile />}  />
+                <Route path="/pricing"  element={<Pricing />}  />
+                <Route path="/history"  element={<History />}  />
+                <Route path="/plans"    element={<Plans />}    />
+                <Route path="/privacy"  element={<Privacy />}  />
+                <Route path="/stats"    element={<Stats />}    />
+                <Route path="/api-docs" element={<ApiDocs />}  />
+                <Route path="/admin"    element={<Admin />}     />
+              </Routes>
+              <CookieBanner />
+              <FeedbackWidget />
+            </BrowserRouter>
+          </PremiumProvider>
+        </AuthProvider>
+      </LocaleProvider>
+    </ErrorBoundary>
   );
 }
