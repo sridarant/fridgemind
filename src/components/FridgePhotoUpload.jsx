@@ -15,7 +15,8 @@ export default function FridgePhotoUpload({ onIngredientsDetected, existingIngre
   const [checked,  setChecked]  = useState({});
   const [errMsg,   setErrMsg]   = useState('');
   const [previews, setPreviews] = useState([]);
-  const fileRef = useRef(null);
+  const fileRef  = useRef(null);
+  const cameraRef = useRef(null);
 
   const handleFiles = async (files) => {
     if (!files?.length) return;
