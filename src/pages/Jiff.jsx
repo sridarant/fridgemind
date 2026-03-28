@@ -1312,7 +1312,7 @@ export default function Jiff() {
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>
-            {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}}
+            {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
             {user && (
