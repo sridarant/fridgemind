@@ -776,6 +776,7 @@ export default function Jiff() {
   const [pantryLoaded, setPantryLoaded] = useState(false);
   const [gatePlan,     setGatePlan]     = useState('annual');
   const [gateLoading,  setGateLoading]  = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const timerRef = useRef(null);
 
