@@ -49,7 +49,7 @@ function getDietaryLabel(food_type) {
     return [s];
   };
   try {
-    const ids = unwrap(food_type).filter(Boolean);
+    const ids = [...new Set(unwrap(food_type).filter(Boolean))];
     if (!ids.length) return 'Not set';
     return ids.map(toLabel).filter(Boolean).join(', ') || 'Not set';
   } catch { return 'Not set'; }

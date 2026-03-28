@@ -52,7 +52,7 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-    await updateProfile({ food_type:foodType, spice_level:spiceLevel, allergies, diet_requirements:dietReqs, preferred_cuisines:prefCuisines, skill_level:skillLevel, family_members:familyMembers, nutrition_goals:nutritionGoals });
+    await updateProfile({ food_type:[...new Set(foodType)], spice_level:spiceLevel, allergies, diet_requirements:dietReqs, preferred_cuisines:prefCuisines, skill_level:skillLevel, family_members:familyMembers, nutrition_goals:nutritionGoals });
     await savePantry(pantryItems);
     setSaving(false); setSaved(true); setTimeout(()=>setSaved(false),3000);
   };

@@ -47,7 +47,17 @@ export default function Admin() {
   const [resetResult,  setResetResult]  = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastSent,setBroadcastSent]= useState(false);
-  const [releases,      setReleases]     = useState([]);
+  const CHANGELOG_RELEASES = [
+    { version:'v18.0', title:'Major release: Family mode, Insights, Delivery, Smart Recs, WhatsApp bot, Admin ', summary:'New **👨‍👩‍👧 Family** tab in Profile — add family members with name + dietary preference; Saved as `family_members JSONB` column in Supabase `profiles`', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.6', title:'Notifications, share dropdown, rating clarity, camera mobile-only, ingredient tr', summary:'Bell icon added to header-right, before the avatar button (visible to logged-in users); Red unread badge showing count (max "9+"); Panel shows three n', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.5', title:'Definitive dietary display fix + camera mobile detection', summary:'**Dietary garbled content — root cause:**; **Camera opens folder — root cause:**', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.4', title:'Clean pass: dietary card, nav chips, share card redesign, rating position', summary:'**Dietary Preferences sidebar card removed** — the duplicate card in the main sidebar has been removed. Dietary details are shown in the "Your Prefere', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.3', title:'Crash fixes, seasonal picker, camera, voice, rating, share card', summary:'**`t is not defined` in GroceryPanel** — `GroceryPanel` called `t(\'need_to_buy\')` etc. but only destructured `country` from `useLocale()`, not `t`. Ad', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.2', title:'API consolidation: 11 → 8 serverless functions', summary:'**Result: 11 → 8 functions (4 spare for future features)**; `POST /api/v1/suggest` still works (maps to `suggest.js?v=1`)', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.1', title:'Quick wins + medium features: Surprise me, ratings, voice, streaks, seasonal', summary:'**"Surprise me" button**; One-tap generation with zero input required; Reads `profile.preferred_cuisines` and picks one at random', status:'deployed', deployed_at:'March 2026' },
+    { version:'v17.0', title:'India-only, profile-driven plans, avatar dropdown, CSS animation, admin overhaul', summary:'**India-only release** — `guessCountry()` now returns `\'IN\'` unconditionally. All country detection, currency switching, Stripe/non-Razorpay payment p', status:'deployed', deployed_at:'March 2026' }
+  ];
+  const [releases,      setReleases]     = useState(CHANGELOG_RELEASES);
   const [newRelease,    setNewRelease]   = useState({ version:'', title:'', summary:'', status:'deployed' });
   const [feedbackFilter,setFeedbackFilter]=useState('user');  // 'user' | 'crash' | 'rating'
   const [apiUsage,     setApiUsage]     = useState(null);
@@ -68,7 +78,13 @@ export default function Admin() {
     } catch {}
     // Waitlist from localStorage
     setWaitlist(JSON.parse(localStorage.getItem('jiff-global-waitlist')||'[]'));
-    setReleases(JSON.parse(localStorage.getItem('jiff-releases')||'[]'));
+    const saved = JSON.parse(localStorage.getItem('jiff-releases')||'[]');
+    // Merge: local entries first, then CHANGELOG entries not already in local
+    const merged = [...saved];
+    CHANGELOG_RELEASES.forEach(r => {
+      if (!merged.some(m => m.version === r.version)) merged.push(r);
+    });
+    setReleases(merged);
     // Supabase users + feedback via admin API
     try {
       const r = await fetch('/api/admin?action=users');
@@ -152,6 +168,7 @@ export default function Admin() {
     { id:'api',       label:'📡 API Usage' },
     { id:'techstack', label:'🛠️ Tech Stack' },
     { id:'security',  label:'🔒 Security' },
+    { id:'config',    label:'⚙️ Config' },
   ];
 
   return (
@@ -613,6 +630,191 @@ export default function Admin() {
               ))}
             </Card>
           </>
+        )}
+
+
+        {/* CONFIGURATION */}
+        {activeTab==='config' && (
+          <div style={{display:'flex',flexDirection:'column',gap:20}}>
+
+            {/* Vercel */}
+            <div style={{background:'white',border:'1px solid '+C.border,borderRadius:16,overflow:'hidden',boxShadow:C.shadow}}>
+              <div style={{padding:'14px 20px',background:'#000',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>▲</span>
+                <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:'white'}}>Vercel</span>
+                <span style={{fontSize:11,color:'rgba(255,255,255,0.5)',marginLeft:'auto'}}>Hosting + Serverless</span>
+              </div>
+              <div style={{padding:'16px 20px'}}>
+                <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:500,marginBottom:10}}>Environment Variables</div>
+                {[
+                  ['ANTHROPIC_API_KEY','sk-ant-...','Required — recipe generation'],
+                  ['REACT_APP_SUPABASE_URL','https://xxx.supabase.co','Required — database'],
+                  ['REACT_APP_SUPABASE_ANON_KEY','eyJ...','Required — public auth'],
+                  ['SUPABASE_SERVICE_ROLE_KEY','eyJ...','Server-side only, NOT prefixed REACT_APP_'],
+                  ['RAZORPAY_KEY_ID','rzp_live_...','Payments (India)'],
+                  ['RAZORPAY_KEY_SECRET','...','Server-side only'],
+                  ['REACT_APP_RAZORPAY_KEY_ID','rzp_live_...','Client-side key'],
+                  ['WHATSAPP_ACCESS_TOKEN','EAAx...','WhatsApp bot'],
+                  ['WHATSAPP_VERIFY_TOKEN','jiff-whatsapp-2026','Change this'],
+                  ['WHATSAPP_PHONE_NUMBER_ID','123...','From Meta dashboard'],
+                  ['MAILCHIMP_API_KEY','abc...','Email capture'],
+                  ['MAILCHIMP_LIST_ID','abc123','Audience ID'],
+                  ['MAILCHIMP_SERVER_PREFIX','us21','e.g. us21'],
+                ].map(([key, eg, note]) => (
+                  <div key={key} style={{display:'grid',gridTemplateColumns:'240px 180px 1fr',gap:8,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'center'}}>
+                    <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 7px',borderRadius:4,fontFamily:'monospace'}}>{key}</code>
+                    <span style={{fontSize:11,color:C.muted,fontFamily:'monospace'}}>{eg}</span>
+                    <span style={{fontSize:11,color:C.muted,fontWeight:300}}>{note}</span>
+                  </div>
+                ))}
+                <div style={{marginTop:12,padding:'8px 12px',background:'rgba(0,0,0,0.03)',borderRadius:8,fontSize:11,color:C.muted}}>
+                  Add at: <strong>vercel.com → Project → Settings → Environment Variables</strong>. Redeploy after changes.
+                </div>
+              </div>
+            </div>
+
+            {/* Supabase */}
+            <div style={{background:'white',border:'1px solid '+C.border,borderRadius:16,overflow:'hidden',boxShadow:C.shadow}}>
+              <div style={{padding:'14px 20px',background:'#3ECF8E',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>🐘</span>
+                <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:'white'}}>Supabase</span>
+                <span style={{fontSize:11,color:'rgba(255,255,255,0.75)',marginLeft:'auto'}}>Database + Auth</span>
+              </div>
+              <div style={{padding:'16px 20px'}}>
+                <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:500,marginBottom:10}}>Setup Phases</div>
+                {[
+                  ['Phase 1','profiles, pantry, favourites tables + trigger','Required'],
+                  ['Phase 2','meal_history table','Required'],
+                  ['Phase 3','feedback, api_keys tables + profile columns','For Admin'],
+                  ['Phase 4','broadcasts table + meal_history.rating column','For Notifications'],
+                  ['Phase 5','family_members, nutrition_goals columns + releases table','For v18 features'],
+                ].map(([phase, desc, tag]) => (
+                  <div key={phase} style={{display:'flex',gap:10,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'flex-start'}}>
+                    <span style={{fontSize:11,padding:'2px 8px',borderRadius:20,background:tag==='Required'?'rgba(62,207,142,0.12)':'rgba(28,10,0,0.06)',color:tag==='Required'?'#1a7a4a':C.muted,fontWeight:600,flexShrink:0,whiteSpace:'nowrap'}}>{phase}</span>
+                    <span style={{fontSize:12,color:C.ink,flex:1,fontWeight:300}}>{desc}</span>
+                    <span style={{fontSize:10,color:C.muted,flexShrink:0}}>{tag}</span>
+                  </div>
+                ))}
+                <div style={{marginTop:12,padding:'8px 12px',background:'rgba(62,207,142,0.07)',borderRadius:8,fontSize:11,color:'#1a7a4a'}}>
+                  Run SQL at: <strong>supabase.com → Project → SQL Editor</strong>. Full SQL in <code>SUPABASE_SETUP.md</code>.
+                </div>
+                <div style={{marginTop:8}}>
+                  <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:500,marginBottom:8,marginTop:12}}>Auth Setup</div>
+                  {[
+                    ['Google OAuth','supabase.com → Auth → Providers → Google → add Client ID + Secret from Google Cloud Console'],
+                    ['Email OTP','Enabled by default — users get magic link'],
+                    ['Redirect URL','Add: https://jiff-ecru.vercel.app/app to Supabase Auth → URL Configuration'],
+                  ].map(([label, desc]) => (
+                    <div key={label} style={{display:'flex',gap:10,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
+                      <span style={{fontSize:11,fontWeight:600,color:C.ink,minWidth:100,flexShrink:0}}>{label}</span>
+                      <span style={{fontSize:11,color:C.muted,fontWeight:300}}>{desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div style={{background:'white',border:'1px solid '+C.border,borderRadius:16,overflow:'hidden',boxShadow:C.shadow}}>
+              <div style={{padding:'14px 20px',background:'#25D366',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>💬</span>
+                <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:'white'}}>WhatsApp Bot</span>
+                <span style={{fontSize:11,color:'rgba(255,255,255,0.75)',marginLeft:'auto'}}>Meta Cloud API</span>
+              </div>
+              <div style={{padding:'16px 20px'}}>
+                {[
+                  ['1. Meta App','developers.facebook.com → Create App → Business → Add WhatsApp product'],
+                  ['2. Phone Number','WhatsApp → Getting Started → Add/verify phone number → note Phone Number ID'],
+                  ['3. Access Token','Generate Permanent System User Token (not temporary)'],
+                  ['4. Webhook URL','Set to: https://jiff-ecru.vercel.app/api/whatsapp'],
+                  ['5. Verify Token','Set to: jiff-whatsapp-2026 (change in Vercel env + code)'],
+                  ['6. Subscribe','Subscribe to: messages field'],
+                  ['7. Env Vars','Add WHATSAPP_ACCESS_TOKEN, WHATSAPP_VERIFY_TOKEN, WHATSAPP_PHONE_NUMBER_ID to Vercel'],
+                  ['8. Test','Send "Hi Jiff! rice, dal, onion" to your WhatsApp number'],
+                ].map(([step, desc]) => (
+                  <div key={step} style={{display:'flex',gap:10,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
+                    <span style={{fontSize:11,fontWeight:600,color:'#128C7E',minWidth:90,flexShrink:0}}>{step}</span>
+                    <span style={{fontSize:11,color:C.muted,fontWeight:300}}>{desc}</span>
+                  </div>
+                ))}
+                <div style={{marginTop:10,padding:'8px 12px',background:'rgba(37,211,102,0.07)',borderRadius:8,fontSize:11,color:'#128C7E'}}>
+                  Full guide: <code>WHATSAPP_SETUP.md</code> in repo root. Free tier: 1,000 conversations/month.
+                </div>
+              </div>
+            </div>
+
+            {/* Razorpay */}
+            <div style={{background:'white',border:'1px solid '+C.border,borderRadius:16,overflow:'hidden',boxShadow:C.shadow}}>
+              <div style={{padding:'14px 20px',background:'#072654',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>💳</span>
+                <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:'white'}}>Razorpay</span>
+                <span style={{fontSize:11,color:'rgba(255,255,255,0.5)',marginLeft:'auto'}}>Payments (India)</span>
+              </div>
+              <div style={{padding:'16px 20px'}}>
+                {[
+                  ['1. Account','razorpay.com → Sign up → complete KYC (required for live payments)'],
+                  ['2. API Keys','Dashboard → Settings → API Keys → Generate Test/Live keys'],
+                  ['3. Key ID','Add as RAZORPAY_KEY_ID + REACT_APP_RAZORPAY_KEY_ID in Vercel'],
+                  ['4. Key Secret','Add as RAZORPAY_KEY_SECRET in Vercel (server-side only)'],
+                  ['5. Webhook','Optional: Dashboard → Webhooks → add endpoint for payment events'],
+                  ['Test card','4111 1111 1111 1111 · Expiry: any future date · CVV: any'],
+                ].map(([step, desc]) => (
+                  <div key={step} style={{display:'flex',gap:10,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
+                    <span style={{fontSize:11,fontWeight:600,color:'#072654',minWidth:90,flexShrink:0}}>{step}</span>
+                    <span style={{fontSize:11,color:C.muted,fontWeight:300}}>{desc}</span>
+                  </div>
+                ))}
+                <div style={{marginTop:10,padding:'8px 12px',background:'rgba(7,38,84,0.05)',borderRadius:8,fontSize:11,color:'#072654'}}>
+                  Plans: ₹99/mo · ₹799/yr · ₹2,999 lifetime. Change in <code>LocaleContext.jsx → CURRENCY_MAP</code>.
+                </div>
+              </div>
+            </div>
+
+            {/* Mailchimp */}
+            <div style={{background:'white',border:'1px solid '+C.border,borderRadius:16,overflow:'hidden',boxShadow:C.shadow}}>
+              <div style={{padding:'14px 20px',background:'#FFE01B',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:20}}>🐵</span>
+                <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:'#241C15'}}>Mailchimp</span>
+                <span style={{fontSize:11,color:'rgba(36,28,21,0.6)',marginLeft:'auto'}}>Email + Drip</span>
+              </div>
+              <div style={{padding:'16px 20px'}}>
+                {[
+                  ['1. Account','mailchimp.com → free for up to 500 contacts'],
+                  ['2. Audience','Audience → Create Audience → "Jiff Users"'],
+                  ['3. List ID','Audience → Settings → Audience ID → copy'],
+                  ['4. API Key','Account → Profile → Extras → API Keys → Create'],
+                  ['5. Server Prefix','From API key — last part e.g. "us21"'],
+                  ['6. Env Vars','Add MAILCHIMP_API_KEY, MAILCHIMP_LIST_ID, MAILCHIMP_SERVER_PREFIX to Vercel'],
+                  ['Tags applied','jiff-waitlist, source:landing/pricing'],
+                ].map(([step, desc]) => (
+                  <div key={step} style={{display:'flex',gap:10,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
+                    <span style={{fontSize:11,fontWeight:600,color:'#241C15',minWidth:90,flexShrink:0}}>{step}</span>
+                    <span style={{fontSize:11,color:C.muted,fontWeight:300}}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Admin key reminder */}
+            <div style={{background:'rgba(229,62,62,0.05)',border:'1px solid rgba(229,62,62,0.2)',borderRadius:16,padding:'16px 20px'}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+                <span style={{fontSize:18}}>🔑</span>
+                <span style={{fontFamily:"'Fraunces',serif",fontSize:14,fontWeight:700,color:C.red}}>Before going live</span>
+              </div>
+              {[
+                'Change admin key from "jiff-admin-2026" in Admin.jsx (ADMIN_KEY constant)',
+                'Change WhatsApp verify token from "jiff-whatsapp-2026" in api/whatsapp.js + Vercel env',
+                'Switch Razorpay from test keys to live keys (requires KYC completion)',
+                'Run npm audit in repo to check for vulnerable dependencies',
+                'Add Content-Security-Policy headers in vercel.json',
+              ].map((item, i) => (
+                <div key={i} style={{display:'flex',gap:8,padding:'6px 0',borderBottom:'1px solid rgba(229,62,62,0.08)',fontSize:12,color:C.ink,fontWeight:300}}>
+                  <span style={{color:C.red,flexShrink:0}}>⚠</span>{item}
+                </div>
+              ))}
+            </div>
+
+          </div>
         )}
 
       </div>
