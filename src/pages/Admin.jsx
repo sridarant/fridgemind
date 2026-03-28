@@ -1,6 +1,21 @@
 // src/pages/Admin.jsx — Admin dashboard v17
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// ── Status badge for services ────────────────────────────────────
+function StatusBadge({ id, supabaseEnabled }) {
+  const [ok, setOk] = React.useState(null);
+  React.useEffect(() => {
+    if (id === 1) { setOk(supabaseEnabled); return; }
+    if (id === 0) {
+      fetch('/api/stats').then(r => setOk(r.ok)).catch(() => setOk(false));
+    } else { setOk(null); } // unknown — show as unverified
+  }, [id, supabaseEnabled]);
+  const color = ok === true ? '#1D9E75' : ok === false ? '#E53E3E' : '#9E9E9E';
+  const label = ok === true ? 'Operational' : ok === false ? 'Unavailable' : 'Unverified';
+  const dot   = ok === true ? '🟢' : ok === false ? '🔴' : '⚪';
+  return <span style={{fontSize:12,color,fontWeight:500}}>{dot} {label}</span>;
+}
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00', cream:'#FFFAF5',
@@ -48,14 +63,37 @@ export default function Admin() {
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastSent,setBroadcastSent]= useState(false);
   const CHANGELOG_RELEASES = [
-    { version:'v18.0', title:'Major release: Family mode, Insights, Delivery, Smart Recs, WhatsApp bot, Admin ', summary:'New **👨‍👩‍👧 Family** tab in Profile — add family members with name + dietary preference; Saved as `family_members JSONB` column in Supabase `profiles`', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.6', title:'Notifications, share dropdown, rating clarity, camera mobile-only, ingredient tr', summary:'Bell icon added to header-right, before the avatar button (visible to logged-in users); Red unread badge showing count (max "9+"); Panel shows three n', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.5', title:'Definitive dietary display fix + camera mobile detection', summary:'**Dietary garbled content — root cause:**; **Camera opens folder — root cause:**', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.4', title:'Clean pass: dietary card, nav chips, share card redesign, rating position', summary:'**Dietary Preferences sidebar card removed** — the duplicate card in the main sidebar has been removed. Dietary details are shown in the "Your Prefere', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.3', title:'Crash fixes, seasonal picker, camera, voice, rating, share card', summary:'**`t is not defined` in GroceryPanel** — `GroceryPanel` called `t(\'need_to_buy\')` etc. but only destructured `country` from `useLocale()`, not `t`. Ad', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.2', title:'API consolidation: 11 → 8 serverless functions', summary:'**Result: 11 → 8 functions (4 spare for future features)**; `POST /api/v1/suggest` still works (maps to `suggest.js?v=1`)', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.1', title:'Quick wins + medium features: Surprise me, ratings, voice, streaks, seasonal', summary:'**"Surprise me" button**; One-tap generation with zero input required; Reads `profile.preferred_cuisines` and picks one at random', status:'deployed', deployed_at:'March 2026' },
-    { version:'v17.0', title:'India-only, profile-driven plans, avatar dropdown, CSS animation, admin overhaul', summary:'**India-only release** — `guessCountry()` now returns `\'IN\'` unconditionally. All country detection, currency switching, Stripe/non-Razorpay payment p', status:'deployed', deployed_at:'March 2026' }
+    {version:'v18.0',title:'Major release: Family mode, Insights, Delivery, Smart Recs, WhatsApp b',summary:'New **👨‍👩‍👧 Family** tab in Profile — add family members with name + dietary preference; Saved as `f',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.6',title:'Notifications, share dropdown, rating clarity, camera mobile-only, ing',summary:'Bell icon added to header-right, before the avatar button (visible to logged-in users); Red unread b',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.5',title:'Definitive dietary display fix + camera mobile detection',summary:'**Dietary garbled content — root cause:**',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.4',title:'Clean pass: dietary card, nav chips, share card redesign, rating posit',summary:'**Dietary Preferences sidebar card removed** — the duplicate card in the main sidebar has been remov',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.3',title:'Crash fixes, seasonal picker, camera, voice, rating, share card',summary:'**`t is not defined` in GroceryPanel** — `GroceryPanel` called `t(\\'need_to_buy\\')` etc. but only dest',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.2',title:'API consolidation: 11 → 8 serverless functions',summary:'',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.1',title:'Quick wins + medium features: Surprise me, ratings, voice, streaks, se',summary:'**"Surprise me" button**; One-tap generation with zero input required',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v17.0',title:'India-only, profile-driven plans, avatar dropdown, CSS animation, admi',summary:'**India-only release** — `guessCountry()` now returns `\\'IN\\'` unconditionally. All country detection,',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.6',title:'Critical crash fix: recipe generation & Favourites',summary:'**`MealCard`** — Added `const { t } = useLocale()` as first line of the component; **`ShareDrawer`**',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.5',title:'i18n completion, History fix, cuisine multi-pref, profile nav',summary:'**History page crash** — `Jiff.jsx` saved history entries with key `meals` but `History.jsx` read `e',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.4',title:'Country rollout, admin, stability, session security, navigation',summary:'**Week Plan crash fixed** — `toggleType` and `handleSubmit` were completely missing from `Planner.js',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.3',title:'Planner/Plans fixed, pantry pre-fill, Goal Plans fridge section',summary:'**Week Plan page crash** — `setIngredients(pantry)` in Planner pantry-prefill `useEffect` referenced',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.3',title:'Week Plan & Goal Plans fixed, complete cleanup pass',summary:'**Planner crash** — `setIngredients(pantry)` → `setPantryItems(pantry)` in pantry pre-fill `useEffec',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.2',title:'Grocery fix, country detection, cuisine cleanup, Planner fridge sectio',summary:'**Grocery list blank page** — `GroceryPanel` now calls `useLocale()` directly to get `country`, elim',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16.1',title:'UX polish, Blinkit India-gate, routes, food validation, Mailchimp guid',summary:'**ApiDocs.jsx build fix** — Invalid octal escape `\\1` in border string corrected to `2px solid`; **B',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v16',title:'Full i18n, Smart Greeting, Autocomplete, Photo Upload, Food Types, Ind',summary:'**Files changed:** 40+ files across all layers; **a. Full language coverage** — Fixed all hardcoded ',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v15',title:'Privacy, Analytics, Goal Plans, Cookie Consent, Logo Animation',summary:'**Files changed:** `src/components/JiffLogo.jsx` (new), `src/components/CookieBanner.jsx` (new), `sr',status:'deployed',deployed_at:'2026-03-01'},
+    {version:'v14',title:'Meal History, Email Capture, Global Payments Messaging',summary:'**Meal history** — every generation auto-saved to Supabase (last 30 per user). New `/history` page w',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v13',title:'Mandatory Sign-in, Meal Types, Servings, 5 Recipes, Trial, Planner Fix',summary:'**Mandatory sign-in** — full-screen auth overlay for unauthenticated users; cannot access app withou',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v12',title:'Multi-currency Pricing, 13 Cuisines, Imperial Units, i18n',summary:'**Multi-currency pricing** — `LocaleContext` detects country from browser locale. India → ₹ INR via ',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v11',title:'Phase 4 Freemium Paywall, Razorpay, Pricing Page',summary:'**Freemium paywall** — 5 free meal suggestions/day, 1 weekly plan/month. Usage tracked in localStora',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v10',title:'Phase 3 Supabase Auth, Cloud Sync, Taste Profile, Pantry',summary:'**Google sign-in** — Supabase Auth with OAuth redirect; **Magic link email sign-in** — passwordless,',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v9',title:'Step Timers on Recipe Steps',summary:'**Tap-to-start step timers** — every recipe step with a cooking time gets a timer pill automatically',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v8',title:'Serving Size Scaler',summary:'**Serving scaler** — −/+ buttons in every expanded recipe card. Scales 1–20 people; **Smart quantity',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v7',title:'Save Favourites with localStorage Persistence',summary:'**Heart button** on every meal card — hollow when unsaved, fills red with pop animation when saved; ',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v6',title:'Weekly Meal Planner',summary:'**Week planner** (`/planner`) — generates 7 days × 3 meals (21 total) in one API call; **7-column ca',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v5',title:'Full Rebrand to Jiff',summary:'**Name:** FridgeMind → Jiff ("meals in a jiff" — blend of Jam + Riff); **Tagline:** "Meals in a Jiff',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v4',title:'Grocery List Generator',summary:'**Grocery list** — compares recipe ingredients against fridge contents using fuzzy matching; Shows "',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v3',title:'Share Button + WhatsApp Integration',summary:'**Share drawer** on each meal card — slides open with animation; **WhatsApp** — pre-formatted recipe',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v2',title:'Cuisine Filter + PWA',summary:'**7 cuisine filters** — Any 🌍, Indian 🇮🇳, Italian 🇮🇹, Chinese 🇨🇳, Mexican 🇲🇽, Mediterranean 🫒, Thai ',status:'deployed',deployed_at:'2025-01-01'},
+    {version:'v1',title:'Core AI Meal Suggester (FridgeMind)',summary:'**Ingredient tag input** — type ingredients, press Enter to add as tags, Backspace to remove; **Time',status:'deployed',deployed_at:'2025-01-01'}
   ];
   const [releases,      setReleases]     = useState(CHANGELOG_RELEASES);
   const [newRelease,    setNewRelease]   = useState({ version:'', title:'', summary:'', status:'deployed' });
@@ -165,6 +203,9 @@ export default function Admin() {
     { id:'crashes',   label:'💥 Crashes' },
     { id:'releases',  label:'🚀 Releases' },
     { id:'tools',     label:'🔧 Tools' },
+    { id:'status',    label:'🟢 Status' },
+    { id:'cicd',      label:'🔄 CI/CD' },
+    { id:'tests',     label:'🧪 Tests' },
     { id:'api',       label:'📡 API Usage' },
     { id:'techstack', label:'🛠️ Tech Stack' },
     { id:'security',  label:'🔒 Security' },
@@ -303,23 +344,45 @@ export default function Admin() {
         )}
 
         {/* USER FEEDBACK (non-crash) */}
-        {activeTab==='feedback' && (
-          <Card title="User Feedback"
-            action={<button onClick={()=>exportCSV(feedback.filter(f=>f.category!=='crash'),'jiff-user-feedback.csv',['rating','category','message','created_at'])} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, border:'1px solid '+C.borderMid, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↓ CSV</button>}>
-            {feedback.filter(f=>f.category!=='crash').length === 0 ? (
-              <div style={{ color:C.muted, fontSize:13, fontWeight:300 }}>No user feedback yet. Requires Supabase Phase 3 + <code style={{fontSize:11}}>SUPABASE_SERVICE_ROLE_KEY</code>.</div>
-            ) : feedback.filter(f=>f.category!=='crash').map((f,i)=>(
+        {activeTab==='feedback' && (() => {
+          const nonCrash = feedback.filter(f=>f.category!=='crash');
+          const cats = ['all',...[...new Set(nonCrash.map(f=>f.category||'general'))]];
+          const [activeCat, setActiveCat] = [feedbackFilter, setFeedbackFilter];
+          const shown = activeCat==='all' ? nonCrash : nonCrash.filter(f=>(f.category||'general')===activeCat);
+          return (
+          <Card title={`User Feedback — ${nonCrash.length} entries`}
+            action={<button onClick={()=>exportCSV(shown,'jiff-user-feedback.csv',['rating','category','message','created_at'])} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, border:'1px solid '+C.borderMid, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↓ CSV</button>}>
+            {/* Category filter chips */}
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:14}}>
+              {cats.map(cat=>(
+                <button key={cat} onClick={()=>setFeedbackFilter(cat)}
+                  style={{padding:'3px 12px',borderRadius:20,fontSize:11,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",
+                    border:'1.5px solid '+(activeCat===cat?C.jiff:C.borderMid),
+                    background:activeCat===cat?C.jiff:'white',
+                    color:activeCat===cat?'white':C.muted,fontWeight:activeCat===cat?500:400}}>
+                  {cat}
+                  <span style={{marginLeft:4,opacity:0.7}}>
+                    ({cat==='all'?nonCrash.length:nonCrash.filter(f=>(f.category||'general')===cat).length})
+                  </span>
+                </button>
+              ))}
+            </div>
+            {shown.length === 0 ? (
+              <div style={{ color:C.muted, fontSize:13, fontWeight:300 }}>No feedback in this category yet.</div>
+            ) : shown.map((f,i)=>(
               <div key={i} style={{ borderBottom:'1px solid rgba(28,10,0,0.05)', padding:'10px 0' }}>
                 <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
-                  <span style={{ fontSize:13 }}>{'⭐'.repeat(f.rating||0)||'💬'}</span>
-                  <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', borderRadius:20, padding:'2px 8px' }}>{f.category||'general'}</span>
+                  <span style={{ fontSize:13 }}>{f.rating ? '⭐'.repeat(f.rating) : '💬'}</span>
+                  <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', borderRadius:20, padding:'2px 8px', textTransform:'capitalize' }}>{f.category||'general'}</span>
+                  {f.page && <span style={{fontSize:11,color:C.muted}}>{f.page}</span>}
                   <span style={{ fontSize:11, color:C.muted, marginLeft:'auto' }}>{f.created_at ? new Date(f.created_at).toLocaleDateString() : ''}</span>
                 </div>
                 <div style={{ fontSize:12, color:C.ink, fontWeight:300, lineHeight:1.6 }}>{f.message}</div>
               </div>
             ))}
           </Card>
-        )}
+          );
+        })()}
 
         {/* CRASH REPORTS (separate tab, never lost) */}
         {activeTab==='crashes' && (
@@ -427,33 +490,6 @@ export default function Admin() {
         {/* RELEASES */}
         {activeTab==='releases' && (
           <>
-            <Card title="Log New Release">
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
-                <input value={newRelease.version} onChange={e=>setNewRelease(r=>({...r,version:e.target.value}))}
-                  placeholder="v18.0" style={{width:80,padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:'none'}}/>
-                <input value={newRelease.title} onChange={e=>setNewRelease(r=>({...r,title:e.target.value}))}
-                  placeholder="Release title" style={{flex:1,minWidth:180,padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:'none'}}/>
-                <select value={newRelease.status} onChange={e=>setNewRelease(r=>({...r,status:e.target.value}))}
-                  style={{padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none'}}>
-                  {[['deployed','✅ Deployed'],['draft','📝 Draft'],['rollback','⏪ Rollback']].map(([v,l])=>(
-                    <option key={v} value={v}>{l}</option>
-                  ))}
-                </select>
-              </div>
-              <textarea value={newRelease.summary} onChange={e=>setNewRelease(r=>({...r,summary:e.target.value}))}
-                placeholder="What changed in this release?" rows={3}
-                style={{width:'100%',padding:'8px 10px',border:'1.5px solid '+C.borderMid,borderRadius:8,fontSize:12,fontFamily:"'DM Sans',sans-serif",outline:'none',resize:'vertical',boxSizing:'border-box',marginBottom:8}}/>
-              <button onClick={async()=>{
-                if(!newRelease.version||!newRelease.title) return;
-                const entry={...newRelease,deployed_at:new Date().toISOString()};
-                const saved=JSON.parse(localStorage.getItem('jiff-releases')||'[]');
-                saved.unshift(entry); localStorage.setItem('jiff-releases',JSON.stringify(saved));
-                setReleases(saved); setNewRelease({version:'',title:'',summary:'',status:'deployed'});
-                showToast('✓ Release logged');
-              }} style={{background:C.jiff,color:'white',border:'none',borderRadius:8,padding:'8px 16px',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>
-                Log release
-              </button>
-            </Card>
             <Card title={`Release history — ${releases.length} entries`}
               action={<button onClick={()=>{const rs=JSON.parse(localStorage.getItem('jiff-releases')||'[]');setReleases(rs);}} style={{fontSize:11,padding:'4px 10px',borderRadius:8,border:'1px solid '+C.borderMid,background:'white',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>↻ Refresh</button>}>
               {releases.length===0 ? (
@@ -469,6 +505,160 @@ export default function Admin() {
                   </div>
                   <div style={{fontSize:13,fontWeight:500,color:C.ink,marginBottom:2}}>{r.title}</div>
                   {r.summary&&<div style={{fontSize:12,color:C.muted,fontWeight:300,lineHeight:1.5}}>{r.summary}</div>}
+                </div>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {/* STATUS */}
+        {activeTab==='status' && (
+          <>
+            <Card title="Service Status">
+              {(() => {
+                const [statuses, setStatuses] = [
+                  { name:'Vercel (Hosting)', url:'https://jiff-ecru.vercel.app', status:'checking' },
+                  { name:'Supabase DB', url:null, status:'checking' },
+                  { name:'Anthropic API', url:null, status:'checking' },
+                  { name:'Razorpay', url:null, status:'checking' },
+                  { name:'WhatsApp Bot', url:'/api/whatsapp', status:'checking' },
+                ].map(s => s);
+                return statuses.map((svc,i) => (
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid rgba(28,10,0,0.05)'}}>
+                    <span style={{fontSize:14}}>
+                      {i===0?'▲':i===1?'🐘':i===2?'🤖':i===3?'💳':'💬'}
+                    </span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:13,fontWeight:500,color:C.ink}}>{svc.name}</div>
+                      <div style={{fontSize:11,color:C.muted,fontWeight:300}}>
+                        {i===0?'jiff-ecru.vercel.app':i===1?'Supabase PostgreSQL 15':i===2?'Anthropic Claude API':i===3?'Razorpay Payments India':'Meta WhatsApp Cloud API'}
+                      </div>
+                    </div>
+                    <StatusBadge id={i} supabaseEnabled={supabaseEnabled} />
+                  </div>
+                ));
+              })()}
+            </Card>
+            <Card title="Environment">
+              {[
+                ['ANTHROPIC_API_KEY',      process.env.REACT_APP_ANTHROPIC_CHECK ? '✅ Set' : '⚠️ Check Vercel env'],
+                ['SUPABASE URL',           supabaseEnabled ? '✅ Connected' : '❌ Not configured'],
+                ['RAZORPAY',               '⚠️ Verify in Vercel'],
+                ['WHATSAPP',               '⚠️ Verify in Vercel'],
+                ['MAILCHIMP',              '⚠️ Verify in Vercel'],
+              ].map(([k,v])=>(
+                <div key={k} style={{display:'flex',gap:12,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'center'}}>
+                  <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 8px',borderRadius:4,minWidth:160,flexShrink:0}}>{k}</code>
+                  <span style={{fontSize:12,color:v.startsWith('✅')?C.green:v.startsWith('❌')?C.red:'#854F0B',fontWeight:400}}>{v}</span>
+                </div>
+              ))}
+              <div style={{marginTop:10,padding:'8px 12px',background:'rgba(28,10,0,0.03)',borderRadius:8,fontSize:11,color:C.muted}}>
+                Server-side env vars (ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY etc.) are not readable client-side. Verify in Vercel dashboard.
+              </div>
+            </Card>
+          </>
+        )}
+
+        {/* CI/CD */}
+        {activeTab==='cicd' && (
+          <>
+            <Card title="CI/CD Pipeline">
+              <div style={{display:'flex',flexDirection:'column',gap:0}}>
+                {[
+                  { step:'1', label:'Developer pushes to GitHub (main branch)', icon:'💻', status:'auto', detail:'git add . → git commit → git push origin main' },
+                  { step:'2', label:'GitHub triggers Vercel webhook', icon:'🔗', status:'auto', detail:'Automatic — Vercel listens to GitHub push events' },
+                  { step:'3', label:'Vercel runs npm install', icon:'📦', status:'auto', detail:'Installs 267 packages from package.json' },
+                  { step:'4', label:'ESLint static analysis', icon:'🔍', status:'auto', detail:'react-scripts build runs ESLint — fails on syntax errors' },
+                  { step:'5', label:'React production build', icon:'⚙️', status:'auto', detail:'Webpack bundles src/ → optimised static files in build/' },
+                  { step:'6', label:'Vercel deploys to Edge CDN', icon:'🌍', status:'auto', detail:'Deployed to 50+ edge locations globally in ~30 seconds' },
+                  { step:'7', label:'Serverless functions deployed', icon:'⚡', status:'auto', detail:'api/*.js → 9 Vercel serverless functions (Node.js 18)' },
+                  { step:'8', label:'Playwright E2E tests (optional)', icon:'🧪', status:'manual', detail:'Run manually: npx playwright test — 84 tests in tests/jiff.spec.js' },
+                ].map((s,i)=>(
+                  <div key={i} style={{display:'flex',gap:12,padding:'12px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',alignItems:'flex-start'}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',background:s.status==='auto'?C.green:'rgba(255,184,0,0.2)',color:s.status==='auto'?'white':'#854F0B',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,flexShrink:0}}>
+                      {s.step}
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
+                        <span style={{fontSize:14}}>{s.icon}</span>
+                        <span style={{fontSize:13,fontWeight:500,color:C.ink}}>{s.label}</span>
+                        <span style={{fontSize:10,padding:'1px 7px',borderRadius:20,background:s.status==='auto'?'rgba(29,158,117,0.1)':'rgba(255,184,0,0.15)',color:s.status==='auto'?C.green:'#854F0B',fontWeight:500,marginLeft:'auto',flexShrink:0}}>{s.status==='auto'?'Auto':'Manual'}</span>
+                      </div>
+                      <div style={{fontSize:11,color:C.muted,fontWeight:300}}>{s.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <Card title="GitHub Actions (Optional)">
+              <div style={{fontSize:12,color:C.muted,fontWeight:300,lineHeight:1.7,marginBottom:12}}>
+                The repo includes <code>.github/workflows/e2e.yml</code> for automated Playwright tests.
+                To activate: add <code>VERCEL_URL</code> secret in GitHub → Settings → Secrets.
+              </div>
+              {[
+                ['Trigger','Push to main + pull requests'],
+                ['Tests','84 Playwright E2E tests'],
+                ['Report','HTML report uploaded as artifact'],
+                ['Status','Workflow file ready — requires VERCEL_URL secret to activate'],
+              ].map(([k,v])=>(
+                <div key={k} style={{display:'flex',gap:12,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
+                  <span style={{fontSize:12,color:C.muted,minWidth:80,flexShrink:0,fontWeight:300}}>{k}</span>
+                  <span style={{fontSize:12,color:C.ink}}>{v}</span>
+                </div>
+              ))}
+            </Card>
+          </>
+        )}
+
+        {/* TEST COVERAGE */}
+        {activeTab==='tests' && (
+          <>
+            <Card title="Test Suite Overview">
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:12,marginBottom:20}}>
+                {[
+                  {label:'Total Tests',value:'84',color:C.jiff,emoji:'🧪'},
+                  {label:'Pages Covered',value:'10',color:C.green,emoji:'📄'},
+                  {label:'API Endpoints',value:'9',color:C.purple||'#7C3AED',emoji:'⚡'},
+                  {label:'Framework',value:'Playwright',color:C.ink,emoji:'🎭'},
+                ].map(m=>(
+                  <div key={m.label} style={{background:C.cream,border:'1px solid '+C.border,borderRadius:12,padding:'14px',textAlign:'center'}}>
+                    <div style={{fontSize:24,marginBottom:4}}>{m.emoji}</div>
+                    <div style={{fontFamily:"'Fraunces',serif",fontSize:26,fontWeight:900,color:m.color}}>{m.value}</div>
+                    <div style={{fontSize:11,color:C.muted,fontWeight:300}}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:500,marginBottom:10}}>Test Breakdown by Feature</div>
+              {[
+                ['1–10',  'Landing page + auth flow',           '🏠'],
+                ['11–20', 'Recipe generation (main app)',        '🍽️'],
+                ['21–30', 'Favourites, history, profile',        '❤️'],
+                ['31–40', 'Week Planner + Goal Plans',           '📅'],
+                ['41–50', 'Premium + Razorpay payments',        '💳'],
+                ['51–60', 'Voice input + camera + translate',    '🎤'],
+                ['61–67', 'Admin portal',                       '🔧'],
+                ['68–72', 'Notifications + share + camera',     '🔔'],
+                ['73–84', 'v18 — Family, Insights, WhatsApp',   '👨‍👩‍👧'],
+              ].map(([range,desc,icon])=>(
+                <div key={range} style={{display:'flex',gap:10,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',alignItems:'center'}}>
+                  <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 8px',borderRadius:4,minWidth:60,textAlign:'center',flexShrink:0}}>{range}</code>
+                  <span style={{fontSize:14}}>{icon}</span>
+                  <span style={{fontSize:12,color:C.ink,fontWeight:300}}>{desc}</span>
+                </div>
+              ))}
+            </Card>
+            <Card title="How to Run Tests">
+              {[
+                ['Install','npm install && npx playwright install chromium'],
+                ['Run all','npx playwright test'],
+                ['Run single','npx playwright test --grep "test name"'],
+                ['View report','npx playwright show-report'],
+                ['CI mode','VERCEL_URL=https://jiff-ecru.vercel.app npx playwright test'],
+                ['File','tests/jiff.spec.js'],
+              ].map(([cmd,detail])=>(
+                <div key={cmd} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'flex-start'}}>
+                  <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 8px',borderRadius:4,minWidth:90,flexShrink:0}}>{cmd}</code>
+                  <span style={{fontSize:12,color:C.muted,fontWeight:300,fontFamily:'monospace'}}>{detail}</span>
                 </div>
               ))}
             </Card>

@@ -2,6 +2,7 @@
 // Curated 7-day plans for specific goals: weight loss, muscle gain, family, budget, etc.
 
 import { useState, useEffect } from 'react';
+import { getDietaryLabel } from '../lib/dietary';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../contexts/PremiumContext';
 import { useAuth }    from '../contexts/AuthContext';
@@ -258,7 +259,7 @@ export default function Plans() {
                 )}
                 {profile?.food_type?.length > 0 && (
                   <span style={{ fontSize:12, background:'rgba(28,10,0,0.06)', color:C.ink, padding:'3px 10px', borderRadius:20, fontWeight:400 }}>
-                    🍽️ {(Array.isArray(profile.food_type) ? profile.food_type : [profile.food_type]).join(', ')}
+                    🍽️ {getDietaryLabel(profile.food_type)}
                   </span>
                 )}
                 {profile?.spice_level && (

@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { parseFoodTypeIds } from '../lib/dietary';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }   from '../contexts/AuthContext';
 import { useLocale, FOOD_TYPE_OPTIONS, DIET_REQUIREMENTS, INDIAN_CUISINES, GLOBAL_CUISINES } from '../contexts/LocaleContext';
@@ -25,11 +26,7 @@ export default function Profile() {
   const [saved,  setSaved]   = useState(false);
   const [saving, setSaving]  = useState(false);
 
-  const [foodType,      setFoodType]      = useState(
-    Array.isArray(profile?.food_type) ? profile.food_type
-    : profile?.food_type ? [profile.food_type]
-    : ['veg']
-  );
+  const [foodType,      setFoodType]      = useState(() => parseFoodTypeIds(profile?.food_type) || ['veg']);
   const [familyMembers, setFamilyMembers] = useState(
     Array.isArray(profile?.family_members) ? profile.family_members : []
   );
@@ -43,12 +40,36 @@ export default function Profile() {
   const [allergies,     setAllergies]     = useState(profile?.allergies || []);
   const [allergyInput,  setAllergyInput]  = useState('');
   const [dietReqs,      setDietReqs]      = useState(profile?.diet_requirements || []);
-  const [prefCuisines,  setPrefCuisines]  = useState(profile?.preferred_cuisines || []);
+  const [prefCuisines,  setPrefCuisines]  = useState(
+    profile?.preferred_cuisines?.length
+      ? profile.preferred_cuisines
+      : JSON.parse(localStorage.getItem('jiff-pref-cuisines') || '[]')
+  );
   const [pantryItems,   setPantryItems]   = useState(pantry || []);
   const allergyRef = useRef(null);
 
   const addTag = (setArr, arr, v) => { const t=v.trim().toLowerCase().replace(/,$/,''); if(t&&!arr.includes(t)) setArr(p=>[...p,t]); };
   const toggleArr = (setArr, arr, id) => setArr(p => p.includes(id) ? p.filter(x=>x!==id) : [...p,id]);
+
+  // Sync local state whenever profile updates from server (after save or initial load)
+  useEffect(() => {
+    if (!profile) return;
+    const ids = parseFoodTypeIds(profile.food_type);
+    if (ids.length) setFoodType(ids);
+    if (profile.spice_level)        setSpiceLevel(profile.spice_level);
+    if (profile.skill_level)        setSkillLevel(profile.skill_level);
+    if (profile.allergies?.length)  setAllergies(profile.allergies);
+    if (profile.diet_requirements?.length) setDietReqs(profile.diet_requirements);
+    if (profile.preferred_cuisines?.length) setPrefCuisines(profile.preferred_cuisines);
+    if (profile.family_members)     setFamilyMembers(Array.isArray(profile.family_members) ? profile.family_members : []);
+    if (profile.nutrition_goals)    setNutritionalGoals(profile.nutrition_goals);
+  }, [profile]);
+
+  // Persist cuisine selection to localStorage so it survives page refresh
+  useEffect(() => {
+    if (prefCuisines.length > 0)
+      localStorage.setItem('jiff-pref-cuisines', JSON.stringify(prefCuisines));
+  }, [prefCuisines]);
 
   const handleSave = async () => {
     setSaving(true);

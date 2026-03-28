@@ -185,7 +185,7 @@ export default function IngredientInput({ ingredients, onChange, pantryIngredien
       setTranslateResult(data);
       // If found, populate the input with English name for easy adding
       if (data.found && data.english) {
-        setInputVal(data.english);
+        // Don't auto-set inputVal — let user click "+ Add" button explicitly
         setSuggestions([]);
       }
     } catch {
@@ -196,7 +196,7 @@ export default function IngredientInput({ ingredients, onChange, pantryIngredien
   };
 
   // Show translate button when input has text but no/few autocomplete matches
-  const showTranslateBtn = inputVal.trim().length >= 2 && suggestions.length < 3;
+  const showTranslateBtn = inputVal.trim().length >= 2;
 
   return (
     <>
@@ -217,9 +217,9 @@ export default function IngredientInput({ ingredients, onChange, pantryIngredien
             value={inputVal}
             onChange={e => handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={() => { setTimeout(() => { if (inputVal.trim()) addIngredient(inputVal); setSuggestions([]); }, 150); }}
+            onBlur={() => { setTimeout(() => { if (inputVal.trim() && !translating) addIngredient(inputVal); setSuggestions([]); }, 200); }}
             placeholder={ingredients.length === 0
-              ? (placeholder || 'eggs, onions, rice… or type regional name 🌐')
+              ? (placeholder || 'eggs, spinach, rice… or regional names — click 🌐 to translate')
               : 'add more…'}
             autoComplete="off"
             spellCheck={false}

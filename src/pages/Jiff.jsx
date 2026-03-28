@@ -957,6 +957,7 @@ export default function Jiff() {
   const [gatePlan,     setGatePlan]     = useState('annual');
   const [gateLoading,  setGateLoading]  = useState(false);
   const [showUserMenu,       setShowUserMenu]       = useState(false);
+  const [gateDismissed,      setGateDismissed]      = useState(false);
   const [showNotifications,  setShowNotifications]  = useState(false);
   const [notifications,      setNotifications]      = useState([]);
   const [unreadCount,        setUnreadCount]        = useState(0);
@@ -1233,7 +1234,7 @@ export default function Jiff() {
   ] : [];
 
   // Show mandatory sign-in gate
-  const showSignInGate = !authLoading && !user;
+  const showSignInGate = !authLoading && !user && !gateDismissed;
 
   return (
     <>
@@ -1243,7 +1244,12 @@ export default function Jiff() {
         {/* ── Mandatory sign-in gate ── */}
         {showSignInGate && (
           <div className="auth-gate">
-            <div className="auth-card">
+            <div className="auth-card" style={{position:'relative'}}>
+              <button onClick={()=>setGateDismissed(true)}
+                style={{position:'absolute',top:16,right:16,background:'none',border:'none',
+                  fontSize:20,cursor:'pointer',color:'rgba(28,10,0,0.3)',lineHeight:1,padding:4}}>
+                ✕
+              </button>
               <div className="auth-icon">⚡</div>
               <div className="auth-title">{t('auth_title')}</div>
               <div className="auth-sub">Sign in to start your free {TRIAL_DAYS}-day trial. No credit card needed.</div>
@@ -1315,8 +1321,8 @@ export default function Jiff() {
               </button>
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/history')}>🕐 {t('history_nav')}</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
+            {user && <button className="hdr-btn" onClick={()=>navigate('/little-chefs')}>👨‍🍳 Little Chefs</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
             {user && (
@@ -1331,11 +1337,17 @@ export default function Jiff() {
                     <div className="notif-panel">
                       <div className="notif-header">
                         <span style={{fontFamily:"'Fraunces',serif",fontSize:14,fontWeight:700,color:'var(--ink)'}}>Notifications</span>
-                        {unreadCount > 0 && (
-                          <button onClick={markAllRead} style={{background:'none',border:'none',fontSize:11,color:'var(--jiff)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
-                            Mark all read
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginLeft:'auto'}}>
+                          {unreadCount > 0 && (
+                            <button onClick={markAllRead} style={{background:'none',border:'none',fontSize:11,color:'var(--jiff)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontWeight:500}}>
+                              Mark all read
+                            </button>
+                          )}
+                          <button onClick={()=>{setShowNotifications(false);markAllRead();}}
+                            style={{background:'none',border:'none',fontSize:16,cursor:'pointer',color:'rgba(28,10,0,0.35)',padding:'0 2px',lineHeight:1}}>
+                            ✕
                           </button>
-                        )}
+                        </div>
                       </div>
                       <div style={{maxHeight:380,overflowY:'auto'}}>
                         {notifications.length === 0 ? (

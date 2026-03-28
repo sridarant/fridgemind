@@ -7,6 +7,43 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v18.1 — UX fixes, Little Chefs, Admin overhaul
+**Date:** March 2026  |  **Package:** 1.18.1
+
+### Bug fixes
+- **Sign-in gate** — added ✕ close button; users can now read the landing page before signing in
+- **Notification panel** — added ✕ close button; no longer requires click-outside to dismiss
+- **History removed from header** — Profile history is sufficient; header is cleaner
+- **Plans.jsx food_type** — now uses `getDietaryLabel()` — no more `["veg"]` raw JSON display
+- **Profile food type highlight** — `useEffect` syncs local state from server profile after save; selection now stays highlighted
+- **Cuisine persistence** — preferred cuisines saved to `localStorage('jiff-pref-cuisines')` and restored on refresh
+- **Ingredient translator** — `onBlur` no longer auto-adds term while translating; translate button always visible when input has text
+- **Insights empty state** — clear message explaining what insights will show; no longer looks broken after cache clear
+
+### 👨‍🍳 Little Chefs (new page — /little-chefs)
+- Age-group selector: Toddlers (1–3), Kids (4–8), Pre-teens (9–12)
+- Meal types: Breakfast, Lunch, Dinner, Snack, School Tiffin
+- Fun fact for kids about a main ingredient in each recipe
+- Nutrition info per serving
+- Kid-specific prompt via `kidsMode` + `kidsPromptOverride` in `/api/suggest`
+- Linked from header nav
+
+### Admin Portal overhaul
+- **🟢 Status tab** — service health for Vercel, Supabase, Anthropic API, Razorpay, WhatsApp with live badge
+- **🔄 CI/CD tab** — 8-step pipeline diagram (push → ESLint → build → deploy → CDN), GitHub Actions info
+- **🧪 Tests tab** — 90 test breakdown by feature range, how-to-run commands
+- **💬 User Feedback** — category filter chips; filter by any category in one click
+- **🚀 Releases** — manual entry form removed; auto-loaded from CHANGELOG (all 31 versions v1→v18.1); correct dates
+- **Tools** — Supabase status removed (moved to Status tab)
+
+### New files
+- `src/pages/LittleChefs.jsx` — kids meal plan page
+- `src/lib/dietary.js` — shared `getDietaryLabel` + `parseFoodTypeIds` utility
+
+### Tests: 84 → 90
+
+---
+
 ## v18.0 — Major release: Family mode, Insights, Delivery, Smart Recs, WhatsApp bot, Admin overhaul
 **Date:** March 2026  |  **Package:** 1.18.0  |  **Supabase:** Run Phase 5 SQL
 

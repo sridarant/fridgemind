@@ -42,10 +42,27 @@ export default async function handler(req, res) {
     const validation = await validateApiKey(apiKey, process.env.REACT_APP_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     if (!validation.ok) return res.status(validation.status || 401).json({ error: validation.error });
 
-    const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric' } = req.body;
+    const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric', kidsMode=false, kidsPromptOverride=null, tasteProfile=null, familyMembers=[] } = req.body;
     if (!ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
     const maxCount = Math.min(count, validation.record?.tier === 'pro' ? 5 : 3);
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
+    // ── Kids mode prompt override ───────────────────────────────────
+    if (kidsMode && kidsPromptOverride) {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:2000,
+          messages:[{role:'user',content:kidsPromptOverride}] }),
+      });
+      const aiData = await aiRes.json();
+      const raw = (aiData.content||[]).map(c=>c.text||'').join('');
+      const m = raw.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/);
+      if (m) { try { const parsed=JSON.parse(m[0]); return res.status(200).json(parsed); } catch {} }
+      return res.status(500).json({ error:'Failed to parse kids recipe response' });
+    }
+
     const dietLabel    = (!diet    || diet    === 'none') ? 'no dietary restrictions' : diet;
     const langMap = { en:'English', hi:'Hindi', ta:'Tamil', es:'Spanish', fr:'French', de:'German' };
     const langName = langMap[language] || 'English';

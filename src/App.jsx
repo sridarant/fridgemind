@@ -16,6 +16,7 @@ import Stats     from './pages/Stats';
 import ApiDocs      from './pages/ApiDocs';
 import Admin        from './pages/Admin';
 import Insights     from './pages/Insights';
+import LittleChefs  from './pages/LittleChefs';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
@@ -37,7 +38,8 @@ export default function App() {
                 <Route path="/stats"    element={<Stats />}    />
                 <Route path="/api-docs" element={<ApiDocs />}  />
                 <Route path="/admin"    element={<Admin />}     />
-              <Route path="/insights" element={<Insights />}  />
+              <Route path="/insights"      element={<Insights />}     />
+              <Route path="/little-chefs"   element={<LittleChefs />}  />
               </Routes>
               <CookieBanner />
               <FeedbackWidget />

@@ -167,19 +167,30 @@ export default function Insights() {
             Loading insights…
           </div>
         ) : data.history.length === 0 ? (
-          <div style={{ textAlign:'center', padding:60 }}>
-            <div style={{ fontSize:48, marginBottom:16 }}>📊</div>
-            <div style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:900, color:C.ink, marginBottom:8 }}>
-              No data yet
+          <div style={{ textAlign:'center', padding:'48px 24px', maxWidth:480, margin:'0 auto' }}>
+            <div style={{ fontSize:56, marginBottom:16 }}>🍽️</div>
+            <div style={{ fontFamily:"'Fraunces',serif", fontSize:24, fontWeight:900, color:C.ink, marginBottom:10 }}>
+              Your insights will appear here
             </div>
-            <p style={{ color:C.muted, fontWeight:300, marginBottom:20 }}>
-              Generate your first recipes to see insights here.
+            <p style={{ color:C.muted, fontWeight:300, lineHeight:1.7, marginBottom:8 }}>
+              Insights are built from your recipe history. Once you start generating meals, you'll see:
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:24, textAlign:'left',
+              background:'white', border:'1px solid '+C.border, borderRadius:14, padding:'14px 18px' }}>
+              {['📊 Which cuisines you cook most', '⭐ Your recipe ratings over time',
+                '🥦 Most-used ingredients', '🔥 Average calories & protein',
+                '📅 Cooking frequency & streaks'].map(item => (
+                <div key={item} style={{ fontSize:13, color:C.ink, fontWeight:300 }}>{item}</div>
+              ))}
+            </div>
+            <p style={{ color:C.muted, fontSize:12, fontWeight:300, marginBottom:20 }}>
+              Note: Insights use your browser's local storage. They'll rebuild automatically as you cook.
             </p>
             <button onClick={() => navigate('/app')}
               style={{ background:C.jiff, color:'white', border:'none', borderRadius:12,
-                padding:'10px 24px', fontSize:14, fontWeight:500, cursor:'pointer',
+                padding:'12px 28px', fontSize:14, fontWeight:500, cursor:'pointer',
                 fontFamily:"'DM Sans',sans-serif" }}>
-              Start cooking ⚡
+              Generate your first meal ⚡
             </button>
           </div>
         ) : (

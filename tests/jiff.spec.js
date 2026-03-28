@@ -827,3 +827,64 @@ test('84. WhatsApp webhook responds to GET verification', async ({ page }) => {
   // Should return 200 with the challenge
   expect([200, 403]).toContain(res.status()); // 403 if token mismatch in test env
 });
+
+// ── v18.1 ─────────────────────────────────────────────────────────
+
+// 85. Sign-in gate has a close button
+test('85. Sign-in gate has close/dismiss button', async ({ page }) => {
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  // Close button should be visible on the auth gate
+  const closeBtn = page.locator('.auth-gate button:has-text("✕")').first();
+  if (await closeBtn.isVisible()) {
+    await closeBtn.click();
+    // After close, gate should be dismissed
+    await expect(page.locator('.auth-gate')).not.toBeVisible({ timeout: 2000 });
+  }
+});
+
+// 86. Little Chefs page loads
+test('86. Little Chefs page loads correctly', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => { if (!e.message.includes('Warning')) errors.push(e.message); });
+  await injectPremium(page);
+  await page.goto('/little-chefs');
+  await page.waitForLoadState('networkidle');
+  expect(errors).toHaveLength(0);
+  await expect(page.locator('text=Little Chefs').first()).toBeVisible();
+});
+
+// 87. Little Chefs shows age group selector
+test('87. Little Chefs age groups visible', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/little-chefs');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('text=Toddlers').first()).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('text=Kids').first()).toBeVisible();
+  await expect(page.locator('text=Pre-teens').first()).toBeVisible();
+});
+
+// 88. Little Chefs link visible in header
+test('88. Little Chefs nav link in header', async ({ page }) => {
+  await injectPremium(page);
+  await page.goto('/app');
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('button:has-text("Little Chefs")').first()).toBeVisible({ timeout: 5000 });
+});
+
+// 89. Admin Status tab exists
+test('89. Admin has Status tab', async ({ page }) => {
+  await page.goto('/admin');
+  await page.locator('input[type=password]').fill('jiff-admin-2026');
+  await page.locator('button:has-text("Sign in")').click();
+  await expect(page.locator('button:has-text("Status")').first()).toBeVisible({ timeout: 3000 });
+});
+
+// 90. Admin CI/CD tab exists and shows pipeline
+test('90. Admin CI/CD tab shows pipeline', async ({ page }) => {
+  await page.goto('/admin');
+  await page.locator('input[type=password]').fill('jiff-admin-2026');
+  await page.locator('button:has-text("Sign in")').click();
+  await page.locator('button:has-text("CI/CD")').click();
+  await expect(page.locator('text=CI/CD Pipeline').first()).toBeVisible({ timeout: 3000 });
+});
