@@ -7,6 +7,64 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v18.3 -- Admin sidebar nav, Home button, Supabase cleanup
+**Date:** March 2026  |  **Package:** 1.18.3
+
+### Admin portal -- redesigned navigation
+- Replaced cluttered 14-tab header with a clean **sticky left sidebar**
+- Tabs grouped into 5 logical sections:
+  - **Dashboard** -- Overview
+  - **Users & Feedback** -- Users, Waitlist, User Feedback, Crashes
+  - **Releases & Build** -- Releases, CI/CD, Tests
+  - **Platform** -- Status, Tools, API Usage
+  - **Documentation** -- Tech Stack, Security, Config
+- **Home button** -- appears in top bar when not on Overview; click to return to admin dashboard (does not exit admin)
+- **Exit button** -- dedicated "Exit" in top bar to leave admin and return to the app
+- Breadcrumb label shows current section name next to the Jiff Admin logo
+- Active item highlighted with orange left border and subtle tint
+
+### Admin Tools -- Supabase status removed
+- Supabase status card removed from Tools tab
+- Supabase connectivity is available under the Status tab
+
+### App header nav order
+- Already in correct order: Week Plan > Goal Plan > Little Chefs > Insights
+
+---
+
+## v18.2 -- Crash fixes, sign-out, Supabase insights, cross-navigation
+**Date:** March 2026  |  **Package:** 1.18.2
+
+### Critical crash fixes
+- **e.map is not a function** -- guarded all three crash points:
+  - `setMeals(data.meals)` now wraps with `Array.isArray()` before setting state
+  - `favourites.map()` -- guarded in favs-grid render
+  - `notifications.map()` -- guarded in both markAllRead and render
+- **Sign Out not working** -- `signOut` was missing from the `useAuth()` destructure in Jiff.jsx; clicking Sign Out now works correctly
+
+### Insights -- loads from Supabase when localStorage is empty
+- Insights previously only read from localStorage (browser cache)
+- After clearing browser cache or opening on a new device, Insights appeared blank
+- Now: if localStorage is empty AND user is signed in, fetches from `/api/meal-history`
+- History, ratings, and all profile data are already saved to Supabase -- Insights now uses that
+- localStorage remains as a fast cache layer
+
+### localStorage vs Supabase -- what lives where
+- **Supabase (persistent, cross-device):** meal history, ratings, favourites, pantry, profile preferences (food type, spice, allergies, cuisines, family members, nutrition goals)
+- **localStorage (cache/device):** streak, notification read state, premium status (for speed), admin releases list, language/unit preference
+- Phase 5 SQL updated: added `lang` and `units` columns to profiles table for full cross-device preference sync
+
+### Cross-navigation between plan pages
+- **Week Plan** header: Goal Plan + Little Chefs links; "Back to App" renamed
+- **Goal Plan** header: Week Plan + Little Chefs links; "Back to App" renamed
+- **Little Chefs** header: Week Plan + Goal Plan links; "Back to App" renamed
+- All plan pages now form a connected hub -- easy to switch between them
+
+### Header nav order
+- Little Chefs now appears before Insights in the header (logical grouping of plan pages)
+
+---
+
 ## v18.1 — UX fixes, Little Chefs, Admin overhaul
 **Date:** March 2026  |  **Package:** 1.18.1
 

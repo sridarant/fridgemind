@@ -179,66 +179,103 @@ export default function Admin() {
   if (!authed) return (
     <div style={{ minHeight:'100vh', background:C.cream, display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'DM Sans',sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-      <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:20, padding:'32px 28px', width:320, boxShadow:C.shadow }}>
-        <div style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:900, color:C.ink, marginBottom:4 }}>⚡ Jiff Admin</div>
-        <div style={{ fontSize:12, color:C.muted, marginBottom:20, fontWeight:300 }}>Enter admin key to continue</div>
-        <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()}
-          placeholder="Admin key"
-          style={{ width:'100%', padding:'10px 12px', border:'1.5px solid '+C.borderMid, borderRadius:10, fontSize:13, fontFamily:"'DM Sans',sans-serif", marginBottom:12, boxSizing:'border-box', outline:'none' }}
-        />
-        <button onClick={login} style={{ width:'100%', background:C.jiff, color:'white', border:'none', borderRadius:10, padding:11, fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-          Sign in
-        </button>
-        <button onClick={()=>navigate('/app')} style={{ width:'100%', background:'none', border:'none', marginTop:10, fontSize:12, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-          ← Back to app
-        </button>
-      </div>
-    </div>
-  );
-
-  const tabs = [
-    { id:'overview',  label:'📊 Overview' },
-    { id:'users',     label:'👥 Users' },
-    { id:'waitlist',  label:'📋 Waitlist' },
-    { id:'feedback',  label:'💬 User Feedback' },
-    { id:'crashes',   label:'💥 Crashes' },
-    { id:'releases',  label:'🚀 Releases' },
-    { id:'tools',     label:'🔧 Tools' },
-    { id:'status',    label:'🟢 Status' },
-    { id:'cicd',      label:'🔄 CI/CD' },
-    { id:'tests',     label:'🧪 Tests' },
-    { id:'api',       label:'📡 API Usage' },
-    { id:'techstack', label:'🛠️ Tech Stack' },
-    { id:'security',  label:'🔒 Security' },
-    { id:'config',    label:'⚙️ Config' },
-  ];
-
-  return (
-    <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', top:16, right:16, background:C.ink, color:'white', padding:'10px 18px', borderRadius:10, fontSize:13, zIndex:999, boxShadow:C.shadow }}>
-          {toast}
-        </div>
+        <div style={{ position:'fixed',top:20,right:20,background:C.green,color:'white',padding:'10px 20px',borderRadius:12,boxShadow:'0 4px 16px rgba(0,0,0,0.15)',zIndex:9999,fontSize:13,fontWeight:500 }}>{toast}</div>
       )}
-      <header style={{ padding:'14px 28px', borderBottom:'1px solid '+C.border, background:'white', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10 }}>
-        <div style={{ fontFamily:"'Fraunces',serif", fontSize:18, fontWeight:900, color:C.ink }}>⚡ Jiff Admin</div>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          {tabs.map(t=>(
-            <button key={t.id} onClick={()=>setActiveTab(t.id)}
-              style={{ padding:'6px 12px', borderRadius:20, fontSize:11, fontWeight:activeTab===t.id?500:400, cursor:'pointer', border:'1.5px solid '+(activeTab===t.id?C.jiff:C.border), background:activeTab===t.id?C.jiff:'white', color:activeTab===t.id?'white':C.muted, fontFamily:"'DM Sans',sans-serif" }}>
-              {t.label}
+
+      {/* Top bar */}
+      <header style={{ padding:'12px 24px', borderBottom:'1px solid '+C.border, background:'white',
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        position:'sticky', top:0, zIndex:20, boxShadow:'0 2px 8px rgba(28,10,0,0.04)' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={()=>setActiveTab('overview')}
+            style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}>
+            <span style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:900, color:C.ink }}>
+              ⚡ Jiff Admin
+            </span>
+          </button>
+          <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.06)', padding:'2px 8px', borderRadius:20, fontFamily:"'DM Sans',sans-serif" }}>
+            {tabs.find(t=>t.id===activeTab)?.label || 'Overview'}
+          </span>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          {activeTab !== 'overview' && (
+            <button onClick={()=>setActiveTab('overview')}
+              style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer',
+                border:'1.5px solid '+C.border, background:'white', color:C.muted,
+                fontFamily:"'DM Sans',sans-serif", display:'flex', alignItems:'center', gap:5 }}>
+              🏠 Home
             </button>
-          ))}
+          )}
           <button onClick={()=>{sessionStorage.removeItem('jiff-admin-auth');navigate('/app');}}
-            style={{ padding:'6px 12px', borderRadius:20, fontSize:11, cursor:'pointer', border:'1.5px solid '+C.border, background:'white', color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>
-            Sign out
+            style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer',
+              border:'1.5px solid rgba(229,62,62,0.25)', background:'rgba(229,62,62,0.05)',
+              color:C.red, fontFamily:"'DM Sans',sans-serif" }}>
+            &#8592; Exit
           </button>
         </div>
       </header>
 
-      <div style={{ maxWidth:960, margin:'0 auto', padding:'28px 24px' }}>
+      {/* Sidebar + content layout */}
+      <div style={{ display:'flex', minHeight:'calc(100vh - 53px)' }}>
+
+        {/* Sidebar */}
+        <nav style={{ width:196, flexShrink:0, background:'white', borderRight:'1px solid '+C.border,
+          padding:'16px 0', position:'sticky', top:53, height:'calc(100vh - 53px)', overflowY:'auto' }}>
+          {[
+            { group:'Dashboard', items:[
+              { id:'overview',  icon:'📊', label:'Overview' },
+            ]},
+            { group:'Users & Feedback', items:[
+              { id:'users',     icon:'👥', label:'Users' },
+              { id:'waitlist',  icon:'📋', label:'Waitlist' },
+              { id:'feedback',  icon:'💬', label:'User Feedback' },
+              { id:'crashes',   icon:'💥', label:'Crashes' },
+            ]},
+            { group:'Releases & Build', items:[
+              { id:'releases',  icon:'🚀', label:'Releases' },
+              { id:'cicd',      icon:'🔄', label:'CI/CD' },
+              { id:'tests',     icon:'🧪', label:'Tests' },
+            ]},
+            { group:'Platform', items:[
+              { id:'status',    icon:'🟢', label:'Status' },
+              { id:'tools',     icon:'🔧', label:'Tools' },
+              { id:'api',       icon:'📡', label:'API Usage' },
+            ]},
+            { group:'Documentation', items:[
+              { id:'techstack', icon:'🛠️', label:'Tech Stack' },
+              { id:'security',  icon:'🔒', label:'Security' },
+              { id:'config',    icon:'⚙️', label:'Config' },
+            ]},
+          ].map(section => (
+            <div key={section.group} style={{ marginBottom:6 }}>
+              <div style={{ padding:'8px 20px 3px', fontSize:9, letterSpacing:'1.5px',
+                textTransform:'uppercase', color:'rgba(28,10,0,0.3)', fontWeight:600,
+                fontFamily:"'DM Sans',sans-serif" }}>
+                {section.group}
+              </div>
+              {section.items.map(item => {
+                const active = activeTab === item.id;
+                return (
+                  <button key={item.id} onClick={()=>setActiveTab(item.id)}
+                    style={{ width:'100%', padding:'8px 20px', border:'none', textAlign:'left',
+                      background: active ? 'rgba(255,69,0,0.07)' : 'transparent',
+                      borderLeft: active ? '3px solid '+C.jiff : '3px solid transparent',
+                      cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontSize:13,
+                      color: active ? C.jiff : C.ink, fontWeight: active ? 500 : 400,
+                      display:'flex', alignItems:'center', gap:9, transition:'all 0.1s' }}>
+                    <span style={{ fontSize:14 }}>{item.icon}</span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Content */}
+        <div style={{ flex:1, padding:'28px 28px', overflowX:'hidden' }}>
 
         {/* OVERVIEW */}
         {activeTab==='overview' && (
@@ -451,40 +488,7 @@ export default function Admin() {
             </Card>
 
             {/* Quick actions */}
-            <Card title="Quick actions">
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                {[
-                  { label:'View live app',      action:()=>window.open('/app','_blank') },
-                  { label:'View stats page',     action:()=>window.open('/stats','_blank') },
-                  { label:'View API docs',       action:()=>window.open('/api-docs','_blank') },
-                  { label:'Test /api/stats',     action:()=>window.open('/api/stats','_blank') },
-                  { label:'Clear my test data',  action:()=>{ localStorage.removeItem('jiff-history'); localStorage.removeItem('jiff-premium'); showToast('✓ Test data cleared'); }},
-                  { label:'Export waitlist CSV', action:()=>{ const wl=JSON.parse(localStorage.getItem('jiff-global-waitlist')||'[]'); if(!wl.length){showToast('No waitlist entries');return;} exportCSV(wl,'waitlist.csv',['email','country','ts']); }},
-                ].map(t=>(
-                  <button key={t.label} onClick={t.action}
-                    style={{ background:'white', border:'1.5px solid '+C.borderMid, borderRadius:10, padding:'9px 14px', fontSize:12, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:C.ink, transition:'all 0.15s' }}
-                    onMouseEnter={e=>e.target.style.background=C.cream}
-                    onMouseLeave={e=>e.target.style.background='white'}>
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </Card>
-
-            {/* Supabase status */}
-            <Card title="Supabase status" accent={C.green}>
-              <div style={{ fontSize:13, color:C.muted, fontWeight:300, lineHeight:2 }}>
-                {[
-                  ['REACT_APP_SUPABASE_URL',      !!process.env.REACT_APP_SUPABASE_URL],
-                  ['REACT_APP_SUPABASE_ANON_KEY', !!process.env.REACT_APP_SUPABASE_ANON_KEY],
-                ].map(([k,v])=>(
-                  <div key={k}>{k}: <code style={{ background:v?'rgba(29,158,117,0.1)':'rgba(229,62,62,0.1)', color:v?C.green:C.red, padding:'2px 7px', borderRadius:4, fontSize:11 }}>{v?'✓ Set':'✗ Not set'}</code></div>
-                ))}
-                <div style={{ marginTop:10, padding:'8px 12px', background:'rgba(29,158,117,0.07)', borderRadius:8, fontSize:12, color:C.green, borderLeft:'3px solid '+C.green }}>
-                  Test connectivity: <a href="/api/stats" target="_blank" style={{ color:C.green, fontWeight:500 }}>/api/stats</a> should return JSON. Also ensure <code style={{ fontSize:11 }}>SUPABASE_SERVICE_ROLE_KEY</code> is set (server-side variable, NOT prefixed with REACT_APP_).
-                </div>
-              </div>
-            </Card>
+            
           </>
         )}
 
@@ -1008,6 +1012,7 @@ export default function Admin() {
           </div>
         )}
 
+        </div>
       </div>
     </div>
   );

@@ -916,7 +916,7 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
 
 export default function Jiff() {
   const navigate = useNavigate();
-  const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, supabaseEnabled, authLoading } = useAuth();
+  const { user, profile, pantry, favourites, toggleFavourite, isFav, signInWithGoogle, signInWithEmail, signOut, supabaseEnabled, authLoading } = useAuth();
   const { isPremium, trial, trialActive, trialExpired, trialDaysLeft, recipeCount, plans, checkAccess, recordUsage, startTrial, openCheckout, activateTestPremium, showGate, setShowGate, gateReason, razorpayEnabled, TRIAL_DAYS, PAID_RECIPE_CAP } = usePremium();
   const { lang, units, setUnits, setLang, t, country, setCountry, CUISINE_OPTIONS, TIME_OPTIONS, DIET_OPTIONS, INDIAN_CUISINES, GLOBAL_CUISINES, supportedLanguages } = useLocale();
 
@@ -1042,7 +1042,7 @@ export default function Jiff() {
       });
       const data = await res.json();
       if (data.meals?.length > 0) {
-        setMeals(data.meals); setView('results'); recordUsage();
+        setMeals(Array.isArray(data.meals) ? data.meals : []); setView('results'); recordUsage();
         setCuisine(surpriseCuisine); setMealType(surpriseMealType);
       } else { setErrorMsg(data.error||'Could not generate suggestions.'); setView('error'); }
     } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
@@ -1071,7 +1071,7 @@ export default function Jiff() {
       });
       const data = await res.json();
       if (data.meals?.length > 0) {
-        setMeals(data.meals);
+        setMeals(Array.isArray(data.meals) ? data.meals : []);
         setView('results');
         recordUsage();
         if (typeof window !== 'undefined' && window._jiffGA) {
@@ -1201,7 +1201,7 @@ export default function Jiff() {
   }, [user, supabaseEnabled, streak]);
 
   const markAllRead = () => {
-    const ids = notifications.map(n => n.id);
+    const ids = (Array.isArray(notifications)?notifications:[]).map(n => n.id);
     localStorage.setItem('jiff-read-notifs', JSON.stringify(ids));
     setNotifications(ns => ns.map(n => ({ ...n, read: true })));
     setUnreadCount(0);
@@ -1321,8 +1321,8 @@ export default function Jiff() {
               </button>
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/little-chefs')}>👨‍🍳 Little Chefs</button>}
+            {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
             {user && (
@@ -1355,7 +1355,7 @@ export default function Jiff() {
                             <div style={{fontSize:28,marginBottom:8}}>🔔</div>
                             No notifications yet
                           </div>
-                        ) : notifications.map(n => (
+                        ) : (Array.isArray(notifications)?notifications:[]).map(n => (
                           <div key={n.id} className={`notif-item ${n.read ? '' : 'unread'}`}>
                             <span style={{fontSize:20,lineHeight:1,marginTop:2,flexShrink:0}}>{n.icon}</span>
                             <div style={{flex:1,minWidth:0}}>
@@ -1432,7 +1432,7 @@ export default function Jiff() {
             {favourites.length===0?(
               <div className="favs-empty"><div className="favs-empty-icon">🤍</div><div className="favs-empty-title">{t('favs_empty_title')}</div><div className="favs-empty-sub">Tap ♥ on any recipe card to save it here.</div></div>
             ):(
-              <div className="favs-grid">{favourites.map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} defaultServings={defaultServings} showFavTag animDelay={i*0.05} rating={ratings[mealKey(meal)]||0}/>)}</div>
+              <div className="favs-grid">{(Array.isArray(favourites)?favourites:[]).map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} defaultServings={defaultServings} showFavTag animDelay={i*0.05} rating={ratings[mealKey(meal)]||0}/>)}</div>
             )}
           </div>
         )}

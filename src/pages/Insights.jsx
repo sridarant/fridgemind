@@ -54,10 +54,28 @@ export default function Insights() {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    // Build insights from localStorage
-    const history = JSON.parse(localStorage.getItem('jiff-history') || '[]');
-    const ratings  = JSON.parse(localStorage.getItem('jiff-ratings') || '{}');
-    const streak   = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+    const loadData = async () => {
+      // Try localStorage first (fast)
+      let history = JSON.parse(localStorage.getItem('jiff-history') || '[]');
+      let ratings  = JSON.parse(localStorage.getItem('jiff-ratings') || '{}');
+      const streak = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+
+      // If localStorage is empty, fetch from Supabase API
+      if (history.length === 0 && user) {
+        try {
+          const res = await fetch('/api/meal-history?userId=' + user.id);
+          const d = await res.json();
+          if (Array.isArray(d.history) && d.history.length > 0) {
+            history = d.history;
+            // Also rebuild ratings from Supabase history
+            const newRatings = {};
+            d.history.forEach(h => {
+              if (h.rating && h.id) newRatings[h.id] = h.rating;
+            });
+            if (Object.keys(newRatings).length > 0) ratings = newRatings;
+          }
+        } catch {}
+      }
 
     // Cuisine breakdown
     const cuisineMap = {};

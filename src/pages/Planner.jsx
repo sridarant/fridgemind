@@ -361,8 +361,9 @@ export default function Planner() {
             <span className="logo-name"><span style={{color:'#FF4500'}}>J</span>iff</span>
           </div>
           <div className="nav-links">
-            <button className="nav-link" onClick={()=>navigate('/plans')}>🎯 Goal Planner</button>
-            <button className="nav-link" onClick={()=>navigate('/app')}>← Back to app</button>
+            <button className="nav-link" onClick={()=>navigate('/plans')}>🎯 Goal Plan</button>
+            <button className="nav-link" onClick={()=>navigate('/little-chefs')}>👨‍🍳 Little Chefs</button>
+            <button className="nav-link" onClick={()=>navigate('/app')}>← Back to App</button>
           </div>
         </header>
 

@@ -262,6 +262,10 @@ alter table profiles add column if not exists family_members jsonb default '[]';
 
 -- Nutrition goals (JSONB: {calories, protein})
 alter table profiles add column if not exists nutrition_goals jsonb default '{"calories":2000,"protein":80}';
+
+-- Language + units preference (persist cross-device)
+alter table profiles add column if not exists lang  text default 'en';
+alter table profiles add column if not exists units text default 'metric';
 ```
 
 ### Step 2 — Releases table (admin build tracker)

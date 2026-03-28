@@ -134,11 +134,23 @@ Respond ONLY with valid JSON (no markdown):
           </div>
           <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>Fun & nutritious meals for kids</div>
         </div>
-        <button onClick={() => navigate('/app')}
-          style={{ padding:'7px 16px', borderRadius:20, border:'1.5px solid '+C.border,
-            background:'white', fontSize:12, cursor:'pointer', color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>
-          ← Back
-        </button>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <button onClick={() => navigate('/planner')}
+            style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid rgba(28,10,0,0.15)',
+              background:'white', fontSize:12, cursor:'pointer', color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>
+            📅 Week Plan
+          </button>
+          <button onClick={() => navigate('/plans')}
+            style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid rgba(28,10,0,0.15)',
+              background:'white', fontSize:12, cursor:'pointer', color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>
+            🎯 Goal Plan
+          </button>
+          <button onClick={() => navigate('/app')}
+            style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid rgba(28,10,0,0.15)',
+              background:'white', fontSize:12, cursor:'pointer', color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>
+            ← Back to App
+          </button>
+        </div>
       </div>
 
       <div style={{ maxWidth:680, margin:'0 auto', padding:'28px 20px' }}>
