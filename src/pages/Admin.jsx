@@ -57,6 +57,23 @@ export default function Admin() {
   const [loading,  setLoading]  = useState(false);
   const [activeTab,setActiveTab]= useState('overview');
   const [toast,    setToast]    = useState('');
+
+  const tabs = [
+    { id:'overview',  label:'Overview' },
+    { id:'users',     label:'Users' },
+    { id:'waitlist',  label:'Waitlist' },
+    { id:'feedback',  label:'User Feedback' },
+    { id:'crashes',   label:'Crashes' },
+    { id:'releases',  label:'Releases' },
+    { id:'cicd',      label:'CI/CD' },
+    { id:'tests',     label:'Tests' },
+    { id:'status',    label:'Status' },
+    { id:'tools',     label:'Tools' },
+    { id:'api',       label:'API Usage' },
+    { id:'techstack', label:'Tech Stack' },
+    { id:'security',  label:'Security' },
+    { id:'config',    label:'Config' },
+  ];
   // Tools state
   const [resetEmail,   setResetEmail]   = useState('');
   const [resetResult,  setResetResult]  = useState('');
