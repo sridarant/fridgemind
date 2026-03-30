@@ -1050,6 +1050,8 @@ export default function Jiff() {
 
   const handleSubmit = async () => {
     if (!ingredients.length) return;
+    // Mandate sign-in before any generation
+    if (!user) { setGateDismissed(false); return; }
     if (!checkAccess('generation')) return;
     setView('loading'); setFactIdx(0); setShowFavs(false);
     try {
@@ -1305,7 +1307,7 @@ export default function Jiff() {
               <button className="gate-cta" disabled={gateLoading} onClick={handleGateUpgrade}>
                 {gateLoading?'⏳ Processing…':'⚡ Upgrade now'}
               </button>
-              {gateReason!=='trial_expired'&&<button className="gate-skip" onClick={()=>setShowGate(false)}>Maybe later</button>}
+              {gateReason==='trial_expired'&&<button className="gate-skip" onClick={()=>navigate('/')}>← Back to home</button>}
               {!razorpayEnabled&&<div style={{fontSize:11,color:'var(--muted)',marginTop:8}}>Test mode — click to activate free premium</div>}
             </div>
           </div>
@@ -1321,7 +1323,7 @@ export default function Jiff() {
               </button>
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/little-chefs')}>👨‍🍳 Little Chefs</button>}
+            {user && <button className="hdr-btn" onClick={()=>navigate('/little-chefs')}>👶 Kids Meals</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
@@ -1616,7 +1618,7 @@ export default function Jiff() {
 
 
                 <div className="cta-wrap">
-                  <button className="cta-btn" onClick={handleSubmit} disabled={!ingredients.length || !user}>
+                  <button className="cta-btn" onClick={!user ? ()=>{setGateDismissed(false);} : handleSubmit} disabled={!ingredients.length || !user}>
                     <span>⚡</span>
                     <span>Jiff it now!</span>
                   </button>

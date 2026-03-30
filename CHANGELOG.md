@@ -1139,4 +1139,36 @@ Before zipping and shipping any release, verify all three doc files are updated:
 - Razorpay pending steps current
 - CI/GitHub Actions instructions current
 
-> These three files ship in every zip. A release is not complete without them.
+> These three files ship in every zip. A release is not complete without them.## v18.8 -- GA4, Kids Meals, auth gate, email drip, Admin comms
+**Date:** March 2026  |  **Package:** 1.18.8
+
+### Google Analytics GA4
+- Updated measurement ID to G-ERSLLHSXCL in public/index.html
+- window._jiffGA helper available globally for event tracking
+
+### Kids Meals (renamed from Little Chefs)
+- Page renamed from "Little Chefs" to "Kids Meals" across all nav references
+- Dynamic subtitle explains current mode clearly
+- Mode toggle: "Cook for your child" (parent prepares) vs "Your child wants to cook" (kids cook)
+- AI prompt fully adapts to each mode — nutrition-focused adult-prep vs safe-technique kids-cooking
+
+### Sign-in gate hardened
+- Generate button now mandates sign-in — no bypass possible
+- "Maybe later" skip removed from sign-in gate
+- Pricing page "Back to app" is auth-aware — unauthenticated users go to / not /app
+- Landing nav simplified — Goal Plan / Week Plan / Quick Meal removed; replaced with social proof + "Try free"
+
+### Email drip sequence (comms.js)
+- api/comms.js rebuilt with 5 trigger actions: welcome, trial_start, trial_expired, premium_confirm, email
+- Each action adds correct Mailchimp tags to fire Customer Journey automations
+- 11 HTML email templates built across 7 journeys (see jiff-email-templates.zip)
+
+### Admin portal — Email & Comms tab
+- New sidebar section: Documentation → Email & Comms
+- Full drip sequence documentation with subject lines and preview text
+- Template viewer showing all 11 templates with journey mapping
+- Mailchimp setup checklist and API trigger reference
+
+---
+
+

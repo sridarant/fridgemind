@@ -216,7 +216,7 @@ export default function Plans() {
             📅 Week Plan
           </button>
           <button onClick={() => navigate('/little-chefs')} style={{ fontSize: 12, color: C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.15)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", display:'flex', alignItems:'center', gap:4 }}>
-            👨‍🍳 Little Chefs
+            👶 Kids Meals
           </button>
           <button onClick={() => navigate('/app')} style={{ fontSize: 12, color: C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.15)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
             ← Back to App

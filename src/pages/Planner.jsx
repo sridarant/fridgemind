@@ -362,7 +362,7 @@ export default function Planner() {
           </div>
           <div className="nav-links">
             <button className="nav-link" onClick={()=>navigate('/plans')}>🎯 Goal Plan</button>
-            <button className="nav-link" onClick={()=>navigate('/little-chefs')}>👨‍🍳 Little Chefs</button>
+            <button className="nav-link" onClick={()=>navigate('/little-chefs')}>👶 Kids Meals</button>
             <button className="nav-link" onClick={()=>navigate('/app')}>← Back to App</button>
           </div>
         </header>

@@ -144,16 +144,17 @@ export default function Landing() {
         <div style={s.navLogo} onClick={() => navigate('/')}>
           <span style={s.navSpark}>⚡</span>Jiff
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => navigate('/plans')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>🎯 Goal Plans</button>
-          <button onClick={() => navigate('/planner')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
-            📅 Week plan
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: C.muted, fontWeight: 300 }}>
+            <span style={{ color: C.jiff, fontWeight: 600 }}>★★★★★</span>
+            <span>7-day free trial &nbsp;·&nbsp; No credit card</span>
+          </div>
+          <div style={{ width: 1, height: 20, background: C.border }} />
+          <button onClick={() => navigate('/pricing')} style={{ background: 'transparent', color: C.muted, border: 'none', padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
+            Pricing
           </button>
-          <button onClick={() => navigate('/pricing')} style={{ background: 'transparent', color: C.ink, border: '1.5px solid ' + C.borderMid, borderRadius: 10, padding: '9px 18px', fontSize: 13, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer' }}>
-            💳 Pricing
-          </button>
-          <button style={s.navCta} onClick={() => navigate('/app')} onMouseEnter={e => Object.assign(e.target.style, { background: C.jiffDark, transform: 'translateY(-1px)' })} onMouseLeave={e => Object.assign(e.target.style, { background: C.jiff, transform: 'none' })}>
-            ⚡ Quick meal
+          <button style={s.navCta} onClick={() => navigate('/app')} onMouseEnter={e => Object.assign(e.target.style, { background: C.jiffDark })} onMouseLeave={e => Object.assign(e.target.style, { background: C.jiff })}>
+            Try free &rarr;
           </button>
         </div>
       </nav>
@@ -195,10 +196,10 @@ export default function Landing() {
       <div style={s.statBar}>
         <div style={s.statBarInner}>
           {[
-            { num: '10s', label: 'To get your first meal idea' },
-            { num: '5', label: 'Full recipes every single search' },
-            { num: '400+', label: 'Hours saved per year per person' },
-            { num: '0', label: 'Grocery runs you didn\'t need to make' },
+            { num: '10s', label: 'From fridge to full recipe' },
+            { num: '5', label: 'Recipes generated per search' },
+            { num: '28', label: 'Cuisines supported worldwide' },
+            { num: '10', label: 'Languages supported globally' },
           ].map((item, i) => (
             <div key={i} style={{ ...s.statItem, borderRight: i < 3 ? s.statItem.borderRight : 'none' }}>
               <div style={s.statNum}>{item.num}</div>

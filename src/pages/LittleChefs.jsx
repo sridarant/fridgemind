@@ -1,4 +1,4 @@
-// src/pages/LittleChefs.jsx — Kids Meal Plan ("Little Chefs")
+// src/pages/LittleChefs.jsx — Kids Meal Plan ("Kids Meals")
 // Age-appropriate, fun, nutritious meal suggestions for children
 
 import { useState, useEffect } from 'react';
@@ -40,6 +40,7 @@ export default function LittleChefs() {
   const { user, profile } = useAuth();
   const { lang } = useLocale();
   const { isPremium } = usePremium();
+  const [mode,     setMode]       = useState('for');  // 'for' = parent cooks for kids | 'with' = kids cook
   const [ageGroup, setAgeGroup]   = useState('kids');
   const [mealType, setMealType]   = useState('lunch');
   const [servings, setServings]   = useState(2);
@@ -62,14 +63,19 @@ export default function LittleChefs() {
     const parentDiet = profile?.food_type ? 
       (Array.isArray(profile.food_type) ? profile.food_type[0] : 'veg') : 'veg';
 
+    const isForKids = mode === 'for';
     const prompt = `You are a child nutrition expert and creative kids' chef.
-Create ${isPremium ? 3 : 1} fun, nutritious ${mt?.label} recipe(s) for ${ag?.label} (${ag?.range}).
+${isForKids
+  ? `Create ${isPremium ? 3 : 1} nutritious, easy-to-prepare ${mt?.label} recipe(s) that a PARENT or CAREGIVER should cook FOR ${ag?.label} (${ag?.range}).
+Focus on: balanced nutrition, hidden vegetables where possible, child-friendly flavours, and quick preparation time.
+The adult prepares everything — complexity is fine as long as the result is something kids will love eating.`
+  : `Create ${isPremium ? 3 : 1} fun, age-appropriate ${mt?.label} recipe(s) that ${ag?.label} (${ag?.range}) can COOK THEMSELVES with minimal adult supervision.
+Focus on: simple safe techniques suitable for ${ag?.range}, clear step-by-step instructions, minimal knife work, fun and engaging process.`}
 Key requirements:
 - ${ag?.note}
 - Diet: ${parentDiet} (family preference)
-- Serves: ${servings} children
-- Make it FUN — kids should want to eat it
-- Include a playful recipe name kids will love
+- Serves: ${servings} ${isForKids ? 'children' : 'people'}
+- Include a ${isForKids ? 'kid-friendly appealing' : 'fun and exciting'} recipe name
 - Keep preparation simple (parent-friendly, under 30 mins)
 - Add a "Fun Fact for Kids" about a main ingredient
 - India-appropriate ingredients
@@ -130,9 +136,11 @@ Respond ONLY with valid JSON (no markdown):
         position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 8px rgba(28,10,0,0.04)' }}>
         <div>
           <div style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:900, color:C.ink }}>
-            👨‍🍳 Little Chefs
+            👶 Kids Meals
           </div>
-          <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>Fun & nutritious meals for kids</div>
+          <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>
+            {mode==='for' ? 'Recipes parents cook for their children' : 'Simple recipes kids can make themselves'}
+          </div>
         </div>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
           <button onClick={() => navigate('/planner')}
@@ -154,6 +162,38 @@ Respond ONLY with valid JSON (no markdown):
       </div>
 
       <div style={{ maxWidth:680, margin:'0 auto', padding:'28px 20px' }}>
+        {/* Mode toggle — what kind of recipes? */}
+        <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:20,
+          padding:'16px 22px', marginBottom:16, boxShadow:C.shadow }}>
+          <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase',
+            color:C.jiff, fontWeight:500, marginBottom:12 }}>What are you looking for?</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <button onClick={()=>{setMode('for');setMeals(null);}}
+              style={{ padding:'14px 16px', borderRadius:14, cursor:'pointer', textAlign:'left',
+                border:'2px solid '+(mode==='for'?C.jiff:C.border),
+                background:mode==='for'?'rgba(255,69,0,0.05)':'white',
+                transition:'all 0.15s', fontFamily:"'DM Sans',sans-serif" }}>
+              <div style={{ fontSize:22, marginBottom:4 }}>👩‍🍳</div>
+              <div style={{ fontSize:13, fontWeight:600, color:mode==='for'?C.jiff:C.ink }}>Cook for your child</div>
+              <div style={{ fontSize:11, color:C.muted, fontWeight:300, marginTop:3 }}>
+                Nutritious recipes a parent cooks and serves
+              </div>
+            </button>
+            <button onClick={()=>{setMode('with');setMeals(null);}}
+              style={{ padding:'14px 16px', borderRadius:14, cursor:'pointer', textAlign:'left',
+                border:'2px solid '+(mode==='with'?C.purple:C.border),
+                background:mode==='with'?'rgba(124,58,237,0.05)':'white',
+                transition:'all 0.15s', fontFamily:"'DM Sans',sans-serif" }}>
+              <div style={{ fontSize:22, marginBottom:4 }}>👦</div>
+              <div style={{ fontSize:13, fontWeight:600, color:mode==='with'?C.purple:C.ink }}>Your child wants to cook</div>
+              <div style={{ fontSize:11, color:C.muted, fontWeight:300, marginTop:3 }}>
+                Simple age-appropriate recipes kids make themselves
+              </div>
+            </button>
+          </div>
+        </div>
+
+
         {/* Age group selector */}
         <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:20,
           padding:'20px 22px', marginBottom:16, boxShadow:C.shadow }}>

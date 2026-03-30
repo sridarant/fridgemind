@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale, CURRENCY_MAP, ENABLED_COUNTRIES } from '../contexts/LocaleContext';
 
@@ -34,6 +35,7 @@ const COUNTRY_OPTIONS = Object.entries(CURRENCY_MAP)
 
 export default function Pricing() {
   const navigate   = useNavigate();
+  const { user }   = useAuth();
   const { isPremium, premium, plans, openCheckout, handleStripeSuccess, activateTestPremium, razorpayEnabled, stripeEnabled, clearPremium } = usePremium();
   const { currency, country, setCountry } = useLocale();
 
@@ -97,7 +99,7 @@ export default function Pricing() {
             style={{ fontSize:12, color:C.muted, background:'white', border:'1px solid ' + C.borderMid, borderRadius:8, padding:'5px 8px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
             {COUNTRY_OPTIONS.map(c=><option key={c.code} value={c.code}>{c.label}</option>)}
           </select>
-          <button onClick={()=>navigate('/app')} style={{ fontSize:13, color:C.muted, background:'none', border:'1.5px solid ' + C.borderMid, borderRadius:8, padding:'7px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:500 }}>
+          <button onClick={()=>navigate(user ? '/app' : '/')} style={{ fontSize:13, color:C.muted, background:'none', border:'1.5px solid ' + C.borderMid, borderRadius:8, padding:'7px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif", fontWeight:500 }}>
             ← Back to app
           </button>
         </div>
@@ -118,7 +120,7 @@ export default function Pricing() {
               Plan: <strong>{premium?.planId}</strong> · Expires: {premium?.expiresAt ? new Date(premium.expiresAt).toLocaleDateString() : 'Never'}
               · Paid via: {premium?.gateway || 'card'}
             </p>
-            <button onClick={()=>navigate('/app')} style={{background:C.jiff,color:'white',border:'none',borderRadius:12,padding:'14px 32px',fontSize:15,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif",marginRight:10}}>
+            <button onClick={()=>navigate(user ? '/app' : '/')} style={{background:C.jiff,color:'white',border:'none',borderRadius:12,padding:'14px 32px',fontSize:15,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif",marginRight:10}}>
               ⚡ Go cook something →
             </button>
             <button onClick={clearPremium} style={{fontSize:12,color:C.muted,background:'none',border:'1px solid ' + C.border,borderRadius:8,padding:'8px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
@@ -135,7 +137,7 @@ export default function Pricing() {
               Welcome to Jiff Premium!
             </h1>
             <p style={{fontSize:16,color:C.muted,fontWeight:300,marginBottom:28}}>Unlimited meals, plans, and more — forever yours.</p>
-            <button onClick={()=>navigate('/app')} style={{background:C.jiff,color:'white',border:'none',borderRadius:14,padding:'16px 36px',fontSize:16,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
+            <button onClick={()=>navigate(user ? '/app' : '/')} style={{background:C.jiff,color:'white',border:'none',borderRadius:14,padding:'16px 36px',fontSize:16,fontWeight:500,cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>
               ⚡ Start Jiffing →
             </button>
           </div>
