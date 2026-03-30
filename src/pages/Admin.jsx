@@ -1112,12 +1112,12 @@ export default function Admin() {
                   { file:'03_welcome_day5',        journey:'Welcome',          day:'Day 5',        subject:'Your trial is going well — one tip to make it better' },
                   { file:'04_trial_day3_nudge',    journey:'Trial nudge',      day:'Day 3',        subject:'3 days in — have you tried everything?' },
                   { file:'05_trial_day6_expiring', journey:'Trial expiring',   day:'Day 6',        subject:'1 day left on your Jiff trial' },
-                  { file:'06_trial_expired_day8',  journey:'Trial expired',    day:'Day 8',        subject:'Your trial ended — here's a special offer (20% off)' },
+                  { file:'06_trial_expired_day8',  journey:'Trial expired',    day:'Day 8',        subject:'Your trial ended — special offer (20% off)' },
                   { file:'07_trial_expired_day15', journey:'Trial expired',    day:'Day 15',       subject:'We miss cooking with you' },
-                  { file:'08_premium_welcome',     journey:'Premium welcome',  day:'Immediate',    subject:'You're premium! Here's everything unlocked' },
-                  { file:'09_premium_week1',       journey:'Premium welcome',  day:'Day 7',        subject:'A week of premium — how's it going?' },
+                  { file:'08_premium_welcome',     journey:'Premium welcome',  day:'Immediate',    subject:'You are premium! Everything unlocked' },
+                  { file:'09_premium_week1',       journey:'Premium welcome',  day:'Day 7',        subject:'A week of premium — how is it going?' },
                   { file:'10_reengagement_7d',     journey:'Re-engagement',    day:'Immediate',    subject:'Your fridge is probably full. Jiff can help.' },
-                  { file:'11_waitlist_confirm',    journey:'Waitlist',         day:'Immediate',    subject:'You're on the Jiff waitlist' },
+                  { file:'11_waitlist_confirm',    journey:'Waitlist',         day:'Immediate',    subject:'You are on the Jiff waitlist' },
                 ].map((t,i) => (
                   <div key={i} style={{ background:'rgba(28,10,0,0.02)', border:'1px solid '+C.border,
                     borderRadius:12, padding:'12px 14px' }}>
