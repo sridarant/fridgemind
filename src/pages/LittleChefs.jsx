@@ -56,74 +56,84 @@ export default function LittleChefs() {
   }, [loading]);
 
   const generate = async () => {
-    if (!user && !isPremium) { navigate('/pricing'); return; }
+    if (!user) { navigate('/app'); return; }
     setLoading(true); setError(''); setMeals(null);
-    const ag = AGE_GROUPS.find(a => a.id === ageGroup);
-    const mt = MEAL_TYPES.find(m => m.id === mealType);
-    const parentDiet = profile?.food_type ? 
-      (Array.isArray(profile.food_type) ? profile.food_type[0] : 'veg') : 'veg';
 
+    const ag    = AGE_GROUPS.find(a => a.id === ageGroup);
+    const mt    = MEAL_TYPES.find(m => m.id === mealType);
+    const count = isPremium ? 3 : 1;
     const isForKids = mode === 'for';
-    const prompt = `You are a child nutrition expert and creative kids' chef.
-${isForKids
-  ? `Create ${isPremium ? 3 : 1} nutritious, easy-to-prepare ${mt?.label} recipe(s) that a PARENT or CAREGIVER should cook FOR ${ag?.label} (${ag?.range}).
-Focus on: balanced nutrition, hidden vegetables where possible, child-friendly flavours, and quick preparation time.
-The adult prepares everything — complexity is fine as long as the result is something kids will love eating.`
-  : `Create ${isPremium ? 3 : 1} fun, age-appropriate ${mt?.label} recipe(s) that ${ag?.label} (${ag?.range}) can COOK THEMSELVES with minimal adult supervision.
-Focus on: simple safe techniques suitable for ${ag?.range}, clear step-by-step instructions, minimal knife work, fun and engaging process.`}
-Key requirements:
-- ${ag?.note}
-- Diet: ${parentDiet} (family preference)
-- Serves: ${servings} ${isForKids ? 'children' : 'people'}
-- Include a ${isForKids ? 'kid-friendly appealing' : 'fun and exciting'} recipe name
-- Keep preparation simple (parent-friendly, under 30 mins)
-- Add a "Fun Fact for Kids" about a main ingredient
-- India-appropriate ingredients
 
-Respond ONLY with valid JSON (no markdown):
-{
-  "meals": [
-    {
-      "name": "Sunshine Veggie Wrap 🌮",
-      "emoji": "🌮",
-      "description": "Colourful and crunchy — kids love assembling their own!",
-      "time": "15 mins",
-      "difficulty": "Easy",
-      "servings": "${servings}",
-      "ingredients": ["1 whole wheat roti", "2 tbsp hummus"],
-      "steps": ["Warm the roti for 30 seconds.", "Spread hummus evenly."],
-      "calories": "280 kcal",
-      "protein": "9g",
-      "fun_fact": "Chickpeas help build strong muscles!"
-    }
-  ]
-}`;
+    // ── Rich dietary context from profile ─────────────────────────
+    const rawFoodType = profile?.food_type;
+    const foodArr     = Array.isArray(rawFoodType) ? rawFoodType : rawFoodType ? [rawFoodType] : [];
+    const dietLabel   = foodArr.length ? foodArr.join(', ') : 'vegetarian';
+    const allergies   = Array.isArray(profile?.allergies) && profile.allergies.length
+                        ? `Allergies to avoid: ${profile.allergies.join(', ')}.` : '';
+    const prefCuisines = Array.isArray(profile?.preferred_cuisines) && profile.preferred_cuisines.length
+                         ? profile.preferred_cuisines : [];
+    const cuisineCtx  = prefCuisines.length
+                        ? `Preferred cuisines: ${prefCuisines.join(', ')}.`
+                        : 'Use Indian-style cooking.';
+
+    // Age-specific spice level — always override to safe for age
+    const kidsSpice = ageGroup === 'toddler' ? 'absolutely NO spice, salt or sugar — completely plain'
+                    : ageGroup === 'kids'    ? 'very mild — no chilli, minimal spice'
+                    :                          'mild to medium spice at most';
+
+    // Age-specific safety constraints
+    const safetyRules = {
+      toddler: 'TODDLER SAFETY (1-3 yrs): NO whole nuts, NO honey, NO added salt or sugar, NO raw egg, NO hard raw vegetables, NO choking hazard foods. Everything must be mashed, pureed, or very soft finger-food. Examples: soft idli, banana mash, moong dal soup, steamed sweet potato.',
+      kids:    'KIDS SAFETY (4-8 yrs): No sharp cutting, no deep frying. Fun shapes, hidden vegetables, bright colours. Small portions. Examples: mini wraps, fruit skewers (blunt), egg scramble, stuffed paratha, fruit smoothie bowl.',
+      preteen: 'PRE-TEEN (9-12 yrs): Simple stovetop allowed with adult nearby. Growing appetite — proper portions. Can handle mild spice. Examples: pasta, egg fried rice, stuffed sandwich, simple curry with roti.',
+    };
+
+    const modeInstr = isForKids
+      ? `The PARENT cooks this FOR the child. Adult does all cooking. Focus on nutrition, hidden veg, quick prep, child-friendly presentation. Child just eats — make them love it.`
+      : `The CHILD cooks this THEMSELVES. Only age-safe techniques. ${ageGroup === 'toddler' ? 'No heat — assembly only.' : ageGroup === 'kids' ? 'No sharp knives or frying. Mixing, spreading, assembling.' : 'Simple stovetop ok with adult nearby.'} Make the process fun and achievable.`;
+
+    const prompt = `You are an expert child nutritionist and kids cooking educator.
+
+${modeInstr}
+
+Age group: ${ag?.label} (${ag?.range})
+${safetyRules[ageGroup] || ''}
+Meal type: ${mt?.label}
+Recipes needed: ${count} — each COMPLETELY DIFFERENT from the others
+Serves: ${servings}
+Dietary: ${dietLabel}
+${allergies}
+Spice: ${kidsSpice}
+${cuisineCtx}
+
+STRICT RULE: Do NOT suggest Dal Tadka, plain Jeera Rice, or any generic everyday dish. Be creative and varied — think of something a child would actually get excited about.
+
+Respond ONLY with valid JSON, no markdown:
+{"meals":[{"name":"Rainbow Veggie Pancakes 🥞","emoji":"🥞","description":"Fluffy colourful pancakes with hidden carrots","time":"20 mins","difficulty":"Easy","servings":"${servings}","ingredients":["1 cup wheat flour","1 grated carrot"],"steps":["Mix all into batter.","Cook on non-stick pan."],"calories":"210 kcal","protein":"7g","fun_fact":"Carrots have beta-carotene that keeps your eyes sharp!"}]}`;
 
     try {
       const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ingredients: ['rice', 'dal', 'vegetables', 'milk', 'eggs', 'paneer', 'roti'],
+          ingredients: [],
           time: '30 minutes',
-          diet: parentDiet,
-          cuisine: 'indian',
+          diet: dietLabel,
+          cuisine: prefCuisines[0] || 'indian',
           mealType,
           defaultServings: servings,
-          count: isPremium ? 3 : 1,
+          count,
           language: lang,
           kidsMode: true,
           kidsPromptOverride: prompt,
         }),
       });
       const data = await res.json();
-      if (data.meals?.length) {
-        setMeals(data.meals);
-      } else {
-        setError('Could not generate recipes. Please try again.');
-      }
+      const meals = Array.isArray(data.meals) ? data.meals : Array.isArray(data) ? data : null;
+      if (meals && meals.length) { setMeals(meals); }
+      else { setError('Could not generate recipes. Please try again.'); }
     } catch { setError('Connection error. Please try again.'); }
-    finally { setLoading(false); }
+    finally   { setLoading(false); }
   };
 
   return (

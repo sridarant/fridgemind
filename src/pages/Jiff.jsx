@@ -1247,7 +1247,7 @@ export default function Jiff() {
         {showSignInGate && (
           <div className="auth-gate">
             <div className="auth-card" style={{position:'relative'}}>
-              <button onClick={()=>setGateDismissed(true)}
+              <button onClick={()=>navigate('/')}
                 style={{position:'absolute',top:16,right:16,background:'none',border:'none',
                   fontSize:20,cursor:'pointer',color:'rgba(28,10,0,0.3)',lineHeight:1,padding:4}}>
                 ✕
@@ -1410,7 +1410,7 @@ export default function Jiff() {
                         {item.label}
                       </button>
                     ))}
-                    <button onClick={()=>{signOut();setShowUserMenu(false);}}
+                    <button onClick={()=>{signOut();setShowUserMenu(false);navigate('/');}}
                       style={{width:'100%',padding:'10px 14px',border:'none',background:'white',cursor:'pointer',textAlign:'left',fontSize:13,color:'#E53E3E',fontWeight:500,fontFamily:"'DM Sans',sans-serif",transition:'background 0.1s'}}
                       onMouseEnter={e=>e.target.style.background='rgba(229,62,62,0.05)'}
                       onMouseLeave={e=>e.target.style.background='white'}>

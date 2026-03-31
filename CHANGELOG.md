@@ -7,6 +7,73 @@ GitHub: https://github.com/sridarant/fridgemind
 
 ---
 
+## v19.0 -- Technical Docs tab, Investor deck, auth fixes, Kids Meals overhaul
+**Date:** March 2026  |  **Package:** 1.19.0
+
+### Admin Portal — Technical Documentation tab (new)
+- Full technical documentation embedded in Admin → Documentation → Technical Docs
+- 8 reusable components with full props table and JSX usage examples
+- 3 context providers with all exported values documented
+- 9 serverless API functions with route, file, and description
+- Design token system (colour palette, typography)
+- 3 annotated data flow diagrams (recipe generation, kids meals, sign-in)
+- 13 routes/pages reference table
+- Complete environment variables table (13 vars, scope, requirement)
+- Pages and architecture overview with request flow diagram
+
+### Investor Deck — Complete rebuild
+- 12 slides rebuilt from scratch with pptxgenjs
+- Jiff orange/dark professional palette throughout
+- Updated to v18.9 stats (90 tests, 13 pages, 9 APIs, 28 cuisines, 10 languages)
+- Kids Meals, GA4 live, email drip, WhatsApp all reflected
+- Pitch write-up (jiff-pitch.md) included
+
+### Authentication fixes
+- SignOut now navigates to homepage (was staying on /app)
+- Sign-in gate X close button navigates to / (was keeping unauthenticated user on /app)
+- Landing Try free -> close gate -> back to homepage (no bypass)
+
+### Kids Meals — full overhaul
+- Profile dietary (food_type, allergies, spice_level, preferred_cuisines) now all used
+- Age-specific hard constraints per group (toddler/kids/preteen)
+- Spice overridden to age-safe level regardless of profile setting
+- Explicit anti-repetition rule in prompt (no Dal Tadka, no plain rice)
+- Mode-specific AI instructions properly differentiate cook-for-kids vs kids-cook
+- Response parsing handles both {meals:[]} and flat array formats
+
+---
+
+## v19.0 -- Technical Docs, Deck, Kids Meals fix, auth gate, signOut
+**Date:** March 2026  |  **Package:** 1.19.0
+
+### Admin Portal — Technical Documentation tab
+- New Technical Docs tab in Admin sidebar (Documentation group)
+- 8 UI component docs: IngredientInput, JiffLogo, FamilySelector, FridgePhotoUpload, SmartGreeting, FeedbackWidget, CookieBanner, ErrorBoundary
+- Each component has: description, props table (name/type/description), usage example
+- 3 context provider docs: AuthContext, PremiumContext, LocaleContext with all exported values
+- 9 API function reference table (file, route, description)
+- Design tokens, typography system documentation
+- 3 annotated data flows: Recipe Generation, Kids Meals, Sign-in
+- 13-route pages & routes reference
+- 13-variable environment vars table with scope and requirement level
+
+### Investor Deck — rebuilt from scratch
+- 12 slides with Jiff orange/dark palette (pptxgenjs)
+- Updated with v18.9+ stats, Kids Meals, GA4, email drip, all features
+- Includes: Cover, Problem, Solution, Product, Market, Traction, Business Model, Why Now, Competitive, Roadmap, The Ask, Closing
+- PITCH.md pitch write-up document included in project
+
+### Bug fixes
+- SignOut now navigates to homepage (/) after signing out
+- Auth gate close (X) now navigates to homepage instead of showing app unauthenticated
+- Pricing page Back/nav is auth-aware: user gets /app, guest gets /
+- Kids Meals generate now uses profile dietary + preferred_cuisines + allergies
+- Kids Meals: age-specific safety constraints (toddler/kids/preteen)
+- Kids Meals: explicit anti-repetition rule (no Dal Tadka / plain rice)
+- Kids Meals: mode-specific AI instructions properly differentiated
+
+---
+
 ## v18.4 -- Fix Insights.jsx build error
 **Date:** March 2026  |  **Package:** 1.18.4
 
