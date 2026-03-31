@@ -994,7 +994,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           <div style={{display:'flex',gap:8,marginBottom:8}}>
             <button onClick={e=>{e.stopPropagation();setOrderOpen(p=>!p);}}
               style={{padding:'6px 12px',borderRadius:10,border:'1px solid rgba(28,10,0,0.12)',background:'white',fontSize:11,cursor:'pointer',color:'var(--muted)',display:'flex',alignItems:'center',gap:4}}>
-              🛵 {orderOpen?'Hide': "'Can\'t cook? Order'"}
+              🛵 {orderOpen ? 'Hide' : "Can't cook? Order"}
             </button>
           </div>
           <button onClick={e=>{e.stopPropagation();setCookMode(true);setCookStep(0);}}
@@ -1124,7 +1124,7 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
       </div>
 
       <div style={{fontFamily:"'Fraunces',serif",fontSize:'clamp(20px,3.5vw,28px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-0.5px',marginBottom:8}}>
-        {cuisine !== 'any',
+        {cuisine !== 'any'
           ? `Finding ${cuisine}${mealType !== 'any' ? ' ' + mealType : ''} recipes…`
           : `Jiffing your ${mealType !== 'any' ? mealType : 'meal'}…`}
       </div>
@@ -1516,8 +1516,8 @@ export default function Jiff() {
               <div className="gate-icon">{gateReason==='trial_expired'?'⏰':'⚡'}</div>
               <div className="gate-title">{gateReason==='trial_expired'?'Your free trial has ended':'Unlock full access'}</div>
               <div className="gate-sub">
-                {gateReason==='trial_expired',
-                  ? 'Your 7-day free trial is complete. Choose a plan to continue cooking with Jiff.',
+                {gateReason==='trial_expired'
+                  ? 'Your 7-day free trial is complete. Choose a plan to continue cooking with Jiff.'
                   : `Get ${PAID_RECIPE_CAP} recipes per search, unlimited weekly plans, cloud sync, and more.`}
               </div>
               <div className="gate-plans">
