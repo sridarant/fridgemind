@@ -241,6 +241,7 @@ export default function Insights() {
                     <BarChart data={data.mealTypes} color={C.purple} />
                   </div>
                 )}
+              </>
             )}
 
             {/* CUISINES */}
@@ -388,6 +389,8 @@ export default function Insights() {
                 </div>
               </div>
             )}
+          </>
+        )}
       </div>
     </div>
   );
