@@ -994,7 +994,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
           <div style={{display:'flex',gap:8,marginBottom:8}}>
             <button onClick={e=>{e.stopPropagation();setOrderOpen(p=>!p);}}
               style={{padding:'6px 12px',borderRadius:10,border:'1px solid rgba(28,10,0,0.12)',background:'white',fontSize:11,cursor:'pointer',color:'var(--muted)',display:'flex',alignItems:'center',gap:4}}>
-              🛵 {orderOpen?'Hide':'Can't cook? Order'}
+              🛵 {orderOpen?'Hide': "'Can't cook? Order'"}
             </button>
           </div>
           <button onClick={e=>{e.stopPropagation();setCookMode(true);setCookStep(0);}}
