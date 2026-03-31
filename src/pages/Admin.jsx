@@ -75,12 +75,16 @@ export default function Admin() {
     { id:'security',  label:'Security' },
     { id:'config',    label:'Config' },
     { id:'comms',     label:'Email & Comms' },
+    { id:'techdoc',   label:'Technical Docs' },
+    { id:'analytics', label:'Analytics (GA4)' },
   ];
   // Tools state
   const [resetEmail,   setResetEmail]   = useState('');
   const [resetResult,  setResetResult]  = useState('');
   const [broadcastMsg, setBroadcastMsg] = useState('');
   const [broadcastSent,setBroadcastSent]= useState(false);
+  const [premiumStatus,  setPremiumStatus]  = useState('');
+  const [lookerUrl,      setLookerUrl]      = useState(()=>{ try{return localStorage.getItem('jiff-looker-url')||'';}catch{return '';} });
   const CHANGELOG_RELEASES = [
     {version:'v18.8',title:'GA4, Kids Meals modes, sign-in gate, email drip, Admin comms tab',summary:'',status:'deployed',deployed_at:'2026-03-01'},
     {version:'v18.5',title:'Fix Insights.jsx build errors - duplicate body + tabs undefined',summary:'',status:'deployed',deployed_at:'2026-03-01'},
@@ -283,6 +287,7 @@ export default function Admin() {
               { id:'status',    icon:'🟢', label:'Status' },
               { id:'tools',     icon:'🔧', label:'Tools' },
               { id:'api',       icon:'📡', label:'API Usage' },
+              { id:'analytics', icon:'📈', label:'Analytics (GA4)' },
             ]},
             { group:'Documentation', items:[
               { id:'techstack', icon:'🛠️', label:'Tech Stack' },

@@ -11,7 +11,6 @@ export default class ErrorBoundary extends Component {
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
-    // Send crash log to admin
     try {
       fetch('/api/comms?action=feedback', {
         method: 'POST',
@@ -36,6 +35,19 @@ export default class ErrorBoundary extends Component {
     this.setState({ reported: true });
   };
 
+  getBackUrl() {
+    const path = window.location.pathname;
+    // If crash happened on admin portal, go back to admin, not the main app
+    if (path.startsWith('/admin')) return '/admin';
+    return '/app';
+  }
+
+  getBackLabel() {
+    const path = window.location.pathname;
+    if (path.startsWith('/admin')) return '← Back to admin';
+    return '← Back to app';
+  }
+
   render() {
     if (!this.state.hasError) return this.props.children;
     return (
@@ -46,12 +58,12 @@ export default class ErrorBoundary extends Component {
             Something went wrong
           </h2>
           <p style={{ fontSize:13, color:C.muted, fontWeight:300, lineHeight:1.7, marginBottom:24 }}>
-            Jiff hit an unexpected error. Our team has been notified and we're working to fix it. You can try refreshing the page or go back to the app.
+            Jiff hit an unexpected error. Our team has been notified and we're working to fix it. You can try refreshing the page or go back.
           </p>
           <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
-            <button onClick={() => window.location.href = '/app'}
+            <button onClick={() => window.location.href = this.getBackUrl()}
               style={{ background:C.jiff, color:'white', border:'none', borderRadius:10, padding:'10px 20px', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-              ← Back to app
+              {this.getBackLabel()}
             </button>
             <button onClick={() => window.location.reload()}
               style={{ background:'white', color:C.ink, border:'1.5px solid rgba(28,10,0,0.18)', borderRadius:10, padding:'10px 20px', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
