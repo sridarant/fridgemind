@@ -817,6 +817,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
   };
 
   return (
+    <>
     <div className={`meal-card ${expanded?'expanded':''} ${isFavourite?'is-fav':''}`} style={{animationDelay:`${animDelay}s`}}
       onClick={()=>{if(!expanded&&!shareOpen&&!groceryOpen)setExpanded(true);}}>
       <div className="meal-hdr">
@@ -1055,6 +1056,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
         </div>
       </div>
     )}
+    </>
   );
 }
 
