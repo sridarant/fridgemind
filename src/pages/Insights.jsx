@@ -215,6 +215,7 @@ export default function Insights() {
           </div>
         ) : (
           <>
+            <>
             {/* OVERVIEW */}
             {activeTab === 'overview' && (
               <>
