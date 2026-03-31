@@ -1,10 +1,10 @@
 // src/lib/weather.js — Location, time, and weather utilities
-// Uses OpenWeatherMap free API (2.5 endpoint, no key needed for basic)
-// For production: get free key at openweathermap.org (1000 calls/day free)
+// Uses Open-Meteo (free, no API key needed, GPS-accurate) as primary
+// Falls back to OpenWeatherMap if REACT_APP_OPENWEATHER_KEY is set
 
-const OWM_KEY = process.env.REACT_APP_OPENWEATHER_KEY || '';
-const CACHE_KEY = 'jiff-weather-cache';
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const OWM_KEY    = process.env.REACT_APP_OPENWEATHER_KEY || '';
+const CACHE_KEY  = 'jiff-weather-cache';
+const CACHE_TTL  = 30 * 60 * 1000; // 30 minutes
 
 // ── Get user's coordinates via browser Geolocation API ────────────
 export function getCoords() {
@@ -26,7 +26,7 @@ export async function reverseGeocode(lat, lon) {
       { headers: { 'User-Agent': 'Jiff-App/1.0' } }
     );
     const data = await res.json();
-    const city    = data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
+    const city    = data.address?.suburb || data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
     const country = data.address?.country || '';
     const state   = data.address?.state || '';
     return { city, state, country, display: city ? `${city}, ${country}` : country };
@@ -35,9 +35,24 @@ export async function reverseGeocode(lat, lon) {
   }
 }
 
-// ── Fetch weather from OpenWeatherMap ─────────────────────────────
+// ── WMO weather code → description + emoji ────────────────────────
+function wmoToCondition(code) {
+  if (code === 0)            return { condition: 'Clear',        emoji: '☀️' };
+  if (code <= 2)             return { condition: 'Partly cloudy',emoji: '⛅' };
+  if (code === 3)            return { condition: 'Overcast',     emoji: '☁️' };
+  if (code <= 49)            return { condition: 'Foggy',        emoji: '🌫️' };
+  if (code <= 57)            return { condition: 'Drizzle',      emoji: '🌦️' };
+  if (code <= 67)            return { condition: 'Rainy',        emoji: '🌧️' };
+  if (code <= 77)            return { condition: 'Snowy',        emoji: '❄️' };
+  if (code <= 82)            return { condition: 'Rain showers', emoji: '🌧️' };
+  if (code <= 86)            return { condition: 'Snow showers', emoji: '❄️' };
+  if (code >= 95)            return { condition: 'Thunderstorm', emoji: '⛈️' };
+  return                            { condition: 'Cloudy',       emoji: '🌤️' };
+}
+
+// ── Fetch weather — Open-Meteo primary, OWM fallback ──────────────
 export async function fetchWeather(lat, lon) {
-  // Check cache first
+  // Cache check
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
     if (cached.lat === lat && cached.lon === lon && cached.ts > Date.now() - CACHE_TTL) {
@@ -45,139 +60,87 @@ export async function fetchWeather(lat, lon) {
     }
   } catch {}
 
-  try {
-    const keyParam = OWM_KEY ? `&appid=${OWM_KEY}` : '';
-    // Without API key, use a proxy or fallback to a free weather service
-    const url = OWM_KEY
-      ? `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric${keyParam}`
-      : `https://wttr.in/~${lat},${lon}?format=j1`; // fallback: wttr.in
+  let weather = null;
 
+  // Primary: Open-Meteo (free, no key, GPS-accurate)
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m&timezone=auto`;
     const res  = await fetch(url);
     const raw  = await res.json();
+    const cur  = raw.current || {};
+    const temp = Math.round(cur.temperature_2m ?? 25);
+    const { condition, emoji } = wmoToCondition(cur.weather_code ?? 0);
+    weather = {
+      temp,
+      feels_like:  Math.round(cur.apparent_temperature ?? temp),
+      condition,
+      description: condition.toLowerCase(),
+      humidity:    cur.relative_humidity_2m || 0,
+      isRaining:   (cur.weather_code ?? 0) >= 51 && (cur.weather_code ?? 0) <= 82,
+      isCold:      temp < 15,
+      isHot:       temp > 35,
+      emoji,
+    };
+  } catch {}
 
-    let weather;
-    if (OWM_KEY) {
-      // OpenWeatherMap format
-      weather = {
-        temp:        Math.round(raw.main?.temp || 0),
-        feels_like:  Math.round(raw.main?.feels_like || 0),
-        condition:   raw.weather?.[0]?.main || 'Clear',
-        description: raw.weather?.[0]?.description || '',
-        icon:        raw.weather?.[0]?.icon || '',
-        humidity:    raw.main?.humidity || 0,
-        isRaining:   ['Rain','Drizzle','Thunderstorm'].includes(raw.weather?.[0]?.main),
-        isCold:      (raw.main?.temp || 20) < 15,
-        isHot:       (raw.main?.temp || 20) > 35,
-        emoji:       getWeatherEmoji(raw.weather?.[0]?.main, raw.weather?.[0]?.icon),
-      };
-    } else {
-      // wttr.in format fallback
-      const cur = raw.current_condition?.[0];
-      const desc = cur?.weatherDesc?.[0]?.value || 'Clear';
-      const temp = parseInt(cur?.temp_C || '25');
+  // Fallback: OpenWeatherMap (if API key is configured)
+  if (!weather && OWM_KEY) {
+    try {
+      const res = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${OWM_KEY}`
+      );
+      const raw = await res.json();
+      const temp = Math.round(raw.main?.temp || 25);
       weather = {
         temp,
-        feels_like:  parseInt(cur?.FeelsLikeC || String(temp)),
-        condition:   desc,
-        description: desc.toLowerCase(),
-        isRaining:   desc.toLowerCase().includes('rain') || desc.toLowerCase().includes('drizzle'),
+        feels_like:  Math.round(raw.main?.feels_like || temp),
+        condition:   raw.weather?.[0]?.main || 'Clear',
+        description: raw.weather?.[0]?.description || '',
+        humidity:    raw.main?.humidity || 0,
+        isRaining:   ['Rain','Drizzle','Thunderstorm'].includes(raw.weather?.[0]?.main),
         isCold:      temp < 15,
         isHot:       temp > 35,
-        emoji:       getWeatherEmojiFromDesc(desc),
+        emoji:       getOwmEmoji(raw.weather?.[0]?.main, raw.weather?.[0]?.icon),
       };
-    }
+    } catch {}
+  }
 
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ lat, lon, ts: Date.now(), data: weather })); } catch {}
-    return weather;
-  } catch {
+  if (!weather) {
     return { temp: null, condition: 'Unknown', emoji: '🌤️', isRaining: false, isCold: false, isHot: false };
   }
+
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ lat, lon, ts: Date.now(), data: weather })); } catch {}
+  return weather;
 }
 
-function getWeatherEmoji(condition, icon = '') {
+function getOwmEmoji(condition, icon = '') {
   const isNight = icon?.includes('n');
   const map = {
-    'Clear':         isNight ? '🌙' : '☀️',
-    'Clouds':        isNight ? '☁️' : '⛅',
-    'Rain':          '🌧️',
-    'Drizzle':       '🌦️',
-    'Thunderstorm':  '⛈️',
-    'Snow':          '❄️',
-    'Mist':          '🌫️',
-    'Fog':           '🌫️',
-    'Haze':          '🌫️',
-    'Dust':          '💨',
-    'Sand':          '💨',
-    'Wind':          '💨',
+    'Clear': isNight ? '🌙' : '☀️',
+    'Clouds': isNight ? '☁️' : '⛅',
+    'Rain': '🌧️', 'Drizzle': '🌦️', 'Thunderstorm': '⛈️',
+    'Snow': '❄️', 'Mist': '🌫️', 'Fog': '🌫️', 'Haze': '🌫️',
   };
   return map[condition] || '🌤️';
 }
 
-function getWeatherEmojiFromDesc(desc) {
-  const d = desc.toLowerCase();
-  if (d.includes('thunder'))   return '⛈️';
-  if (d.includes('snow'))      return '❄️';
-  if (d.includes('rain') || d.includes('drizzle')) return '🌧️';
-  if (d.includes('fog') || d.includes('mist') || d.includes('haze')) return '🌫️';
-  if (d.includes('cloud') || d.includes('overcast')) return '⛅';
-  if (d.includes('clear') || d.includes('sunny')) return '☀️';
-  return '🌤️';
-}
-
-// ── Get local time info ────────────────────────────────────────────
-export function getTimeInfo() {
-  const now  = new Date();
-  const hour = now.getHours();
-  const mins = now.getMinutes();
-
-  let period, greeting, mealType;
-  if (hour >= 5 && hour < 11) {
-    period = 'morning'; greeting = 'Good morning'; mealType = 'breakfast';
-  } else if (hour >= 11 && hour < 15) {
-    period = 'afternoon'; greeting = 'Good afternoon'; mealType = 'lunch';
-  } else if (hour >= 15 && hour < 18) {
-    period = 'evening'; greeting = 'Good evening'; mealType = 'snack';
-  } else if (hour >= 18 && hour < 22) {
-    period = 'evening'; greeting = 'Good evening'; mealType = 'dinner';
-  } else {
-    period = 'night'; greeting = 'Good late night'; mealType = 'snack';
-  }
-
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  return { period, greeting, mealType, timeStr, hour, mins };
-}
-
-// ── Suggest a recipe based on context ─────────────────────────────
-export function suggestContextualRecipe(weather, timeInfo, location) {
-  const isIndia = location?.country?.toLowerCase().includes('india');
-  const { isRaining, isCold, isHot, condition } = weather || {};
-  const { mealType, period } = timeInfo;
-
-  // Context-aware suggestions
-  if (isRaining && isIndia && period === 'evening')   return { dish: 'Pakoda', emoji: '🧅', reason: `Rainy evening in ${location?.city || 'India'} — pakoda time!` };
-  if (isRaining && period === 'evening')               return { dish: 'Hot Soup', emoji: '🍲', reason: `Rainy weather calls for something warm` };
-  if (isCold && mealType === 'breakfast')              return { dish: 'Upma', emoji: '🍚', reason: `Warm and filling for a cold morning` };
-  if (isHot && mealType === 'lunch')                   return { dish: 'Curd Rice', emoji: '🍚', reason: `Cool and light for a hot day` };
-  if (isHot && period === 'afternoon')                 return { dish: 'Lassi', emoji: '🥛', reason: `Beat the heat` };
-  if (mealType === 'breakfast' && isIndia)             return { dish: 'Masala Dosa', emoji: '🫓', reason: `Classic Tamil Nadu breakfast` };
-  if (mealType === 'lunch' && isIndia)                 return { dish: 'Dal Rice', emoji: '🍛', reason: `Comforting midday meal` };
-  if (mealType === 'dinner' && isIndia)                return { dish: 'Roti & Sabzi', emoji: '🫓', reason: `Light and balanced dinner` };
-  if (mealType === 'snack')                            return { dish: 'Chai & Biscuits', emoji: '☕', reason: `Perfect snack time combo` };
-  return { dish: 'Something delicious', emoji: '⚡', reason: `Jiff has ideas` };
-}
-
-// ── Full context fetch ─────────────────────────────────────────────
+// ── Full user context (location + time + weather) ─────────────────
 export async function getUserContext() {
-  const timeInfo = getTimeInfo();
+  const now = new Date();
+  const hours = now.getHours();
+  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  const timeOfDay = hours < 6 ? 'night' : hours < 12 ? 'morning' : hours < 17 ? 'afternoon' : hours < 21 ? 'evening' : 'night';
+
+  let location = { city: '', country: '', display: '' };
+  let weather  = null;
+  let coords   = null;
+
   try {
-    const coords  = await getCoords();
-    const [loc, weather] = await Promise.all([
-      reverseGeocode(coords.lat, coords.lon),
-      fetchWeather(coords.lat, coords.lon),
-    ]);
-    const suggestion = suggestContextualRecipe(weather, timeInfo, loc);
-    return { timeInfo, location: loc, weather, suggestion, hasLocation: true };
-  } catch {
-    return { timeInfo, location: null, weather: null, suggestion: null, hasLocation: false };
-  }
+    coords   = await getCoords();
+    location = await reverseGeocode(coords.lat, coords.lon);
+    weather  = await fetchWeather(coords.lat, coords.lon);
+  } catch {}
+
+  return { timeOfDay, timeStr, location, weather, coords };
 }

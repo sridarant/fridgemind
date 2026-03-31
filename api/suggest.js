@@ -4,6 +4,34 @@ import crypto from 'crypto';
 
 const DAILY_LIMITS = { free: 10, starter: 500, pro: 5000 };
 
+// ── In-memory rate limiter (per IP, sliding window) ────────────────
+const RL_WINDOW  = 60 * 1000;  // 1 minute
+const RL_LIMITS  = { suggest: 20, planner: 10, default: 30 };
+const _rlStore   = new Map();
+
+function rateLimit(ip, endpoint = 'default') {
+  const key  = `${endpoint}:${ip}`;
+  const now  = Date.now();
+  const limit = RL_LIMITS[endpoint] || RL_LIMITS.default;
+  const entry = _rlStore.get(key) || { hits: [], blocked: false };
+
+  // Evict expired hits
+  entry.hits = entry.hits.filter(t => now - t < RL_WINDOW);
+  entry.hits.push(now);
+  _rlStore.set(key, entry);
+
+  // Cleanup old keys every ~500 calls to prevent unbounded growth
+  if (_rlStore.size > 2000) {
+    for (const [k, v] of _rlStore) {
+      if (v.hits.every(t => now - t >= RL_WINDOW)) _rlStore.delete(k);
+    }
+  }
+
+  const remaining = limit - entry.hits.length;
+  return { allowed: remaining >= 0, remaining: Math.max(0, remaining), limit };
+}
+
+
 async function validateApiKey(apiKey, supabaseUrl, serviceKey) {
   if (!supabaseUrl || !serviceKey) return { ok: false, error: 'Key validation unavailable' };
   try {
@@ -112,8 +140,47 @@ Respond ONLY with valid JSON array:
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // ── Rate limiting ─────────────────────────────────────────────────
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const rl = rateLimit(clientIp, 'suggest');
+  res.setHeader('X-RateLimit-Limit',     String(rl.limit));
+  res.setHeader('X-RateLimit-Remaining', String(rl.remaining));
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'Too many requests. Please wait a moment before trying again.', retryAfter: 60 });
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured.' });
+
+  // ── Kids mode — handled FIRST before ingredients check ────────────
+  const { kidsMode, kidsPromptOverride } = req.body || {};
+  if (kidsMode && kidsPromptOverride) {
+    try {
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 2500,
+          messages: [{ role: 'user', content: kidsPromptOverride }] }),
+      });
+      const aiData = await aiRes.json();
+      if (!aiRes.ok) return res.status(500).json({ error: 'AI service error for kids recipes.' });
+      const raw = (aiData.content || []).map(c => c.text || '').join('');
+      const clean = raw.replace(/```json|```/g, '').trim();
+      // Try object first {meals:[]}, then flat array []
+      const objMatch = clean.match(/\{[\s\S]*\}/);
+      const arrMatch = clean.match(/\[[\s\S]*\]/);
+      if (objMatch) {
+        try { const parsed = JSON.parse(objMatch[0]); return res.status(200).json(parsed); } catch {}
+      }
+      if (arrMatch) {
+        try { const meals = JSON.parse(arrMatch[0]); return res.status(200).json({ meals }); } catch {}
+      }
+      return res.status(500).json({ error: 'Failed to parse kids recipe response. Please try again.' });
+    } catch (err) {
+      console.error('Kids mode error:', err);
+      return res.status(500).json({ error: 'Kids recipe generation failed.' });
+    }
+  }
 
   try {
     const {

@@ -1,6 +1,23 @@
 // api/planner.js — Jiff weekly meal planner with meal type selection
 
+// ── Rate limiter (shared pattern) ────────────────────────────────
+const RL_WINDOW_P = 60 * 1000;
+const RL_LIMIT_P  = 10; // 10 planner calls/min per IP
+const _rlP = new Map();
+function rateLimitPlanner(ip) {
+  const now = Date.now();
+  const hits = (_rlP.get(ip) || []).filter(t => now - t < RL_WINDOW_P);
+  hits.push(now);
+  _rlP.set(ip, hits);
+  if (_rlP.size > 1000) for (const [k,v] of _rlP) if (v.every(t=>now-t>=RL_WINDOW_P)) _rlP.delete(k);
+  return { allowed: hits.length <= RL_LIMIT_P, remaining: Math.max(0, RL_LIMIT_P - hits.length) };
+}
+
+
 export default async function handler(req, res) {
+  const cIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
+  const rl  = rateLimitPlanner(cIp);
+  if (!rl.allowed) return res.status(429).json({ error: 'Too many requests. Please wait a moment.', retryAfter: 60 });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
