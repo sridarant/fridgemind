@@ -77,6 +77,8 @@ export default function Admin() {
     { id:'comms',     label:'Email & Comms' },
     { id:'techdoc',   label:'Technical Docs' },
     { id:'analytics', label:'Analytics (GA4)' },
+    { id:'prompts',   label:'Prompt Library' },
+    { id:'uikit',     label:'UI Kit' },
   ];
   // Tools state
   const [resetEmail,   setResetEmail]   = useState('');
@@ -295,6 +297,10 @@ export default function Admin() {
               { id:'config',    icon:'⚙️', label:'Config' },
               { id:'comms',     icon:'📧', label:'Email & Comms' },
               { id:'techdoc',   icon:'📄', label:'Technical Docs' },
+            ]},
+            { group:'Developer Tools', items:[
+              { id:'prompts',   icon:'🧠', label:'Prompt Library' },
+              { id:'uikit',     icon:'🎨', label:'UI Kit' },
             ]},
           ].map(section => (
             <div key={section.group} style={{ marginBottom:6 }}>
@@ -820,7 +826,7 @@ export default function Admin() {
                 ['AI model',        'Anthropic claude-opus-4-5 (recipes, meal plans)'],
                 ['AI model (fast)', 'Anthropic claude-haiku-4-5 (ingredient translation, WhatsApp bot)'],
                 ['API version',     'Anthropic API 2023-06-01'],
-                ['Functions',       'api/suggest.js · api/planner.js · api/meal-history.js · api/payments.js · api/comms.js · api/admin.js · api/stats.js · api/detect-ingredients.js · api/whatsapp.js'],
+                ['Functions',       'api/suggest.js · api/planner.js · api/admin.js (?action=meal-history) · api/payments.js · api/comms.js · api/admin.js · api/admin.js (?action=stats) · api/detect-ingredients.js · api/whatsapp.js'],
               ].map(([k,v]) => (
                 <div key={k} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.05)'}}>
                   <span style={{fontSize:12,color:C.muted,minWidth:140,flexShrink:0,fontWeight:300}}>{k}</span>
@@ -1445,7 +1451,8 @@ export default function Admin() {
                 {file:'api/comms.js',             route:'POST /api/comms',             desc:'Feedback + all Mailchimp email triggers. Actions: feedback, email, welcome, trial_start, trial_expired, premium_confirm. Upserts members and applies drip tags.'},
                 {file:'api/admin.js',             route:'GET /api/admin',              desc:'Admin-only data: users, feedback, crashes, API usage stats. Requires SUPABASE_SERVICE_ROLE_KEY in Vercel env vars.'},
                 {file:'api/stats.js',             route:'GET /api/stats',              desc:'Public aggregate stats — total users, meals generated, cuisine distribution. Used by Admin Overview and /stats page.'},
-                {file:'api/detect-ingredients.js',route:'POST /api/detect-ingredients',desc:'Fridge photo ingredient detection. Accepts base64 image, returns string[] of detected ingredients via Claude vision.'},
+                {file:'api/suggest.js (?action=detect)',route:'POST /api/detect-ingredients → suggest.js?action=detect',desc:'Fridge photo ingredient detection. Accepts base64 image, returns string[] of detected ingredients via Claude vision.'},
+                {file:'api/videos.js',            route:'GET /api/videos',             desc:'YouTube recipe video search with Supabase cache. Ranked by views, engagement, recency, language match. 7-day TTL per recipe name.'},
                 {file:'api/whatsapp.js',          route:'GET/POST /api/whatsapp',      desc:'Meta WhatsApp Cloud API webhook. GET for token verification, POST for incoming messages → recipe reply.'},
               ].map(fn=>(
                 <div key={fn.file} style={{display:'grid',gridTemplateColumns:'195px 235px 1fr',gap:8,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',alignItems:'start'}}>
@@ -1455,7 +1462,7 @@ export default function Admin() {
                 </div>
               ))}
               <div style={{marginTop:12,padding:'8px 12px',background:'rgba(255,184,0,0.08)',border:'1px solid rgba(255,184,0,0.2)',borderRadius:8,fontSize:11,color:'#854F0B'}}>
-                Vercel Hobby plan hard limit: 12 functions. Current: 9/12. Three slots remain for future features.
+                Vercel Hobby plan hard limit: 12 functions. Current: 7/12. Five slots remain for future features for future features.
               </div>
             </Card>
 
@@ -1687,6 +1694,333 @@ export default function Admin() {
                   <span style={{fontSize:12,color:C.muted,fontWeight:300,lineHeight:1.6}}>{text}</span>
                 </div>
               ))}
+            </Card>
+          </>
+        )}
+
+
+        {/* PROMPT LIBRARY */}
+        {activeTab==='prompts' && (
+          <>
+            <Card title="All AI prompts used in Jiff — with rendered examples">
+              <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12,lineHeight:1.6}}>
+                Every prompt Jiff sends to Claude. Values shown are real examples. Model and token budget noted per prompt.
+              </div>
+            </Card>
+
+            {/* Recipe generation */}
+            <Card title="1. Recipe generation — api/suggest.js (internal path)">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-opus-4-5'],['Max tokens','2500'],['Endpoint','/api/suggest'],['Trigger','Generate button']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`You are a creative, practical chef with deep knowledge of world cuisines.
+
+Available ingredients: [tomato, paneer, onion, coriander].
+Time available: 30 min.
+Dietary preference: vegetarian.
+Meal type: All suggestions must be lunch dishes.
+Cuisine requirement: All 3 meals MUST be authentic Tamil Nadu cuisine.
+Serving size: Each recipe should serve 2 people.
+Measurements: Use metric measurements only.
+
+User taste profile:
+- Spice level: medium
+- Allergies — NEVER include: peanuts
+- User prefers: Tamil Nadu, Kerala
+
+Suggest exactly 3 meals. Respond ONLY with a valid JSON array — no markdown, no explanation.
+[{"name":"...","emoji":"...","time":"...","servings":"2","difficulty":"...","description":"...","ingredients":[...],"steps":[...],"calories":"...","protein":"...","carbs":"...","fat":"..."}]`}
+              </div>
+            </Card>
+
+            {/* Kids mode */}
+            <Card title="2. Kids Meals — api/suggest.js (kidsMode override)">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-haiku-4-5'],['Max tokens','2500'],['Trigger','Kids Meals generate']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`You are an expert child nutritionist and kids cooking educator.
+
+The PARENT cooks this FOR the child. Adult does all cooking.
+Focus on nutrition, hidden veg, quick prep, child-friendly presentation.
+
+Age group: Kids (4-8 yrs) (4-8 yrs)
+KIDS SAFETY (4-8 yrs): No sharp cutting, no deep frying. Fun shapes, hidden vegetables.
+Meal type: Lunch
+Recipes needed: 3 — each COMPLETELY DIFFERENT from the others
+Serves: 2
+Dietary: vegetarian
+Spice: very mild — no chilli, minimal spice
+Preferred cuisines: Tamil Nadu, Kerala.
+
+STRICT RULE: Do NOT suggest Dal Tadka, plain Jeera Rice, or any generic everyday dish.
+
+Respond ONLY with valid JSON, no markdown:
+{"meals":[{"name":"...","emoji":"...","description":"...","time":"...","difficulty":"...","servings":"2","ingredients":[...],"steps":[...],"calories":"...","protein":"...","fun_fact":"..."}]}`}
+              </div>
+            </Card>
+
+            {/* Sacred Kitchen */}
+            <Card title="3. Sacred Kitchen — api/suggest.js (kidsMode override)">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-haiku-4-5'],['Max tokens','2500'],['Trigger','Sacred Kitchen generate']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`You are an expert in sacred and traditional Indian food across all religious traditions.
+
+Generate 3 authentic Prasadam / Naivedyam recipe(s) associated with Tirupati tradition.
+Context: Ladoo, pulihora, chakraponkala — Balaji prasadam
+Occasion: Blessed offering to the divine
+Servings: 4
+Diet: vegetarian
+SATVIK MODE: strictly no onion, no garlic, no meat, no eggs, no non-vegetarian items.
+
+IMPORTANT: These should be genuinely authentic recipes traditionally offered in this context.
+
+Respond ONLY with valid JSON:
+{"meals":[{"name":"...","emoji":"...","description":"...","tradition":"Tirupati","significance":"...","time":"...","difficulty":"...","servings":"4","ingredients":[...],"steps":[...],"calories":"...","protein":"...","fun_fact":"..."}]}`}
+              </div>
+            </Card>
+
+            {/* Week planner */}
+            <Card title="4. Week planner — api/planner.js">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-opus-4-5'],['Max tokens','4000'],['Trigger','Week Plan generate']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`You are a professional meal planner and nutritionist with expertise in Indian and global cuisines.
+
+Create a complete 7-day meal plan.
+Diet: vegetarian
+Cuisine preferences: Tamil Nadu (40%), Kerala (30%), North Indian (30%)
+Servings: 2 people per meal
+Time preference: Quick (under 20 min)
+Nutrition goal: balanced
+
+Respond ONLY with valid JSON: {"plan":[{"day":"Monday","meals":{"breakfast":{...},"lunch":{...},"dinner":{...}}}]}`}
+              </div>
+            </Card>
+
+            {/* Ingredient translation */}
+            <Card title="5. Ingredient translator — api/suggest.js (?action=translate)">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-haiku-4-5'],['Max tokens','300'],['Trigger','🌐 button in IngredientInput']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`You are an expert in Indian culinary ingredients and regional names.
+User typed: "ponangani keerai". The user may be using Tamil names.
+If this is a known food ingredient or regional name, identify it and return:
+{"found":true,"english":"Water Amaranth","local":"Ponangani Keerai","lang":"Tamil","category":"leafy green","note":"Used in rasam and stir fry"}
+If you cannot identify it as a food ingredient, return: {"found":false}`}
+              </div>
+            </Card>
+
+            {/* Fridge detect */}
+            <Card title="6. Fridge photo detection — api/suggest.js (?action=detect)">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-opus-4-5'],['Max tokens','500'],['Input','base64 image'],['Trigger','FridgePhotoUpload']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`[image input: base64 fridge photo]
+
+Determine if this image shows food, ingredients, a fridge, pantry, or kitchen.
+If not, respond: {"error":"not_food"}
+
+If food-related, list all food ingredients visible.
+Rules: common simple names only; max 20 items; skip non-food items.
+Respond ONLY with valid JSON: {"error":"not_food"} or ["ingredient1","ingredient2"]`}
+              </div>
+            </Card>
+
+            {/* Substitution */}
+            <Card title="7. Ingredient substitution — api/suggest.js (inline)">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+                {[['Model','claude-haiku-4-5'],['Max tokens','2500'],['Trigger','Sub? button on ingredient']].map(([k,v])=>(
+                  <div key={k} style={{padding:'4px 10px',background:'rgba(28,10,0,0.04)',borderRadius:6,fontSize:11}}>
+                    <span style={{color:C.muted}}>{k}: </span><span style={{color:C.ink,fontWeight:500}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontFamily:'monospace',fontSize:11,background:'rgba(28,10,0,0.03)',padding:'14px',borderRadius:8,lineHeight:1.9,color:C.muted,whiteSpace:'pre-wrap',wordBreak:'break-word'}}>
+{`Suggest 2-3 practical substitutes for "paneer" when cooking "Palak Paneer".
+Respond ONLY with JSON: {"subs":[{"name":"substitute","note":"brief note on how to use"}]}`}
+              </div>
+            </Card>
+          </>
+        )}
+
+        {/* UI KIT */}
+        {activeTab==='uikit' && (
+          <>
+            <Card title="Jiff Design System — UI components and primitives">
+              <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:4,lineHeight:1.6}}>
+                All UI primitives used across the Jiff app. Each component is built with inline JSX styles — no external CSS framework. Colors come from the local <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'1px 5px',borderRadius:3}}>C</code> object in each file.
+              </div>
+            </Card>
+
+            {/* Buttons */}
+            <Card title="Buttons">
+              <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:16}}>
+                <button style={{padding:'10px 20px',background:C.jiff,color:'white',border:'none',borderRadius:10,fontSize:13,fontWeight:600,cursor:'pointer'}}>Primary</button>
+                <button style={{padding:'10px 20px',background:'white',color:C.ink,border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:13,fontWeight:500,cursor:'pointer'}}>Secondary</button>
+                <button style={{padding:'10px 20px',background:'none',color:C.muted,border:'1px solid rgba(28,10,0,0.12)',borderRadius:10,fontSize:13,cursor:'pointer'}}>Ghost</button>
+                <button style={{padding:'10px 20px',background:'rgba(229,62,62,0.1)',color:'#C53030',border:'1px solid rgba(229,62,62,0.2)',borderRadius:10,fontSize:13,cursor:'pointer'}}>Destructive</button>
+                <button style={{padding:'10px 20px',background:C.jiff,color:'white',border:'none',borderRadius:10,fontSize:13,fontWeight:600,cursor:'not-allowed',opacity:0.4}} disabled>Disabled</button>
+              </div>
+              {[
+                ['Primary','bg: #FF4500, color: white, border-radius: 10px, font-weight: 600 — CTA actions (Generate, Save, Submit)'],
+                ['Secondary','bg: white, border: 1.5px solid rgba(28,10,0,0.18) — navigation actions (Week Plan, Back to app)'],
+                ['Ghost','bg: none, border: 1px solid rgba(28,10,0,0.12) — low-priority actions (Report issue, Cancel)'],
+                ['Destructive','bg: rgba(229,62,62,0.1), color: #C53030 — delete, clear, remove actions'],
+              ].map(([name,desc])=>(
+                <div key={name} style={{display:'flex',gap:10,padding:'6px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:11}}>
+                  <span style={{minWidth:90,fontWeight:500,color:C.ink}}>{name}</span>
+                  <span style={{color:C.muted,fontWeight:300}}>{desc}</span>
+                </div>
+              ))}
+            </Card>
+
+            {/* Chips and badges */}
+            <Card title="Chips, tags & badges">
+              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:16,alignItems:'center'}}>
+                <span style={{padding:'5px 12px',background:'rgba(255,69,0,0.08)',color:C.jiff,border:'1px solid rgba(255,69,0,0.2)',borderRadius:20,fontSize:12,fontWeight:500}}>Jiff chip</span>
+                <span style={{padding:'5px 12px',background:'rgba(29,158,117,0.1)',color:C.green,border:'1px solid rgba(29,158,117,0.25)',borderRadius:20,fontSize:12,fontWeight:500}}>✓ Success</span>
+                <span style={{padding:'5px 12px',background:'rgba(255,184,0,0.1)',color:'#854F0B',border:'1px solid rgba(255,184,0,0.3)',borderRadius:20,fontSize:12,fontWeight:500}}>Trial active</span>
+                <span style={{padding:'5px 12px',background:'rgba(229,62,62,0.08)',color:'#C53030',border:'1px solid rgba(229,62,62,0.2)',borderRadius:20,fontSize:12,fontWeight:500}}>Error</span>
+                <span style={{padding:'3px 8px',background:C.jiff,color:'white',borderRadius:20,fontSize:10,fontWeight:700}}>NEW</span>
+                <span style={{padding:'5px 14px',background:C.warm,color:C.muted,border:'1.5px solid '+C.border,borderRadius:20,fontSize:12,cursor:'pointer'}}>Filter chip</span>
+                <span style={{padding:'5px 14px',background:C.jiff,color:'white',border:'none',borderRadius:20,fontSize:12,fontWeight:500}}>Active filter</span>
+              </div>
+              {[
+                ['Orange chip','Selected state, active filter, selected cuisine — bg: rgba(255,69,0,0.08), border: rgba(255,69,0,0.2)'],
+                ['Green badge','Premium, success, verified — bg: rgba(29,158,117,0.1)'],
+                ['Gold badge','Trial, warning, in-progress — bg: rgba(255,184,0,0.1)'],
+                ['Red badge','Error, crash, danger — bg: rgba(229,62,62,0.08)'],
+                ['Pill filter','Unselected: bg warm, border light. Selected: bg jiff, color white'],
+              ].map(([name,desc])=>(
+                <div key={name} style={{display:'flex',gap:10,padding:'5px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:11}}>
+                  <span style={{minWidth:110,fontWeight:500,color:C.ink}}>{name}</span>
+                  <span style={{color:C.muted,fontWeight:300}}>{desc}</span>
+                </div>
+              ))}
+            </Card>
+
+            {/* Cards */}
+            <Card title="Cards and panels">
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
+                <div style={{background:'white',border:'1px solid rgba(28,10,0,0.10)',borderRadius:16,padding:'16px',boxShadow:'0 4px 24px rgba(28,10,0,0.08)'}}>
+                  <div style={{fontSize:12,fontWeight:500,color:C.ink}}>Standard card</div>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:300,marginTop:4}}>bg white, border 1px, radius 16px, shadow 4px 24px 0.08</div>
+                </div>
+                <div style={{background:C.warm,border:'1px solid rgba(255,69,0,0.15)',borderRadius:16,padding:'16px'}}>
+                  <div style={{fontSize:12,fontWeight:500,color:C.jiff}}>Accent card</div>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:300,marginTop:4}}>bg warm, border orange — info panels, tips</div>
+                </div>
+              </div>
+              {[
+                ['Standard card','bg: white, border: 1px solid rgba(28,10,0,0.10), border-radius: 16-20px, shadow: 0 4px 24px rgba(28,10,0,0.08)'],
+                ['Accent card','bg: #FFF0E5 (warm), border: rgba(255,69,0,0.15) — tip boxes, featured content'],
+                ['Dark card','bg: #1C0A00 (ink), color: white — premium gates, dark overlays'],
+                ['Error panel','bg: rgba(229,62,62,0.08), border: rgba(229,62,62,0.2) — error messages'],
+              ].map(([name,desc])=>(
+                <div key={name} style={{display:'flex',gap:10,padding:'5px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:11}}>
+                  <span style={{minWidth:110,fontWeight:500,color:C.ink}}>{name}</span>
+                  <span style={{color:C.muted,fontWeight:300}}>{desc}</span>
+                </div>
+              ))}
+            </Card>
+
+            {/* Input */}
+            <Card title="Inputs and form elements">
+              <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:16,maxWidth:380}}>
+                <input placeholder="Standard text input" style={{padding:'10px 12px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:13,fontFamily:"'DM Sans',sans-serif",color:C.ink,background:C.cream,outline:'none'}} readOnly/>
+                <textarea rows={2} placeholder="Textarea" style={{padding:'10px 12px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:10,fontSize:13,fontFamily:"'DM Sans',sans-serif",color:C.ink,background:C.cream,resize:'vertical'}} readOnly/>
+                <div style={{display:'flex',gap:8}}>
+                  <input type="number" defaultValue={2} style={{width:60,padding:'8px 10px',border:'1.5px solid rgba(28,10,0,0.18)',borderRadius:8,fontSize:13,textAlign:'center',fontFamily:"'DM Sans',sans-serif"}} readOnly/>
+                  <span style={{alignSelf:'center',fontSize:12,color:C.muted}}>Number stepper</span>
+                </div>
+              </div>
+              {[
+                ['Text input','padding: 9-10px 12px, border: 1.5px solid rgba(28,10,0,0.18), radius: 10px, bg: #FFFAF5 (cream)'],
+                ['Focus state','border-color: #FF4500, outline: none — override default browser focus ring'],
+                ['Disabled','opacity: 0.5, cursor: not-allowed'],
+                ['Error state','border-color: #E53E3E, bg: rgba(229,62,62,0.04)'],
+              ].map(([name,desc])=>(
+                <div key={name} style={{display:'flex',gap:10,padding:'5px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:11}}>
+                  <span style={{minWidth:110,fontWeight:500,color:C.ink}}>{name}</span>
+                  <span style={{color:C.muted,fontWeight:300}}>{desc}</span>
+                </div>
+              ))}
+            </Card>
+
+            {/* Typography */}
+            <Card title="Typography scale">
+              {[
+                {size:32,weight:900,font:'Fraunces',label:'Display heading',sample:'Jiff it.'},
+                {size:22,weight:900,font:'Fraunces',label:'Page title',sample:'Kids Meals'},
+                {size:16,weight:700,font:'Fraunces',label:'Card title',sample:'This week\'s plan'},
+                {size:15,weight:500,font:'DM Sans',label:'Body strong',sample:'5 recipes in 10 seconds'},
+                {size:13,weight:300,font:'DM Sans',label:'Body regular',sample:'Your fridge has the ingredients for 3 meals.'},
+                {size:11,weight:500,font:'DM Sans',label:'Label / caps',sample:'MEAL TYPE'},
+                {size:10,weight:300,font:'DM Sans',label:'Caption / hint',sample:'Last updated 2 hours ago'},
+              ].map(({size,weight,font,label,sample})=>(
+                <div key={label} style={{display:'flex',alignItems:'baseline',gap:16,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.05)'}}>
+                  <span style={{minWidth:130,fontSize:11,color:C.muted,fontWeight:400}}>{label}</span>
+                  <span style={{fontFamily:`'${font}',serif`,fontSize:size,fontWeight:weight,color:C.ink,lineHeight:1.2}}>{sample}</span>
+                  <span style={{fontSize:10,color:C.muted,marginLeft:'auto',whiteSpace:'nowrap'}}>{font} {size}px/{weight}</span>
+                </div>
+              ))}
+            </Card>
+
+            {/* Colour palette */}
+            <Card title="Colour palette — C object">
+              <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(120px,1fr))',gap:8}}>
+                {[
+                  {name:'jiff',val:'#FF4500',desc:'Primary — buttons, accents'},
+                  {name:'jiffDk',val:'#CC3700',desc:'Hover on orange'},
+                  {name:'ink',val:'#1C0A00',desc:'Primary text'},
+                  {name:'cream',val:'#FFFAF5',desc:'Page backgrounds'},
+                  {name:'warm',val:'#FFF0E5',desc:'Card backgrounds'},
+                  {name:'muted',val:'#7C6A5E',desc:'Secondary text'},
+                  {name:'green',val:'#1D9E75',desc:'Success, premium'},
+                  {name:'gold',val:'#FFB800',desc:'Trial, warnings'},
+                  {name:'red',val:'#E53E3E',desc:'Errors, danger'},
+                  {name:'purple',val:'#7C3AED',desc:'Kids Meals mode'},
+                ].map(({name,val,desc})=>(
+                  <div key={name} style={{borderRadius:10,overflow:'hidden',border:'1px solid rgba(28,10,0,0.08)'}}>
+                    <div style={{height:36,background:val}}/>
+                    <div style={{padding:'6px 8px',background:'white'}}>
+                      <div style={{fontSize:10,fontWeight:600,color:C.ink,fontFamily:'monospace'}}>{val}</div>
+                      <div style={{fontSize:9,color:C.muted}}>{name} — {desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </Card>
           </>
         )}

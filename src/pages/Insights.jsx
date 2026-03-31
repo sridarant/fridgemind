@@ -147,6 +147,7 @@ export default function Insights() {
     { id:'nutrition', label:'Nutrition' },
     { id:'ratings',   label:'Ratings' },
     { id:'ingredients',label:'Ingredients' },
+    { id:'passport',   label:'🌍 Passport' },
   ];
 
   return (
@@ -323,8 +324,73 @@ export default function Insights() {
                   : <BarChart data={data.topIngs} color={C.green} />}
               </div>
             )}
+            {/* Cooking Passport */}
+            {activeTab === 'passport' && (
+              <div>
+                {/* Passport header */}
+                <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16,
+                  padding:'20px 22px', boxShadow:C.shadow, marginBottom:16 }}>
+                  <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:C.ink, marginBottom:4 }}>
+                    🌍 Your Cooking Passport
+                  </div>
+                  <div style={{ fontSize:12, color:C.muted, fontWeight:300 }}>
+                    Cuisines you have explored with Jiff — each stamp represents at least one recipe generated.
+                  </div>
+                  <div style={{ marginTop:12, display:'flex', gap:12, flexWrap:'wrap' }}>
+                    {[
+                      [data.cuisinesExplored||0, '/ 30 cuisines', C.jiff],
+                      [data.topCuisines?.[0]?.name||'—', 'favourite cuisine', C.green],
+                      [data.totalMeals||0, 'total recipes', C.purple],
+                    ].map(([val,lbl,col],i)=>(
+                      <div key={i} style={{ background:C.warm, borderRadius:10, padding:'10px 16px', flex:1, minWidth:100 }}>
+                        <div style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:700, color:col }}>{val}</div>
+                        <div style={{ fontSize:11, color:C.muted }}>{lbl}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Passport grid */}
+                <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16,
+                  padding:'20px 22px', boxShadow:C.shadow }}>
+                  <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:500, marginBottom:14 }}>
+                    Cuisine stamps
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(100px,1fr))', gap:8 }}>
+                    {['Tamil Nadu','Kerala','Karnataka','Andhra Pradesh','Maharashtra','Gujarat','Rajasthan','Punjab','Bengal','Odisha','Bihari','Kashmiri','Hyderabadi','Goan','Mughlai','North Indian','South Indian','Street Food','Chinese','Japanese','Korean','Thai','Vietnamese','Malaysian','Italian','French','Spanish','Mediterranean','Mexican','American'].map(cuisine=>{
+                      const explored = (data.topCuisines||[]).some(c=>c.name?.toLowerCase()===cuisine.toLowerCase());
+                      return (
+                        <div key={cuisine} style={{
+                          padding:'10px 8px', borderRadius:10, textAlign:'center',
+                          border:'1.5px solid '+(explored ? C.jiff : C.border),
+                          background: explored ? 'rgba(255,69,0,0.05)' : 'white',
+                          opacity: explored ? 1 : 0.5, transition:'all 0.15s',
+                        }}>
+                          <div style={{ fontSize:18, marginBottom:3 }}>{explored ? '✅' : '○'}</div>
+                          <div style={{ fontSize:10, color:explored ? C.jiff : C.muted, fontWeight:explored?500:300, lineHeight:1.3 }}>{cuisine}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Share passport */}
+                <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16,
+                  padding:'16px 22px', boxShadow:C.shadow, marginTop:16, display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500, color:C.ink }}>Share your passport</div>
+                    <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>Show the world your culinary journey</div>
+                  </div>
+                  <button onClick={()=>{
+                    const text = `I've explored ${data.cuisinesExplored||0} cuisines on Jiff! 🌍\nMy favourite: ${data.topCuisines?.[0]?.name||'various'}\nTotal recipes cooked: ${data.totalMeals||0}\n\nStart your culinary journey: jiff-ecru.vercel.app`;
+                    if(navigator.share) navigator.share({title:'My Cooking Passport', text});
+                    else navigator.clipboard?.writeText(text);
+                  }} style={{ padding:'8px 16px', borderRadius:10, background:C.jiff, color:'white', border:'none', fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    Share 📤
+                  </button>
+                </div>
+              </div>
+            )}
           </>
-        )}
+        }
       </div>
     </div>
   );

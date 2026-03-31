@@ -593,6 +593,29 @@ function ShareDrawer({ meal }) {
   );
 }
 
+
+// ── Festival detector — date-based, no API ──────────────────────
+function getUpcomingFestival() {
+  const now   = new Date();
+  const month = now.getMonth() + 1; // 1-12
+  const day   = now.getDate();
+  const festivals = [
+    { name:'Pongal',    emoji:'🌾', m:1,  d1:13, d2:16, diet:'vegetarian',  note:'Ven Pongal, Sakkarai Pongal, Vadai' },
+    { name:'Holi',      emoji:'🎨', m:3,  d1:24, d2:26, diet:'vegetarian',  note:'Gujiya, Thandai, Dahi Bhalle' },
+    { name:'Navratri',  emoji:'🌸', m:4,  d1:1,  d2:11, diet:'vegetarian',  note:'Sabudana khichdi, Kuttu puri, Samak rice' },
+    { name:'Eid',       emoji:'🌙', m:4,  d1:9,  d2:11, diet:'halal',       note:'Sheer khurma, Biryani, Sewai' },
+    { name:'Onam',      emoji:'🌺', m:8,  d1:28, d2:31, diet:'vegetarian',  note:'Avial, Sambar, Payasam, Sadya' },
+    { name:'Navratri',  emoji:'🌸', m:10, d1:2,  d2:12, diet:'vegetarian',  note:'Fasting specials — sabudana, singhara' },
+    { name:'Diwali',    emoji:'🪔', m:10, d1:29, d2:3,  diet:'vegetarian',  note:'Ladoo, Chakli, Murukku, Kheer' },
+    { name:'Christmas', emoji:'🎄', m:12, d1:22, d2:26, diet:'none',        note:'Plum cake, Appam, Stew, Fruit cake' },
+  ];
+  const check = (m, d1, d2) => {
+    if (d1 <= d2) return month === m && day >= d1-3 && day <= d2;
+    return (month === m && day >= d1-3) || (month === (m%12)+1 && day <= d2);
+  };
+  return festivals.find(f => check(f.m, f.d1, f.d2)) || null;
+}
+
 // ── MealCard ──────────────────────────────────────────────────────
 function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='', onRate, rating=0 }) {
   const { t } = useLocale();
@@ -602,6 +625,15 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
   const [expanded, setExpanded]       = useState(false);
   const [shareOpen, setShareOpen]     = useState(false);
   const [groceryOpen, setGroceryOpen] = useState(false);
+  const [videoOpen,   setVideoOpen]   = useState(false);
+  const [videoData,   setVideoData]   = useState(null);
+  const [videoLoading,setVideoLoading]= useState(false);
+  const [subOpen,     setSubOpen]     = useState(null); // ingredient name being substituted
+  const [subResult,   setSubResult]   = useState({});   // {ingName: [sub1, sub2]}
+  const [cookMode,    setCookMode]    = useState(false);
+  const [cookStep,    setCookStep]    = useState(0);
+  const [speaking,    setSpeaking]    = useState(false);
+  const [orderOpen,   setOrderOpen]   = useState(false);
   const [servings, setServings]       = useState(baseServings);
   const ratio    = servings / baseServings;
   const isScaled = ratio !== 1;
@@ -716,6 +748,74 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
     link.click();
   };
 
+  // ── Fetch video ────────────────────────────────────────────────
+  const fetchVideo = async () => {
+    if (videoData || videoLoading) return;
+    setVideoLoading(true);
+    try {
+      const cuisine = meal.cuisine || '';
+      const res = await fetch(`/api/videos?recipe=${encodeURIComponent(meal.name)}&cuisine=${encodeURIComponent(cuisine)}&lang=${lang||'en'}`);
+      const data = await res.json();
+      setVideoData(data.videos?.[0] || null);
+    } catch { setVideoData(null); }
+    finally { setVideoLoading(false); }
+  };
+
+  // ── Ingredient substitution ────────────────────────────────────
+  const fetchSub = async (ing) => {
+    if (subResult[ing]) { setSubOpen(ing); return; }
+    setSubOpen(ing);
+    try {
+      const res = await fetch('/api/suggest', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ kidsMode: true, kidsPromptOverride: `Suggest 2-3 practical substitutes for "${ing}" when cooking "${meal.name}". Respond ONLY with JSON: {"subs":[{"name":"substitute","note":"brief note on how to use"}]}` })
+      });
+      const data = await res.json();
+      const raw = JSON.stringify(data);
+      const m = raw.match(/"subs"\s*:\s*\[[\s\S]*?\]/);
+      if (m) {
+        const parsed = JSON.parse('{' + m[0] + '}');
+        setSubResult(prev => ({ ...prev, [ing]: parsed.subs || [] }));
+      }
+    } catch {}
+  };
+
+  // ── Read aloud ─────────────────────────────────────────────────
+  const readAloud = () => {
+    if (!('speechSynthesis' in window)) return;
+    if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return; }
+    const stepsText = meal.steps?.map((s,i) => `Step ${i+1}: ${s}`).join('. ') || '';
+    const text = `${meal.name}. ${meal.description}. Ingredients: ${scaledIngs.join(', ')}. ${stepsText}`;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.onend = () => setSpeaking(false);
+    window.speechSynthesis.speak(utt);
+    setSpeaking(true);
+  };
+
+  // ── PDF export ─────────────────────────────────────────────────
+  const printRecipe = () => {
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><title>${meal.name}</title><style>
+      body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;color:#1C0A00;line-height:1.6}
+      h1{color:#FF4500;font-size:24px;margin-bottom:4px}
+      .meta{color:#7C6A5E;font-size:13px;margin-bottom:16px}
+      h2{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#7C6A5E;margin:20px 0 8px}
+      ul,ol{padding-left:20px}li{margin-bottom:6px;font-size:13px}
+      .footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:11px;color:#aaa;text-align:center}
+      @media print{body{margin:20px}}
+    </style></head><body>
+      <h1>${meal.emoji} ${meal.name}</h1>
+      <div class="meta">⏱ ${meal.time} · 👥 ${servings} servings · 📊 ${meal.difficulty} · 🔥 ${meal.calories}</div>
+      <p style="font-size:13px;color:#3D2010">${meal.description}</p>
+      <h2>Ingredients</h2><ul>${scaledIngs.map(i=>`<li>${i}</li>`).join('')}</ul>
+      <h2>Method</h2><ol>${meal.steps?.map(s=>`<li>${s}</li>`).join('')||''}</ol>
+      ${meal.fun_fact?`<p style="background:#FFF0E5;padding:10px;border-radius:6px;font-size:12px;margin-top:16px">💡 ${meal.fun_fact}</p>`:''}
+      <div class="footer">Made with ⚡ Jiff · jiff-ecru.vercel.app</div>
+    </body></html>`);
+    w.document.close();
+    w.print();
+  };
+
   return (
     <div className={`meal-card ${expanded?'expanded':''} ${isFavourite?'is-fav':''}`} style={{animationDelay:`${animDelay}s`}}
       onClick={()=>{if(!expanded&&!shareOpen&&!groceryOpen)setExpanded(true);}}>
@@ -758,8 +858,25 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
               )}
             </div>
           </div>
+          {/* ── Action buttons row: video, read, pdf, share ── */}
+        <div style={{display:'flex',gap:6,marginLeft:'auto',alignItems:'center',flexWrap:'wrap',justifyContent:'flex-end'}}>
+          <button onClick={e=>{e.stopPropagation();fetchVideo();setVideoOpen(p=>!p);}}
+            title="Watch recipe video"
+            style={{padding:'5px 10px',borderRadius:8,border:'1px solid rgba(204,0,0,0.25)',background:'rgba(204,0,0,0.05)',color:'#CC0000',fontSize:11,fontWeight:500,cursor:'pointer',display:'flex',alignItems:'center',gap:4}}>
+            ▶ Video
+          </button>
+          <button onClick={e=>{e.stopPropagation();readAloud();}}
+            title="Read recipe aloud"
+            style={{padding:'5px 10px',borderRadius:8,border:'1px solid rgba(28,10,0,0.12)',background:speaking?'rgba(255,69,0,0.07)':'white',color:speaking?'var(--jiff)':'var(--muted)',fontSize:11,cursor:'pointer'}}>
+            {speaking?'⏹':'🔊'}
+          </button>
+          <button onClick={e=>{e.stopPropagation();printRecipe();}}
+            title="Save as PDF"
+            style={{padding:'5px 10px',borderRadius:8,border:'1px solid rgba(28,10,0,0.12)',background:'white',color:'var(--muted)',fontSize:11,cursor:'pointer'}}>
+            📄
+          </button>
           {/* ── Merged share button ── */}
-        <div style={{marginLeft:'auto',position:'relative'}}>
+        <div style={{position:'relative'}}>
           <button onClick={e=>{e.stopPropagation();setShareOpen(p=>!p);}}
             style={{background:'linear-gradient(135deg,#FF4500,#CC3700)',color:'white',border:'none',borderRadius:8,padding:'4px 12px',fontSize:11,fontWeight:500,cursor:'pointer',display:'flex',alignItems:'center',gap:4,fontFamily:"'DM Sans',sans-serif",boxShadow:'0 2px 6px rgba(255,69,0,0.25)'}}>
             📤 Share
@@ -792,6 +909,7 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
             </div>
           )}
         </div>
+        </div>
       </div>
       </div>
 
@@ -817,7 +935,36 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
             {isScaled?<span className="scaler-badge">×{(ratio%1===0?ratio:ratio.toFixed(2).replace(/\.?0+$/,''))}</span>:<span className="scaler-orig">Base: {baseServings} servings</span>}
           </div>
           <div className="recipe-sec" style={{marginTop:0,paddingTop:12,borderTop:'1px solid rgba(255,69,0,0.12)'}}>{t('recipe_ingredients')}</div>
-          <ul className="ing-list">{scaledIngs.map((ing,j)=><li key={j}><span className={ing!==(meal.ingredients?.[j]||'')&&isScaled?'scaled-highlight':''}>{ing}</span></li>)}</ul>
+          {/* Video panel */}
+          {videoOpen && (
+            <div style={{marginBottom:14,borderRadius:12,overflow:'hidden',border:'1px solid rgba(204,0,0,0.2)'}}>
+              {videoLoading && <div style={{padding:'16px',textAlign:'center',fontSize:12,color:'var(--muted)'}}>Searching for video…</div>}
+              {!videoLoading && videoData && (
+                <>
+                  <iframe src={videoData.embedUrl} title={videoData.title} width="100%" height="200" frameBorder="0" allowFullScreen style={{display:'block'}} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"/>
+                  <div style={{padding:'6px 10px',background:'rgba(204,0,0,0.04)',fontSize:10,color:'var(--muted)'}}>{videoData.title} — {videoData.channel}</div>
+                </>
+              )}
+              {!videoLoading && !videoData && <div style={{padding:'12px',textAlign:'center',fontSize:12,color:'var(--muted)'}}>No video found for this recipe.</div>}
+            </div>
+          )}
+          <ul className="ing-list">{scaledIngs.map((ing,j)=><li key={j} style={{position:'relative'}}><span className={ing!==(meal.ingredients?.[j]||'')&&isScaled?'scaled-highlight':''}>{ing}</span></li>)}</ul>
+          {/* Substitution modal */}
+          {subOpen && (
+            <div onClick={e=>e.stopPropagation()} style={{margin:'8px 0 12px',padding:'12px 14px',background:'rgba(255,69,0,0.04)',border:'1px solid rgba(255,69,0,0.15)',borderRadius:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                <span style={{fontSize:11,fontWeight:500,color:'var(--jiff)'}}>Substitutes for <em>{subOpen}</em></span>
+                <button onClick={()=>setSubOpen(null)} style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:'var(--muted)'}}>×</button>
+              </div>
+              {!subResult[subOpen] && <div style={{fontSize:12,color:'var(--muted)'}}>Finding substitutes…</div>}
+              {subResult[subOpen]?.map((s,k)=>(
+                <div key={k} style={{fontSize:12,marginBottom:6}}>
+                  <strong style={{color:'var(--ink)'}}>{s.name}</strong>
+                  <span style={{color:'var(--muted)',marginLeft:6}}>{s.note}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="recipe-sec">{t('recipe_method')}</div>
           <ol className="steps-list">{meal.steps?.map((s,j)=><StepWithTimer key={j} text={s}/>)}</ol>
           <div className="recipe-sec">Nutrition{isScaled&&<span style={{marginLeft:7,fontSize:9,color:'var(--muted)',fontWeight:400,textTransform:'none',letterSpacing:0}}>scaled for {servings}</span>}</div>
@@ -826,10 +973,88 @@ function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[],
               <div key={lbl} className="nutr-item"><div className={`nutr-val ${isScaled?'scaled-highlight':''}`}>{val}</div><div className="nutr-lbl">{lbl}</div></div>
             ))}
           </div>
+          {/* Order food */}
+          {orderOpen && (
+            <div onClick={e=>e.stopPropagation()} style={{margin:'12px 0',padding:'12px 14px',background:'rgba(28,10,0,0.02)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12}}>
+              <div style={{fontSize:11,fontWeight:500,color:'var(--ink)',marginBottom:8}}>Order <em>{meal.name}</em> from</div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {[
+                  {name:'Swiggy',  color:'#FC8019', url:`https://www.swiggy.com/search?query=${encodeURIComponent(meal.name)}`},
+                  {name:'Zomato',  color:'#CB202D', url:`https://www.zomato.com/search?q=${encodeURIComponent(meal.name)}`},
+                  {name:'EatSure', color:'#E84855', url:`https://eatsure.com/search?query=${encodeURIComponent(meal.name)}`},
+                ].map(d=>(
+                  <a key={d.name} href={d.url} target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
+                    style={{padding:'7px 14px',borderRadius:10,textDecoration:'none',fontSize:12,fontWeight:600,color:'white',background:d.color}}>
+                    {d.name} →
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{display:'flex',gap:8,marginBottom:8}}>
+            <button onClick={e=>{e.stopPropagation();setOrderOpen(p=>!p);}}
+              style={{padding:'6px 12px',borderRadius:10,border:'1px solid rgba(28,10,0,0.12)',background:'white',fontSize:11,cursor:'pointer',color:'var(--muted)',display:'flex',alignItems:'center',gap:4}}>
+              🛵 {orderOpen?'Hide':'Can't cook? Order'}
+            </button>
+          </div>
+          <button onClick={e=>{e.stopPropagation();setCookMode(true);setCookStep(0);}}
+            style={{width:'100%',padding:'12px',borderRadius:12,border:'none',background:'linear-gradient(135deg,#1C0A00,#3D1500)',color:'white',fontSize:13,fontWeight:600,cursor:'pointer',marginBottom:8,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+            👨‍🍳 Start Cooking — Cook Mode
+          </button>
           <button className="collapse-btn" onClick={()=>setExpanded(false)}><span>{t('collapse')}</span><span>↑</span></button>
         </div>
       )}
     </div>
+
+    {/* Cook Mode overlay */}
+    {cookMode && (
+      <div onClick={e=>e.stopPropagation()} style={{position:'fixed',inset:0,background:'rgba(28,10,0,0.97)',zIndex:9999,display:'flex',flexDirection:'column',padding:'28px 24px',fontFamily:"'DM Sans',sans-serif"}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+          <div>
+            <div style={{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:900,color:'white'}}>{meal.emoji} {meal.name}</div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.5)',marginTop:2}}>Step {cookStep+1} of {meal.steps?.length||0}</div>
+          </div>
+          <button onClick={()=>{setCookMode(false);setCookStep(0);window.speechSynthesis?.cancel();}}
+            style={{background:'rgba(255,255,255,0.1)',border:'none',color:'white',borderRadius:10,padding:'8px 16px',cursor:'pointer',fontSize:13}}>
+            ✕ Exit
+          </button>
+        </div>
+        {/* Step display */}
+        <div style={{flex:1,display:'flex',flexDirection:'column',justifyContent:'center',maxWidth:600,margin:'0 auto',width:'100%'}}>
+          <div style={{fontSize:13,color:'rgba(255,69,0,0.8)',fontWeight:600,marginBottom:12,letterSpacing:'1px',textTransform:'uppercase'}}>
+            Step {cookStep+1}
+          </div>
+          <div style={{fontSize:22,color:'white',lineHeight:1.6,fontWeight:300,marginBottom:32}}>
+            {meal.steps?.[cookStep]}
+          </div>
+          {/* Step dots */}
+          <div style={{display:'flex',gap:6,marginBottom:32,flexWrap:'wrap'}}>
+            {meal.steps?.map((_,i)=>(
+              <div key={i} onClick={()=>setCookStep(i)}
+                style={{width:i===cookStep?28:8,height:8,borderRadius:4,background:i===cookStep?'#FF4500':i<cookStep?'rgba(255,69,0,0.4)':'rgba(255,255,255,0.2)',transition:'all 0.2s',cursor:'pointer'}}/>
+            ))}
+          </div>
+          {/* Navigation */}
+          <div style={{display:'flex',gap:12}}>
+            <button onClick={()=>setCookStep(s=>Math.max(0,s-1))} disabled={cookStep===0}
+              style={{flex:1,padding:'14px',borderRadius:14,border:'1px solid rgba(255,255,255,0.15)',background:'rgba(255,255,255,0.08)',color:cookStep===0?'rgba(255,255,255,0.3)':'white',fontSize:15,cursor:cookStep===0?'not-allowed':'pointer'}}>
+              ← Previous
+            </button>
+            {cookStep < (meal.steps?.length||0)-1 ? (
+              <button onClick={()=>setCookStep(s=>s+1)}
+                style={{flex:2,padding:'14px',borderRadius:14,border:'none',background:'#FF4500',color:'white',fontSize:15,fontWeight:600,cursor:'pointer'}}>
+                Next step →
+              </button>
+            ) : (
+              <button onClick={()=>{setCookMode(false);setCookStep(0);}}
+                style={{flex:2,padding:'14px',borderRadius:14,border:'none',background:'#1D9E75',color:'white',fontSize:15,fontWeight:600,cursor:'pointer'}}>
+                ✓ Done cooking!
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
 
@@ -1324,6 +1549,7 @@ export default function Jiff() {
             <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
             {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/little-chefs')}>👶 Kids Meals</button>}
+            {user && <button className="hdr-btn" onClick={()=>navigate('/sacred')}>✨ Sacred Kitchen</button>}
             {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
@@ -1618,7 +1844,22 @@ export default function Jiff() {
 
 
                 <div className="cta-wrap">
-                  <button className="cta-btn" onClick={!user ? ()=>{setGateDismissed(false);} : handleSubmit} disabled={!ingredients.length || !user}>
+                          {/* Festival banner */}
+        {(()=>{const f=getUpcomingFestival(); return f ? (
+          <div style={{background:'rgba(255,69,0,0.06)',border:'1px solid rgba(255,69,0,0.18)',borderRadius:12,padding:'10px 14px',marginBottom:12,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}
+            onClick={()=>{
+              if(f.diet && f.diet!=='none') {/* pre-fill diet context */}
+              handleSubmit && handleSubmit();
+            }}>
+            <span style={{fontSize:22}}>{f.emoji}</span>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:'var(--jiff)'}}>{f.name} special recipes</div>
+              <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>{f.note}</div>
+            </div>
+            <span style={{marginLeft:'auto',fontSize:11,color:'var(--jiff)',fontWeight:500}}>Generate →</span>
+          </div>
+        ) : null;})()}
+        <button className="cta-btn" onClick={!user ? ()=>{setGateDismissed(false);} : handleSubmit} disabled={!ingredients.length || !user}>
                     <span>⚡</span>
                     <span>Jiff it now!</span>
                   </button>
@@ -1816,6 +2057,22 @@ export default function Jiff() {
                 </div>
               ) : null;
             })()}
+            {/* ── "Can't cook today?" order strip ── */}
+            <div style={{background:'rgba(28,10,0,0.025)',border:'1px solid rgba(28,10,0,0.07)',borderRadius:14,padding:'14px 18px',marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:500,color:'var(--muted)',marginBottom:10}}>🛵 Can't cook today? Order it instead</div>
+              <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                {meals?.[0]?.name && [
+                  {name:'Swiggy',  color:'#FC8019', url:`https://www.swiggy.com/search?query=${encodeURIComponent(meals[0].name)}`},
+                  {name:'Zomato',  color:'#CB202D', url:`https://www.zomato.com/search?q=${encodeURIComponent(meals[0].name)}`},
+                  {name:'EatSure', color:'#E84855', url:`https://eatsure.com/search?query=${encodeURIComponent(meals[0].name)}`},
+                ].map(d=>(
+                  <a key={d.name} href={d.url} target="_blank" rel="noopener noreferrer"
+                    style={{padding:'7px 16px',borderRadius:10,textDecoration:'none',fontSize:12,fontWeight:600,color:'white',background:d.color,display:'inline-block'}}>
+                    {d.name}
+                  </a>
+                ))}
+              </div>
+            </div>
             <div className="reset-wrap">
               <button className="reset-btn" onClick={reset}>← Try different ingredients</button>
             </div>

@@ -17,6 +17,7 @@ import ApiDocs      from './pages/ApiDocs';
 import Admin        from './pages/Admin';
 import Insights     from './pages/Insights';
 import LittleChefs  from './pages/LittleChefs';
+import SacredKitchen from './pages/SacredKitchen';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/admin"    element={<Admin />}     />
               <Route path="/insights"      element={<Insights />}     />
               <Route path="/little-chefs"   element={<LittleChefs />}  />
+              <Route path="/sacred"          element={<SacredKitchen />} />
               </Routes>
               <CookieBanner />
               <FeedbackWidget />

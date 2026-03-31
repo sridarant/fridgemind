@@ -336,3 +336,31 @@ To test: go to `/api/stats` — if it returns data instead of an error, Supabase
 | `MAILCHIMP_AUDIENCE_ID` | For email capture | email-subscribe.js |
 | `MAILCHIMP_SERVER_PREFIX` | For email capture | email-subscribe.js |
 
+
+---
+
+## Phase 6 — v20 additions (run after Phase 5)
+
+### video_cache table (YouTube search results cache — 7-day TTL)
+```sql
+create table if not exists video_cache (
+  id         uuid primary key default gen_random_uuid(),
+  cache_key  text not null unique,
+  videos     jsonb not null default '[]',
+  cached_at  timestamptz not null default now()
+);
+
+-- Index for fast lookup by cache_key
+create index if not exists video_cache_key_idx on video_cache(cache_key);
+
+-- Auto-expire: delete entries older than 8 days (run via pg_cron or manually)
+-- delete from video_cache where cached_at < now() - interval '8 days';
+
+-- RLS: server-side only (service role key)
+alter table video_cache enable row level security;
+create policy "Service role only" on video_cache using (false);
+```
+
+### New env var needed
+Add to Vercel Dashboard → Project → Settings → Environment Variables:
+- `YOUTUBE_API_KEY` — Server-side only. Get from Google Cloud Console → APIs → YouTube Data API v3. Free tier: 10,000 units/day (1 search = 100 units = 100 searches/day free).

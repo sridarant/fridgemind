@@ -370,6 +370,19 @@ Respond ONLY with valid JSON, no markdown:
                 )}
               </div>
             )}
+            {/* Video + Order */}
+            <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
+              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent((meal.name||'') + ' kids recipe')}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ padding:'6px 12px', borderRadius:8, border:'1px solid rgba(204,0,0,0.2)', background:'rgba(204,0,0,0.05)', color:'#CC0000', fontSize:11, fontWeight:500, textDecoration:'none' }}>
+                ▶ Watch video
+              </a>
+              <a href={`https://www.swiggy.com/search?query=${encodeURIComponent(meal.name||'')}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ padding:'6px 12px', borderRadius:8, border:'1px solid rgba(252,128,25,0.2)', background:'rgba(252,128,25,0.05)', color:'#FC8019', fontSize:11, fontWeight:500, textDecoration:'none' }}>
+                🛵 Order
+              </a>
+            </div>
           </div>
         ))}
 

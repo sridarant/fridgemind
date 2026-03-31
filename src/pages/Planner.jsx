@@ -137,6 +137,18 @@ function MealSlot({ meal, type, servings }) {
           <div style={{marginBottom:4,fontWeight:500,color:'#FF4500'}}>Ingredients:</div>
           {(meal.ingredients||[]).slice(0,5).map((ing,i)=><div key={i}>• {ing}</div>)}
           {(meal.ingredients||[]).length>5&&<div style={{color:'#7C6A5E'}}>+{meal.ingredients.length-5} more</div>}
+          <div style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
+            <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent((meal.name||'') + ' recipe')}`}
+              target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
+              style={{padding:'4px 10px',borderRadius:6,border:'1px solid rgba(204,0,0,0.2)',background:'rgba(204,0,0,0.05)',color:'#CC0000',fontSize:10,fontWeight:500,textDecoration:'none'}}>
+              ▶ Video
+            </a>
+            <a href={`https://www.swiggy.com/search?query=${encodeURIComponent(meal.name||'')}`}
+              target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
+              style={{padding:'4px 10px',borderRadius:6,border:'1px solid rgba(252,128,25,0.2)',background:'rgba(252,128,25,0.05)',color:'#FC8019',fontSize:10,fontWeight:500,textDecoration:'none'}}>
+              🛵 Order
+            </a>
+          </div>
         </div>
       )}
     </div>

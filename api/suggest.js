@@ -136,6 +136,41 @@ Respond ONLY with valid JSON array:
     } catch { return res.status(500).json({ found: false, message: 'Translation service error' }); }
   }
 
+
+  // ── ?action=detect — fridge photo ingredient detection ──────────
+  if (req.query.action === 'detect') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+    const { imageBase64, mediaType = 'image/jpeg' } = req.body || {};
+    if (!imageBase64) return res.status(400).json({ error: 'No image provided.' });
+    const validTypes = ['image/jpeg','image/jpg','image/png','image/gif','image/webp'];
+    if (!validTypes.includes(mediaType)) return res.status(400).json({ error: 'Invalid image type.' });
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({
+          model: 'claude-opus-4-5', max_tokens: 500,
+          messages: [{ role:'user', content: [
+            { type:'image', source:{ type:'base64', media_type: mediaType, data: imageBase64 } },
+            { type:'text', text: `Determine if this image shows food, ingredients, a fridge, pantry, or kitchen. If not, respond: {"error":"not_food"}\n\nIf food-related, list all food ingredients visible.\nRules: common simple names only; max 20 items; skip non-food items.\nRespond ONLY with valid JSON: {"error":"not_food"} or ["ingredient1","ingredient2"]` }
+          ]}],
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) return res.status(r.status).json({ error: data.error?.message || 'API error' });
+      const raw = (data.content||[]).map(c=>c.text||'').join('');
+      if (raw.includes('"not_food"')) return res.status(400).json({ error: 'Photo does not show food ingredients.', code:'not_food' });
+      let ingredients = [];
+      try {
+        const cleaned = raw.replace(/```json|```/g,'').trim();
+        const m = cleaned.match(/\[[\s\S]*\]/);
+        if (m) ingredients = JSON.parse(m[0]);
+      } catch { return res.status(500).json({ error: 'Could not parse ingredient list.' }); }
+      const normalised = [...new Set(ingredients.filter(i=>typeof i==='string'&&i.trim()).map(i=>i.toLowerCase().trim()).slice(0,20))];
+      return res.status(200).json({ ingredients: normalised, count: normalised.length });
+    } catch(err) { return res.status(500).json({ error: 'Internal server error.' }); }
+  }
+
   // ── Internal app path (existing logic below) ────────────────────
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
