@@ -130,6 +130,52 @@ export default async function handler(req, res) {
       const cR = await fetch(`${url}/rest/v1/profiles?select=count`, { headers: { ...h,'Prefer':'count=exact','Range':'0-0' } });
       return res.status(200).json({ ok: true, recipientCount: safeCount(cR) });
     }
+    // ── GET token usage stats ────────────────────────────────────
+    if (action === 'token-stats' && req.method === 'GET') {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const [totalR, todayR, endpointR] = await Promise.all([
+          fetch(`${url}/rest/v1/token_usage?select=input_tokens,output_tokens,total_tokens`, { headers: h }),
+          fetch(`${url}/rest/v1/token_usage?select=input_tokens,output_tokens,total_tokens&logged_at=gte.${today}T00:00:00Z`, { headers: h }),
+          fetch(`${url}/rest/v1/token_usage?select=endpoint,input_tokens,output_tokens,total_tokens`, { headers: h }),
+        ]);
+        const all      = safeArray(await totalR.json());
+        const todayAll = safeArray(await todayR.json());
+        const byEpRaw  = safeArray(await endpointR.json());
+
+        const sum = (arr, key) => arr.reduce((s, r) => s + (r[key] || 0), 0);
+
+        // Aggregate by endpoint
+        const epMap = {};
+        byEpRaw.forEach(r => {
+          if (!epMap[r.endpoint]) epMap[r.endpoint] = { calls:0, input_tokens:0, output_tokens:0, total_tokens:0 };
+          epMap[r.endpoint].calls++;
+          epMap[r.endpoint].input_tokens  += r.input_tokens  || 0;
+          epMap[r.endpoint].output_tokens += r.output_tokens || 0;
+          epMap[r.endpoint].total_tokens  += r.total_tokens  || 0;
+        });
+        const byEndpoint = Object.entries(epMap)
+          .map(([endpoint, v]) => ({ endpoint, ...v }))
+          .sort((a, b) => b.total_tokens - a.total_tokens);
+
+        const totalInput  = sum(all, 'input_tokens');
+        const totalOutput = sum(all, 'output_tokens');
+        // Rough cost estimate: opus-4-5 rates ($3/$15 per 1M tokens) — conservative upper bound
+        const costEstimateUSD = +((totalInput / 1e6 * 3) + (totalOutput / 1e6 * 15)).toFixed(4);
+
+        return res.status(200).json({
+          totalCalls:    all.length,
+          totalTokens:   sum(all, 'total_tokens'),
+          inputTokens:   totalInput,
+          outputTokens:  totalOutput,
+          todayCalls:    todayAll.length,
+          todayTokens:   sum(todayAll, 'total_tokens'),
+          byEndpoint,
+          costEstimateUSD,
+        });
+      } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+
     return res.status(400).json({ error: `Unknown action: ${action}` });
   } catch(e) { return res.status(500).json({ error: e.message }); }
 }

@@ -4,6 +4,30 @@ import crypto from 'crypto';
 
 const DAILY_LIMITS = { free: 10, starter: 500, pro: 5000 };
 
+// ── Token usage logger (fire-and-forget, never blocks response) ────
+async function logTokenUsage({ endpoint, model, inputTokens, outputTokens, sbUrl, sbKey }) {
+  if (!sbUrl || !sbKey) return;
+  try {
+    await fetch(`${sbUrl}/rest/v1/token_usage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': sbKey,
+        'Authorization': `Bearer ${sbKey}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        endpoint,
+        model,
+        input_tokens:  inputTokens  || 0,
+        output_tokens: outputTokens || 0,
+        total_tokens:  (inputTokens || 0) + (outputTokens || 0),
+        logged_at: new Date().toISOString(),
+      }),
+    });
+  } catch {} // never block the main response
+}
+
 // ── In-memory rate limiter (per IP, sliding window) ────────────────
 const RL_WINDOW  = 60 * 1000;  // 1 minute
 const RL_LIMITS  = { suggest: 20, planner: 10, default: 30 };
@@ -345,6 +369,17 @@ Rules: use given ingredients as base; mark pantry staples with *; keep steps con
       const match = cleaned.match(/\[[\s\S]*\]/);
       if (match) meals = JSON.parse(match[0]);
     } catch { return res.status(500).json({ error: 'Could not parse meal suggestions.' }); }
+
+    // Log token usage (async, fire-and-forget)
+    const usage = data.usage || {};
+    logTokenUsage({
+      endpoint: 'suggest',
+      model: 'claude-opus-4-5',
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      sbUrl: process.env.REACT_APP_SUPABASE_URL,
+      sbKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
 
     return res.status(200).json({ meals });
   } catch (err) {

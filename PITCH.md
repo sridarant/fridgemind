@@ -5,7 +5,7 @@
 
 ## The one-line pitch
 
-**Jiff turns "I don't know what to cook" into five full recipes in 10 seconds — for any fridge, any diet, any language.**
+**Jiff turns "I don't know what to cook" into five full recipes in moments — for any fridge, any diet, any language.**
 
 ---
 
@@ -21,7 +21,7 @@ The real problem: people have food in their fridge but no idea what to make with
 
 ## The solution
 
-Open Jiff. Type what is in your fridge. Get five full recipes — ingredients, steps, nutrition, step timers — in under 10 seconds.
+Open Jiff. Type what is in your fridge. Get five full recipes — ingredients, steps, nutrition, step timers — in less than a minute.
 
 Jiff is not a recipe discovery app. It is a thinking partner that knows your cuisine preferences, dietary requirements, family members' needs, and health goals. Every suggestion is personalised, not generic.
 

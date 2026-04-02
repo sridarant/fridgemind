@@ -166,11 +166,12 @@ export default function Landing() {
           <span style={s.heroPillText}>AI-powered · 7-day free trial · No credit card needed</span>
         </div>
         <h1 style={s.h1}>
-          Any meal.
-          <span style={s.h1Accent}>In a Jiff.</span>
+          Your fridge.
+          <span style={s.h1Accent}>Your recipes.</span>
+          Your way.
         </h1>
         <p style={s.heroSub}>
-          Open your fridge. Type what's inside. Get 5 real meals — with full recipes — in under 5 seconds. No faff.
+          Open your fridge. Type what's inside. Get 5 real meals — with full recipes — in moments. No faff.
         </p>
         <div style={s.heroBtns}>
           <button style={s.primaryBtn} onClick={() => navigate('/app')}
@@ -196,7 +197,7 @@ export default function Landing() {
       <div style={s.statBar}>
         <div style={s.statBarInner}>
           {[
-            { num: '10s', label: 'From fridge to full recipe' },
+            { num: '<1min', label: 'From fridge to full recipes' },
             { num: '5', label: 'Recipes generated per search' },
             { num: '28', label: 'Cuisines supported worldwide' },
             { num: '10', label: 'Languages supported globally' },
@@ -345,7 +346,7 @@ export default function Landing() {
 
       <section style={s.ctaSection}>
         <h2 style={s.ctaH2}>Any meal.<br />Right now.</h2>
-        <p style={s.ctaSub}>Find out what you can make right now. Takes 10 seconds.</p>
+        <p style={s.ctaSub}>Find out what you can make right now. Cook smarter, waste less.</p>
         <button style={s.ctaBtn} onClick={() => navigate('/app')}
           onMouseEnter={e => Object.assign(e.currentTarget.style, { transform: 'translateY(-2px)', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' })}
           onMouseLeave={e => Object.assign(e.currentTarget.style, { transform: 'none', boxShadow: 'none' })}>

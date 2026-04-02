@@ -321,7 +321,7 @@ export default function Profile() {
             </div>
             <span style={label}>Measurement units</span>
             <div style={{display:'flex',flexWrap:'wrap',gap:7}}>\
-              {[{id:'metric',label:'⚖️ Metric (g, ml, kg)'},{id:'imperial',label:'🥛 Imperial (oz, cups, lbs)'}].map(u=>(
+              {[{id:'metric',label:'⚖️ Metric (g, ml, kg)'}].map(u=>(
                 <button key={u.id} style={pill(units===u.id)} onClick={()=>setUnits(u.id)}>{u.label}</button>
               ))}
             </div>

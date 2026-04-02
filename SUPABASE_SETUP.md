@@ -364,3 +364,27 @@ create policy "Service role only" on video_cache using (false);
 ### New env var needed
 Add to Vercel Dashboard → Project → Settings → Environment Variables:
 - `YOUTUBE_API_KEY` — Server-side only. Get from Google Cloud Console → APIs → YouTube Data API v3. Free tier: 10,000 units/day (1 search = 100 units = 100 searches/day free).
+
+---
+
+## Phase 7 — Token usage tracking
+
+```sql
+-- Token usage log (Anthropic API consumption per endpoint call)
+create table if not exists token_usage (
+  id           bigserial primary key,
+  endpoint     text not null,              -- 'suggest', 'planner', 'kids', 'detect', etc.
+  model        text not null,              -- 'claude-opus-4-5', 'claude-haiku-4-5', etc.
+  input_tokens  int  not null default 0,
+  output_tokens int  not null default 0,
+  total_tokens  int  not null default 0,
+  logged_at    timestamptz not null default now()
+);
+
+create index if not exists token_usage_logged_idx on token_usage(logged_at desc);
+create index if not exists token_usage_endpoint_idx on token_usage(endpoint, logged_at desc);
+
+-- RLS: service role only
+alter table token_usage enable row level security;
+create policy "Service role only" on token_usage using (false);
+```
