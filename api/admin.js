@@ -228,6 +228,13 @@ export default async function handler(req, res) {
       return res.status(200).json({ value });
     }
 
+    // ── GET releases from Supabase ───────────────────────────────
+    if (action === 'releases' && req.method === 'GET') {
+      const r = await fetch(`${url}/rest/v1/releases?select=*&order=deployed_at.desc&limit=50`, { headers: h });
+      const releases = safeArray(await r.json());
+      return res.status(200).json({ releases });
+    }
+
     return res.status(400).json({ error: `Unknown action: ${action}` });
   } catch(e) { return res.status(500).json({ error: e.message }); }
 }

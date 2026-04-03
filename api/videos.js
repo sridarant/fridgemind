@@ -8,6 +8,18 @@ const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  // ── Diagnostic endpoint: ?check=true ─────────────────────────
+  if (req.query.check === 'true') {
+    return res.status(200).json({
+      youtube_key_set:   !!process.env.YOUTUBE_API_KEY,
+      supabase_url_set:  !!process.env.REACT_APP_SUPABASE_URL,
+      supabase_key_set:  !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      key_preview:       process.env.YOUTUBE_API_KEY
+        ? process.env.YOUTUBE_API_KEY.slice(0,8) + '…'
+        : null,
+    });
+  }
+
   const { recipe, cuisine = '', lang = 'en' } = req.query;
   if (!recipe?.trim()) return res.status(400).json({ error: 'recipe query param required' });
 
