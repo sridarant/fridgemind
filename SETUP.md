@@ -74,7 +74,25 @@ REACT_APP_RAZORPAY_KEY_ID=rzp_test_...
 
 ---
 
-## 5. Set up Supabase (auth + cloud sync)
+## 5. Set up YouTube API (recipe videos)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a project (or use existing) → **APIs & Services → Enable APIs**
+3. Search for **YouTube Data API v3** → Enable
+4. Go to **Credentials → Create Credentials → API Key**
+5. Copy the key and add it to Vercel environment variables:
+   - Key: `YOUTUBE_API_KEY`
+   - Value: your key
+   - **Note:** This key is server-side only — never prefix with `REACT_APP_`
+6. In Google Cloud: **Restrict the key** to YouTube Data API v3 only
+
+Free quota: **10,000 units/day** — one video search costs 100 units (~100 searches/day free).
+
+If not configured, the Watch Video button falls back gracefully to a YouTube search link.
+
+---
+
+## 6. Set up Supabase (auth + cloud sync)
 
 Follow `SUPABASE_SETUP.md` for the complete guide. Summary:
 
@@ -131,7 +149,7 @@ vercel dev   # or npm start for frontend-only
 
 ---
 
-## 8. Deploy to Vercel
+## 9. Deploy to Vercel
 
 ### First-time deploy
 

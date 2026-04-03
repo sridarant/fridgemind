@@ -53,6 +53,29 @@ function savePremium(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
+// Sync premium to Supabase profiles (server-authoritative backup)
+async function syncPremiumToSupabase(userId, data) {
+  const sbUrl = process.env.REACT_APP_SUPABASE_URL;
+  const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+  if (!sbUrl || !anonKey || !userId) return;
+  try {
+    await fetch(`${sbUrl}/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': anonKey,
+        'Authorization': `Bearer ${anonKey}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        is_premium:         !!data,
+        premium_expires_at: data?.expiresAt ? new Date(data.expiresAt).toISOString() : null,
+        premium_plan:       data?.planId || null,
+      }),
+    });
+  } catch {}
+}
+
 function loadUsage() {
   try {
     const raw = localStorage.getItem(USAGE_KEY);
@@ -91,6 +114,16 @@ export function PremiumProvider({ children }) {
     if (existing) { setTrialState(existing); return existing; }
     const t = initTrial(userId);
     setTrialState(t);
+    // Sync trial start to Supabase
+    const sbUrl = process.env.REACT_APP_SUPABASE_URL;
+    const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+    if (sbUrl && anonKey && userId) {
+      fetch(`${sbUrl}/rest/v1/profiles?id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json','apikey':anonKey,'Authorization':`Bearer ${anonKey}`,'Prefer':'return=minimal' },
+        body: JSON.stringify({ trial_started_at: new Date(t.startedAt).toISOString() }),
+      }).catch(()=>{});
+    }
     return t;
   }, []);
 
@@ -112,7 +145,7 @@ export function PremiumProvider({ children }) {
   }, [usage]);
 
   // Razorpay checkout
-  const openCheckout = useCallback(async (planId) => {
+  const openCheckout = useCallback(async (planId, userId) => {
     const keyId = process.env.REACT_APP_RAZORPAY_KEY_ID;
     if (!keyId) { activateTestPremium(); return; }
 
@@ -147,7 +180,9 @@ export function PremiumProvider({ children }) {
             const v = await verifyRes.json();
             if (!v.verified) throw new Error('Verification failed');
             const pd = { planId, paymentId: response.razorpay_payment_id, activatedAt: Date.now(), expiresAt: v.expiresAt };
-            savePremium(pd); setPremiumState(pd); setShowGate(false); resolve(pd);
+            savePremium(pd); setPremiumState(pd); setShowGate(false);
+            syncPremiumToSupabase(userId, pd).catch(()=>{});
+            resolve(pd);
           } catch (err) { reject(err); }
         },
         modal: { ondismiss: () => reject(new Error('dismissed')) },

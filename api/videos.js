@@ -35,14 +35,22 @@ export default async function handler(req, res) {
     // ── Search YouTube ────────────────────────────────────────────
     const langHints = { hi:'हिंदी', ta:'tamil', te:'telugu', kn:'kannada', mr:'marathi' };
     const langHint  = langHints[lang] ? ` ${langHints[lang]}` : '';
-    const q = encodeURIComponent(`${recipe}${cuisine ? ' '+cuisine : ''} recipe${langHint}`);
+    const q  = encodeURIComponent(`how to make ${recipe}${cuisine ? ' '+cuisine : ''}${langHint}`);
+    const q2 = encodeURIComponent(`${recipe} recipe${langHint}`); // fallback query
     const searchR = await fetch(
-      `${YT_URL}/search?part=snippet&q=${q}&type=video&videoDuration=medium&maxResults=10&key=${YT_KEY}&relevanceLanguage=${lang}`
+      `${YT_URL}/search?part=snippet&q=${q}&type=video&maxResults=12&key=${YT_KEY}&relevanceLanguage=${lang}&safeSearch=strict`
     );
     const searchData = await searchR.json();
-    if (!searchR.ok || !searchData.items?.length) return res.status(200).json({ videos: [] });
+    // Fallback: try secondary query if primary returns nothing
+    let searchItems = searchData.items || [];
+    if (!searchR.ok || !searchItems.length) {
+      const search2R = await fetch(`${YT_URL}/search?part=snippet&q=${q2}&type=video&maxResults=8&key=${YT_KEY}&safeSearch=strict`);
+      const search2Data = await search2R.json();
+      searchItems = search2Data.items || [];
+    }
+    if (!searchItems.length) return res.status(200).json({ videos: [], noResults: true });
 
-    const ids = searchData.items.map(i => i.id.videoId).join(',');
+    const ids = searchItems.map(i => i.id.videoId).join(',');
 
     // ── Get video stats for ranking ───────────────────────────────
     const statsR = await fetch(`${YT_URL}/videos?part=statistics,contentDetails&id=${ids}&key=${YT_KEY}`);
@@ -52,7 +60,7 @@ export default async function handler(req, res) {
 
     // ── Rank videos ───────────────────────────────────────────────
     const now = Date.now();
-    const ranked = searchData.items.map(item => {
+    const ranked = searchItems.map(item => {
       const id = item.id.videoId;
       const st = statsMap[id]?.stats || {};
       const views     = parseInt(st.viewCount || 0);
@@ -65,7 +73,7 @@ export default async function handler(req, res) {
       const dur = statsMap[id]?.details?.duration || 'PT0S';
       const durMatch = dur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
       const durSec = ((parseInt(durMatch?.[1]||0)*60 + parseInt(durMatch?.[2]||0))*60 + parseInt(durMatch?.[3]||0));
-      const durScore = durSec >= 180 && durSec <= 1200 ? 1 : 0.5; // prefer 3-20 min
+      const durScore = durSec >= 120 && durSec <= 1200 ? 1 : (durSec > 0 && durSec < 120 ? 0.7 : 0.4); // prefer 2-20 min
 
       // Language match bonus
       const titleLower = item.snippet.title.toLowerCase();

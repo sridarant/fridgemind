@@ -2,6 +2,7 @@
 // Inclusive of all traditions: Hindu temples, Golden Temple langar, dargah, church, etc.
 
 import { useState, useEffect } from 'react';
+import { VideoButton } from '../components/meal/VideoButton.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { useLocale }  from '../contexts/LocaleContext';
@@ -266,24 +267,14 @@ function SacredMealCard({ meal, servings, video, onFetchVideo }) {
           <button onClick={() => setExpanded(e => !e)} style={{ padding:'7px 14px', borderRadius:10, border:'1.5px solid '+C.border, background:'white', fontSize:12, cursor:'pointer', color:C.ink, fontWeight:500 }}>
             {expanded ? '▲ Hide recipe' : '▼ View recipe'}
           </button>
-          <button onClick={handleVideoClick} style={{ padding:'7px 14px', borderRadius:10, border:'1.5px solid rgba(255,0,0,0.2)', background:'rgba(255,0,0,0.05)', fontSize:12, cursor:'pointer', color:'#CC0000', fontWeight:500 }}>
-            ▶ Watch video
-          </button>
+          <VideoButton recipeName={meal.name} cuisine="Indian sacred" compact={false}/>
           <button onClick={readAloud} style={{ padding:'7px 14px', borderRadius:10, border:'1.5px solid '+C.border, background:speaking ? 'rgba(255,69,0,0.06)' : 'white', fontSize:12, cursor:'pointer', color:speaking ? C.jiff : C.muted }}>
             {speaking ? '⏹ Stop' : '🔊 Read aloud'}
           </button>
         </div>
 
         {/* Video embed */}
-        {videoOpen && video && (
-          <div style={{ marginTop:12, borderRadius:12, overflow:'hidden', border:'1px solid '+C.border }}>
-            <iframe src={video.embedUrl} title={video.title} width="100%" height="220" frameBorder="0" allowFullScreen style={{ display:'block' }} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"/>
-            <div style={{ padding:'8px 12px', background:C.warm, fontSize:11, color:C.muted }}>{video.title} — {video.channel}</div>
-          </div>
-        )}
-        {videoOpen && !video && (
-          <div style={{ marginTop:12, padding:'12px', background:C.warm, borderRadius:10, fontSize:12, color:C.muted, textAlign:'center' }}>Searching for video…</div>
-        )}
+
 
         {/* Expanded recipe */}
         {expanded && (

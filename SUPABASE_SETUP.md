@@ -388,3 +388,29 @@ create index if not exists token_usage_endpoint_idx on token_usage(endpoint, log
 alter table token_usage enable row level security;
 create policy "Service role only" on token_usage using (false);
 ```
+
+---
+
+## Phase 8 — localStorage → Supabase migration (Session 4)
+
+Run these in Supabase SQL editor after Phase 7.
+
+```sql
+-- Add streak tracking to profiles
+alter table profiles add column if not exists streak           int          default 0;
+alter table profiles add column if not exists last_cooked_at  timestamptz;
+
+-- Add premium/trial tracking to profiles (server-authoritative)
+alter table profiles add column if not exists is_premium          boolean      default false;
+alter table profiles add column if not exists premium_expires_at  timestamptz;
+alter table profiles add column if not exists trial_started_at    timestamptz;
+alter table profiles add column if not exists premium_plan        text;        -- monthly|annual|lifetime
+
+-- Add rating to meal_history (replaces jiff-ratings localStorage)
+alter table meal_history add column if not exists rating         int check (rating >= 1 and rating <= 5);
+alter table meal_history add column if not exists cooked_at      timestamptz;
+
+-- Index for fast rating queries
+create index if not exists meal_history_rating_idx on meal_history(user_id, rating) where rating is not null;
+create index if not exists meal_history_cooked_idx on meal_history(user_id, cooked_at desc) where cooked_at is not null;
+```

@@ -2,6 +2,7 @@
 // Curated 7-day plans for specific goals: weight loss, muscle gain, family, budget, etc.
 
 import { useState, useEffect } from 'react';
+import { VideoButton } from '../components/meal/VideoButton.jsx';
 import { getDietaryLabel } from '../lib/dietary';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../contexts/PremiumContext';
@@ -367,11 +368,7 @@ export default function Plans() {
                           {(meal.ingredients || []).length > 5 && <li style={{ fontSize: 11, color: C.muted, paddingTop: 4 }}>+{meal.ingredients.length - 5} more</li>}
                         </ul>
                         <div style={{ display:'flex', gap:6, marginTop:10, flexWrap:'wrap' }}>
-                          <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent((meal.name||'') + ' recipe')}`}
-                            target="_blank" rel="noopener noreferrer"
-                            style={{ padding:'5px 10px', borderRadius:8, border:'1px solid rgba(204,0,0,0.2)', background:'rgba(204,0,0,0.05)', color:'#CC0000', fontSize:11, fontWeight:500, textDecoration:'none' }}>
-                            ▶ Watch video
-                          </a>
+                          <VideoButton recipeName={meal.name||''} compact={true}/>
                           <a href={`https://www.swiggy.com/search?query=${encodeURIComponent(meal.name||'')}`}
                             target="_blank" rel="noopener noreferrer"
                             style={{ padding:'5px 10px', borderRadius:8, border:'1px solid rgba(252,128,25,0.25)', background:'rgba(252,128,25,0.05)', color:'#FC8019', fontSize:11, fontWeight:500, textDecoration:'none' }}>

@@ -43,7 +43,7 @@ export default function Profile() {
   const [prefCuisines,  setPrefCuisines]  = useState(
     profile?.preferred_cuisines?.length
       ? profile.preferred_cuisines
-      : JSON.parse(localStorage.getItem('jiff-pref-cuisines') || '[]')
+      : (profile?.preferred_cuisines || [])
   );
   const [pantryItems,   setPantryItems]   = useState(pantry || []);
   const allergyRef = useRef(null);
@@ -68,7 +68,7 @@ export default function Profile() {
   // Persist cuisine selection to localStorage so it survives page refresh
   useEffect(() => {
     if (prefCuisines.length > 0)
-      localStorage.setItem('jiff-pref-cuisines', JSON.stringify(prefCuisines));
+      // jiff-pref-cuisines migrated to profiles.preferred_cuisines in Supabase
   }, [prefCuisines]);
 
   const handleSave = async () => {

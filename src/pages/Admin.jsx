@@ -73,6 +73,7 @@ export default function Admin() {
     { id:'api',       label:'API Usage' },
     { id:'techstack', label:'Tech Stack' },
     { id:'security',  label:'Security' },
+    { id:'rls',       label:'RLS Audit' },
     { id:'config',    label:'Config' },
     { id:'comms',     label:'Email & Comms' },
     { id:'techdoc',   label:'Technical Docs' },
@@ -88,6 +89,7 @@ export default function Admin() {
   const [broadcastSent,setBroadcastSent]= useState(false);
   const [premiumStatus,  setPremiumStatus]  = useState('');
   const [tokenStats,     setTokenStats]     = useState(null);
+  const [rlsStatus,      setRlsStatus]      = useState(null);
   const [lookerUrl,      setLookerUrl]      = useState(()=>{ try{return localStorage.getItem('jiff-looker-url')||'';}catch{return '';} });
   const CHANGELOG_RELEASES = [
     {version:'v18.8',title:'GA4, Kids Meals modes, sign-in gate, email drip, Admin comms tab',summary:'',status:'deployed',deployed_at:'2026-03-01'},
@@ -148,7 +150,12 @@ export default function Admin() {
       if (r.ok) { const d = await r.json(); if (!d.error) setStats(d); }
     } catch {}
     // Waitlist from localStorage
-    setWaitlist(JSON.parse(localStorage.getItem('jiff-global-waitlist')||'[]'));
+    // Waitlist from Supabase broadcasts table
+        try {
+          const wRes = await fetch('/api/admin?action=waitlist');
+          const wData = await wRes.json();
+          if (Array.isArray(wData.waitlist)) setWaitlist(wData.waitlist);
+        } catch { setWaitlist([]); }
     const saved = JSON.parse(localStorage.getItem('jiff-releases')||'[]');
     // Merge: local entries first, then CHANGELOG entries not already in local
     const merged = [...saved];
@@ -297,6 +304,7 @@ export default function Admin() {
             { group:'Documentation', items:[
               { id:'techstack', icon:'🛠️', label:'Tech Stack' },
               { id:'security',  icon:'🔒', label:'Security' },
+              { id:'rls',       icon:'🛡️', label:'RLS Audit' },
               { id:'config',    icon:'⚙️', label:'Config' },
               { id:'comms',     icon:'📧', label:'Email & Comms' },
               { id:'techdoc',   icon:'📄', label:'Technical Docs' },
@@ -1291,7 +1299,7 @@ export default function Admin() {
               </div>
               <div style={{fontSize:13,fontWeight:500,color:C.ink,marginBottom:8}}>Data persistence</div>
               {[['Supabase (primary)','Profiles, pantry, favourites, history, feedback, API keys. Cross-device sync.'],
-                ['localStorage (cache)','Cuisine pref, streak, notification read state, admin releases. Supabase is source of truth.'],
+                ['localStorage (cache)','Cookie consent, weather cache (30 min), admin Looker URL (mirrored to Supabase), jiff-releases merge. Everything else is Supabase-primary. truth.'],
                 ['sessionStorage','Admin session (jiff-admin-auth). Cleared on Exit.'],
                 ['React state','Current meals, UI state, inputs. Ephemeral — lost on refresh.'],
               ].map(([k,v])=>(
@@ -1449,11 +1457,11 @@ export default function Admin() {
               {[
                 {file:'api/suggest.js',           route:'POST /api/suggest',           desc:'Main recipe generation. Handles kidsMode override (kidsPromptOverride), ingredient translation action, standard recipes. Uses claude-opus-4-5 for full recipes, claude-haiku-4-5 for fast translation.'},
                 {file:'api/planner.js',           route:'POST /api/planner',           desc:'7-day week plan generation. Profile-driven — uses food_type, preferred_cuisines, spice_level, nutrition_goals from Supabase.'},
-                {file:'api/meal-history.js',      route:'GET/POST /api/meal-history',  desc:'Saves meals to Supabase meal_history. GET returns paginated history for Insights and History pages. Used by Insights Supabase fallback when localStorage is empty.'},
+                {file:'api/admin.js (action=meal-history)', route:'GET/POST/PATCH /api/admin?action=meal-history',  desc:'Saves meals to Supabase meal_history. GET returns paginated history for Insights and History pages. Used by Insights Supabase fallback when localStorage is empty.'},
                 {file:'api/payments.js',          route:'POST /api/payments',          desc:'Razorpay order creation (create-order action) and HMAC signature verification (verify-payment action). India-only.'},
                 {file:'api/comms.js',             route:'POST /api/comms',             desc:'Feedback + all Mailchimp email triggers. Actions: feedback, email, welcome, trial_start, trial_expired, premium_confirm. Upserts members and applies drip tags.'},
                 {file:'api/admin.js',             route:'GET /api/admin',              desc:'Admin-only data: users, feedback, crashes, API usage stats. Requires SUPABASE_SERVICE_ROLE_KEY in Vercel env vars.'},
-                {file:'api/stats.js',             route:'GET /api/stats',              desc:'Public aggregate stats — total users, meals generated, cuisine distribution. Used by Admin Overview and /stats page.'},
+                {file:'api/admin.js (action=stats)',             route:'GET /api/stats',              desc:'Public aggregate stats — total users, meals generated, cuisine distribution. Used by Admin Overview and /stats page.'},
                 {file:'api/suggest.js (?action=detect)',route:'POST /api/detect-ingredients → suggest.js?action=detect',desc:'Fridge photo ingredient detection. Accepts base64 image, returns string[] of detected ingredients via Claude vision.'},
                 {file:'api/videos.js',            route:'GET /api/videos',             desc:'YouTube recipe video search with Supabase cache. Ranked by views, engagement, recency, language match. 7-day TTL per recipe name.'},
                 {file:'api/whatsapp.js',          route:'GET/POST /api/whatsapp',      desc:'Meta WhatsApp Cloud API webhook. GET for token verification, POST for incoming messages → recipe reply.'},
@@ -1613,8 +1621,15 @@ export default function Admin() {
                   style={{flex:1,padding:'9px 12px',border:'1.5px solid '+C.borderMid,borderRadius:8,
                     fontSize:12,fontFamily:"'DM Sans',sans-serif",color:C.ink,background:C.cream}}
                 />
-                <button onClick={()=>{
+                <button onClick={async ()=>{
                   try { localStorage.setItem('jiff-looker-url', lookerUrl); } catch {}
+                  // Also persist to Supabase for cross-device admin access
+                  try {
+                    await fetch('/api/admin?action=save-setting', {
+                      method:'POST', headers:{'Content-Type':'application/json'},
+                      body: JSON.stringify({ key:'looker_url', value: lookerUrl, adminKey:'jiff-admin-2026' })
+                    });
+                  } catch {}
                 }} style={{background:C.jiff,color:'white',border:'none',borderRadius:8,
                   padding:'9px 14px',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",whiteSpace:'nowrap'}}>
                   Save URL
@@ -2127,6 +2142,121 @@ Respond ONLY with JSON: {"subs":[{"name":"substitute","note":"brief note on how 
                 <div key={k} style={{display:'flex',gap:10,padding:'6px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:11}}>
                   <span style={{minWidth:100,fontWeight:500,color:C.ink,flexShrink:0}}>{k}</span>
                   <span style={{color:C.muted,fontWeight:300}}>{v}</span>
+                </div>
+              ))}
+            </Card>
+          </>
+        )}
+
+
+        {/* RLS AUDIT */}
+        {activeTab==='rls' && (
+          <>
+            <Card title="Supabase Row Level Security — live audit">
+              <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12,lineHeight:1.6}}>
+                Tests each table with the anonymous key (what an unauthenticated attacker can see).
+                Every table should return 0 rows. Run after any schema change.
+              </div>
+              <button onClick={async ()=>{
+                const sbUrl = process.env.REACT_APP_SUPABASE_URL;
+                const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
+                if (!sbUrl || !anonKey) { setRlsStatus({error:'REACT_APP_SUPABASE_URL or REACT_APP_SUPABASE_ANON_KEY not set'}); return; }
+                const tables = ['profiles','pantry','favourites','meal_history','feedback','api_keys','broadcasts','releases','video_cache','token_usage'];
+                const results = await Promise.all(tables.map(async t => {
+                  try {
+                    const r = await fetch(`${sbUrl}/rest/v1/${t}?limit=1`, {
+                      headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` }
+                    });
+                    const data = await r.json();
+                    const count = Array.isArray(data) ? data.length : (data?.code ? 'ERROR' : '?');
+                    return { table: t, status: r.status, count, safe: r.status === 401 || (r.status === 200 && count === 0), rawCode: data?.code||'' };
+                  } catch(e) { return { table: t, status: 'ERR', count: 'ERR', safe: false }; }
+                }));
+                setRlsStatus({ results, testedAt: new Date().toLocaleTimeString() });
+              }} style={{background:C.jiff,color:'white',border:'none',borderRadius:8,padding:'8px 16px',
+                fontSize:12,fontWeight:600,cursor:'pointer',marginBottom:16,fontFamily:"'DM Sans',sans-serif"}}>
+                Run RLS audit
+              </button>
+
+              {rlsStatus?.error && (
+                <div style={{padding:'10px 14px',background:'rgba(229,62,62,0.08)',border:'1px solid rgba(229,62,62,0.2)',borderRadius:8,fontSize:12,color:C.red}}>
+                  {rlsStatus.error}
+                </div>
+              )}
+
+              {rlsStatus?.results && (
+                <>
+                  <div style={{fontSize:11,color:C.muted,marginBottom:10}}>
+                    Tested at {rlsStatus.testedAt} with anon key (no auth)
+                  </div>
+                  {rlsStatus.results.map((r,i)=>(
+                    <div key={i} style={{display:'grid',gridTemplateColumns:'160px 60px 80px 1fr',gap:8,
+                      padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:12,alignItems:'center'}}>
+                      <code style={{color:C.ink,fontSize:11}}>{r.table}</code>
+                      <span style={{fontSize:11,color:C.muted}}>HTTP {r.status}</span>
+                      <span style={{fontSize:11,fontWeight:600,color:r.safe?C.green:C.red}}>
+                        {r.safe ? '✓ Safe' : `⚠ ${r.count} rows`}
+                      </span>
+                      <span style={{fontSize:10,color:C.muted}}>{r.safe ? 'Blocked as expected' : 'EXPOSED — add RLS policy'}</span>
+                    </div>
+                  ))}
+                  <div style={{marginTop:12,padding:'10px 14px',
+                    background: rlsStatus.results.every(r=>r.safe) ? 'rgba(29,158,117,0.08)' : 'rgba(229,62,62,0.08)',
+                    border: '1px solid ' + (rlsStatus.results.every(r=>r.safe) ? 'rgba(29,158,117,0.25)' : 'rgba(229,62,62,0.2)'),
+                    borderRadius:8,fontSize:12,
+                    color: rlsStatus.results.every(r=>r.safe) ? C.green : C.red}}>
+                    {rlsStatus.results.every(r=>r.safe)
+                      ? '✓ All tables protected — no data exposed to unauthenticated requests'
+                      : `⚠ ${rlsStatus.results.filter(r=>!r.safe).length} table(s) exposed — run Phase 8 SQL in SUPABASE_SETUP.md`}
+                  </div>
+                </>
+              )}
+            </Card>
+
+            <Card title="RLS policies — what each table should enforce">
+              {[
+                ['profiles',     'auth.uid() = id',                    'Users can only see their own profile'],
+                ['pantry',       'auth.uid() = user_id',               'Users can only see their own pantry'],
+                ['favourites',   'auth.uid() = user_id',               'Users can only see their own favourites'],
+                ['meal_history', 'auth.uid() = user_id',               'Users can only see their own history'],
+                ['feedback',     'Service role only',                  'Feedback write-only for users, read via service role'],
+                ['api_keys',     'Service role only',                  'Never exposed to client'],
+                ['broadcasts',   'SELECT: true (public read)',         'Broadcasts are readable by all authenticated users'],
+                ['releases',     'SELECT: true (public read)',         'Release notes readable by all'],
+                ['video_cache',  'Service role only',                  'Cache managed server-side only'],
+                ['token_usage',  'Service role only',                  'Token logs never exposed to client'],
+              ].map(([table,policy,note])=>(
+                <div key={table} style={{display:'grid',gridTemplateColumns:'130px 220px 1fr',gap:8,
+                  padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:11}}>
+                  <code style={{color:C.jiff}}>{table}</code>
+                  <code style={{color:C.muted,fontSize:10}}>{policy}</code>
+                  <span style={{color:C.muted,fontWeight:300}}>{note}</span>
+                </div>
+              ))}
+              <div style={{marginTop:12,fontSize:11,color:C.muted,lineHeight:1.7}}>
+                Run Phase 8 SQL from <code style={{fontSize:10,background:'rgba(28,10,0,0.06)',padding:'1px 5px',borderRadius:3}}>SUPABASE_SETUP.md</code> to create all required policies. Re-run this audit after applying.
+              </div>
+            </Card>
+
+            <Card title="Security checklist — all layers">
+              {[
+                [true,  'ANTHROPIC_API_KEY',         'Server-side only — never in client bundle (check with browser devtools)'],
+                [true,  'YOUTUBE_API_KEY',            'Server-side only — api/videos.js only'],
+                [true,  'SUPABASE_SERVICE_ROLE_KEY',  'Server-side only — api/admin.js and api/suggest.js'],
+                [true,  'RAZORPAY_KEY_SECRET',        'Server-side only — api/payments.js only'],
+                [true,  'Content-Security-Policy',    'CSP headers set in vercel.json — blocks XSS'],
+                [true,  'HTTPS only',                 'Vercel enforces HTTPS — no plain HTTP'],
+                [null,  'RLS on all tables',          'Run audit above to verify — check after each schema change'],
+                [null,  'Premium server-verified',    'Premium status synced to Supabase profiles — not localStorage only'],
+                [null,  'Rate limiting',              'api/suggest.js enforces per-key daily limits via api_keys table'],
+                [false, 'CORS headers',               'Not explicitly set — Vercel defaults allow all origins on API routes'],
+              ].map(([ok,label,desc],i)=>(
+                <div key={i} style={{display:'flex',gap:10,padding:'6px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:12}}>
+                  <span style={{fontSize:14,flexShrink:0}}>
+                    {ok===true?'✅':ok===false?'⚠️':'🔲'}
+                  </span>
+                  <span style={{fontWeight:500,color:C.ink,minWidth:200,flexShrink:0}}>{label}</span>
+                  <span style={{color:C.muted,fontWeight:300,fontSize:11}}>{desc}</span>
                 </div>
               ))}
             </Card>

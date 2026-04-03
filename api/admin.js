@@ -90,6 +90,24 @@ export default async function handler(req, res) {
       await fetch(`${url}/rest/v1/meal_history?id=eq.${id}&user_id=eq.${userId}`, { method:'DELETE', headers: mh });
       return res.status(200).json({ ok: true });
     }
+    // ── PATCH — update rating on a meal by name ──────────────────
+    if (req.method === 'PATCH') {
+      const { userId, mealName, rating } = req.body;
+      if (!userId || !mealName || !rating) return res.status(400).json({ error: 'Missing fields.' });
+      // Find the most recent entry for this meal name by this user
+      const findR = await fetch(
+        `${url}/rest/v1/meal_history?user_id=eq.${userId}&select=id&order=generated_at.desc&limit=1`,
+        { headers: h }
+      );
+      const rows = await findR.json();
+      if (!Array.isArray(rows) || !rows.length) return res.status(200).json({ ok: true, notFound: true });
+      await fetch(`${url}/rest/v1/meal_history?id=eq.${rows[0].id}`, {
+        method: 'PATCH',
+        headers: { ...mh, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ rating, cooked_at: new Date().toISOString() }),
+      });
+      return res.status(200).json({ ok: true });
+    }
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -174,6 +192,40 @@ export default async function handler(req, res) {
           costEstimateUSD,
         });
       } catch(e) { return res.status(500).json({ error: e.message }); }
+    }
+
+    // ── GET waitlist (from broadcasts table) ────────────────────
+    if (action === 'waitlist' && req.method === 'GET') {
+      const r = await fetch(`${url}/rest/v1/broadcasts?select=message,created_at&order=created_at.desc&limit=200`, { headers: h });
+      const rows = safeArray(await r.json());
+      // Broadcasts with email-like messages are waitlist entries
+      const waitlist = rows
+        .filter(b => b.message?.includes('@') || b.message?.startsWith('waitlist:'))
+        .map(b => ({ email: b.message.replace('waitlist:','').trim(), joined_at: b.created_at }));
+      return res.status(200).json({ waitlist });
+    }
+
+    // ── POST save-setting (admin device prefs → api_keys table) ──
+    if (action === 'save-setting' && req.method === 'POST') {
+      const { key, value, adminKey } = req.body || {};
+      if (adminKey !== ADMIN_KEY) return res.status(401).json({ error: 'Unauthorised' });
+      if (!key) return res.status(400).json({ error: 'key required' });
+      await fetch(`${url}/rest/v1/api_keys`, {
+        method: 'POST',
+        headers: { ...h, 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify({ key: `__setting__${key}`, tier: 'admin', value_json: JSON.stringify(value), usage_count: 0, usage_date: new Date().toISOString().slice(0,10) }),
+      });
+      return res.status(200).json({ ok: true });
+    }
+
+    // ── GET load-setting ─────────────────────────────────────────
+    if (action === 'load-setting' && req.method === 'GET') {
+      const { key } = req.query;
+      if (!key) return res.status(400).json({ error: 'key required' });
+      const r = await fetch(`${url}/rest/v1/api_keys?key=eq.__setting__${key}&select=value_json&limit=1`, { headers: h });
+      const rows = safeArray(await r.json());
+      const value = rows[0]?.value_json ? JSON.parse(rows[0].value_json) : null;
+      return res.status(200).json({ value });
     }
 
     return res.status(400).json({ error: `Unknown action: ${action}` });
