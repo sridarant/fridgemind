@@ -42,27 +42,27 @@ function Card({ title, children, accent, action }) {
   );
 }
 
-import Tab_OVERVIEW from './admin/tabs/overview.jsx';
-import Tab_USERS from './admin/tabs/users.jsx';
-import Tab_WAITLIST from './admin/tabs/waitlist.jsx';
-import Tab_FEEDBACK from './admin/tabs/feedback.jsx';
-import Tab_CRASHES from './admin/tabs/crashes.jsx';
-import Tab_RELEASES from './admin/tabs/releases.jsx';
-import Tab_CICD from './admin/tabs/cicd.jsx';
-import Tab_TESTS from './admin/tabs/tests.jsx';
-import Tab_STATUS from './admin/tabs/status.jsx';
-import Tab_TOOLS from './admin/tabs/tools.jsx';
-import Tab_API from './admin/tabs/api.jsx';
-import Tab_TECHSTACK from './admin/tabs/techstack.jsx';
-import Tab_SECURITY from './admin/tabs/security.jsx';
-import Tab_RLS from './admin/tabs/rls.jsx';
-import Tab_CONFIG from './admin/tabs/config.jsx';
-import Tab_COMMS from './admin/tabs/comms.jsx';
-import Tab_TECHDOC from './admin/tabs/techdoc.jsx';
-import Tab_ANALYTICS from './admin/tabs/analytics.jsx';
-import Tab_TOKENS from './admin/tabs/tokens.jsx';
-import Tab_PROMPTS from './admin/tabs/prompts.jsx';
-import Tab_UIKIT from './admin/tabs/uikit.jsx';
+import Tab_OVERVIEW from './tabs/overview.jsx';
+import Tab_USERS from './tabs/users.jsx';
+import Tab_WAITLIST from './tabs/waitlist.jsx';
+import Tab_FEEDBACK from './tabs/feedback.jsx';
+import Tab_CRASHES from './tabs/crashes.jsx';
+import Tab_RELEASES from './tabs/releases.jsx';
+import Tab_CICD from './tabs/cicd.jsx';
+import Tab_TESTS from './tabs/tests.jsx';
+import Tab_STATUS from './tabs/status.jsx';
+import Tab_TOOLS from './tabs/tools.jsx';
+import Tab_API from './tabs/api.jsx';
+import Tab_TECHSTACK from './tabs/techstack.jsx';
+import Tab_SECURITY from './tabs/security.jsx';
+import Tab_RLS from './tabs/rls.jsx';
+import Tab_CONFIG from './tabs/config.jsx';
+import Tab_COMMS from './tabs/comms.jsx';
+import Tab_TECHDOC from './tabs/techdoc.jsx';
+import Tab_ANALYTICS from './tabs/analytics.jsx';
+import Tab_TOKENS from './tabs/tokens.jsx';
+import Tab_PROMPTS from './tabs/prompts.jsx';
+import Tab_UIKIT from './tabs/uikit.jsx';
 
 export default function Admin() {
   const navigate   = useNavigate();
