@@ -66,10 +66,7 @@ export default function Profile() {
   }, [profile]);
 
   // Persist cuisine selection to localStorage so it survives page refresh
-  useEffect(() => {
-    if (prefCuisines.length > 0)
-      // jiff-pref-cuisines migrated to profiles.preferred_cuisines in Supabase
-  }, [prefCuisines]);
+  // jiff-pref-cuisines: reads from profile.preferred_cuisines in Supabase (no localStorage write needed)
 
   const handleSave = async () => {
     setSaving(true);
