@@ -22,7 +22,7 @@ const IconScaler=()=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 
 // ── MealCard ──────────────────────────────────────────────────────
-function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='', onRate, rating=0 }) {
+export function MealCard({ meal, index, isFavourite, onToggleFav, fridgeIngredients=[], showFavTag=false, defaultServings=2, animDelay=0, country='', onRate, rating=0 }) {
   const { t, lang } = useLocale();
   const baseServings = parseInt(meal.servings) || defaultServings;
   const [shareCardOpen, setShareCardOpen] = useState(false);
