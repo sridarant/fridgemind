@@ -5,11 +5,11 @@
 //   setReleases, setLoading, setPremiumStatus, setLookerUrl,
 //   setTokenStats, setRlsStatus, activeTab
 
-export default function Tab_TECHSTACK({{ C, Card, ADMIN_KEY, adminKey, setAdminKey,
+export default function Tab_TECHSTACK({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   stats, setStats, users, setUsers, waitlist, setWaitlist,
   feedback, setFeedback, releases, setReleases, loading, setLoading,
   premiumStatus, setPremiumStatus, lookerUrl, setLookerUrl,
-  tokenStats, setTokenStats, rlsStatus, setRlsStatus }}) {{
+  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
 <>

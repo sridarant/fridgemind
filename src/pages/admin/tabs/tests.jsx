@@ -31,7 +31,7 @@ export default function Tab_TESTS({ C, Card }) {
       </Card>
 
       {/* Unit tests */}
-      <Card title={\`Unit tests — \${totalUnit} tests across \${UNIT_GROUPS.length} modules\`}>
+      <Card title={`Unit tests — ${totalUnit} tests across ${UNIT_GROUPS.length} modules`}>
         <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12}}>
           Pure function tests in <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'1px 4px',borderRadius:3}}>tests/unit/lib.test.js</code> — no browser, runs in milliseconds.
         </div>
@@ -50,7 +50,7 @@ export default function Tab_TESTS({ C, Card }) {
       </Card>
 
       {/* E2E tests */}
-      <Card title={\`E2E tests — \${E2E_TESTS.length} tests (Playwright)\`}>
+      <Card title={`E2E tests — ${E2E_TESTS.length} tests (Playwright)`}>
         <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12}}>
           End-to-end browser tests in <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'1px 4px',borderRadius:3}}>tests/jiff.spec.js</code> — runs against live URL.
         </div>
