@@ -51,20 +51,6 @@ import Tab_TOKENS from './admin/tabs/tokens.jsx';
 import Tab_PROMPTS from './admin/tabs/prompts.jsx';
 import Tab_UIKIT from './admin/tabs/uikit.jsx';
 
-// ── Status badge for services ────────────────────────────────────
-function StatusBadge({ id, supabaseEnabled }) {
-  const [ok, setOk] = React.useState(null);
-  React.useEffect(() => {
-    if (id === 1) { setOk(supabaseEnabled); return; }
-    if (id === 0) {
-      fetch('/api/stats').then(r => setOk(r.ok)).catch(() => setOk(false));
-    } else { setOk(null); } // unknown — show as unverified
-  }, [id, supabaseEnabled]);
-  const color = ok === true ? '#1D9E75' : ok === false ? '#E53E3E' : '#9E9E9E';
-  const label = ok === true ? 'Operational' : ok === false ? 'Unavailable' : 'Unverified';
-  const dot   = ok === true ? '🟢' : ok === false ? '🔴' : '⚪';
-  return <span style={{fontSize:12,color,fontWeight:500}}>{dot} {label}</span>;
-}
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00', cream:'#FFFAF5',

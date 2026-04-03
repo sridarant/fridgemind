@@ -696,7 +696,7 @@ export default function Jiff() {
   const handleLeftoverRescue = () => {
     setJourneyMode(false);
     // Pre-fill hint and focus the fridge input
-    if (!fridgeItems.includes('leftover')) setFridgeItems(prev => [...prev, 'leftover rice', 'yesterday's curry']);
+    if (!fridgeItems.includes('leftover')) setFridgeItems(prev => [...prev, 'leftover rice', 'leftover curry']);
     setView('input');
   };
 
