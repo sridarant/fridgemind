@@ -12,7 +12,6 @@ export default function Tab_TECHSTACK({ C, Card, ADMIN_KEY, adminKey, setAdminKe
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Frontend">
     {[
       ['Framework',       'React 18.x (Create React App)'],
@@ -84,7 +83,6 @@ export default function Tab_TECHSTACK({ C, Card, ADMIN_KEY, adminKey, setAdminKe
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

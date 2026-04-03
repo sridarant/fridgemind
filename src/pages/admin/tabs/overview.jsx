@@ -12,7 +12,6 @@ export default function Tab_OVERVIEW({ C, Card, ADMIN_KEY, adminKey, setAdminKey
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:12, marginBottom:20 }}>
     <StatPill label="Total users"     value={stats?.totalUsers?.toLocaleString()} color={C.jiff} />
     <StatPill label="Meals generated" value={stats?.totalMeals?.toLocaleString()} color="#673AB7" />
@@ -54,7 +53,6 @@ export default function Tab_OVERVIEW({ C, Card, ADMIN_KEY, adminKey, setAdminKey
       </div>
     </Card>
   )}
-</>
     </>
   );
 }

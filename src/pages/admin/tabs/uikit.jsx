@@ -12,7 +12,6 @@ export default function Tab_UIKIT({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Jiff Design System — UI components and primitives">
     <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:4,lineHeight:1.6}}>
       All UI primitives used across the Jiff app. Each component is built with inline JSX styles — no external CSS framework. Colors come from the local <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'1px 5px',borderRadius:3}}>C</code> object in each file.
@@ -158,7 +157,6 @@ export default function Tab_UIKIT({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       ))}
     </div>
   </Card>
-</>
     </>
   );
 }

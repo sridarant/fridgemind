@@ -12,7 +12,6 @@ export default function Tab_STATUS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Service Status">
     {[
       { name:'Vercel (Hosting)',  icon:'▲', detail:'jiff-ecru.vercel.app' },
@@ -51,7 +50,6 @@ export default function Tab_STATUS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
 
         {/* CI/CD */}
         {activeTab==='cicd' && (
-<>
   <Card title="CI/CD Pipeline">
     <div style={{display:'flex',flexDirection:'column',gap:0}}>
       {[
@@ -97,7 +95,6 @@ export default function Tab_STATUS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

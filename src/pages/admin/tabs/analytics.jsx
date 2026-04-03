@@ -12,7 +12,6 @@ export default function Tab_ANALYTICS({ C, Card, ADMIN_KEY, adminKey, setAdminKe
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   {/* GA4 property info */}
   <Card title="Google Analytics 4 — Property">
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
@@ -149,7 +148,6 @@ export default function Tab_ANALYTICS({ C, Card, ADMIN_KEY, adminKey, setAdminKe
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

@@ -25,7 +25,6 @@ export default function Tab_CRASHES({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     </div>
   ))}
-</Card>
         
     </>
   );

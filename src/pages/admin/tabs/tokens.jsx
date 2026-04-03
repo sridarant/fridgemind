@@ -12,7 +12,6 @@ export default function Tab_TOKENS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Anthropic API — Token consumption">
     <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12,lineHeight:1.6}}>
       Token usage is logged per API call to the <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'1px 5px',borderRadius:3}}>token_usage</code> Supabase table.
@@ -111,7 +110,6 @@ export default function Tab_TOKENS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

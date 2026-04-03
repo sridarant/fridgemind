@@ -12,7 +12,6 @@ export default function Tab_SECURITY({ C, Card, ADMIN_KEY, adminKey, setAdminKey
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Vulnerability Scan" accent={C.green}>
     <div style={{marginBottom:16}}>
       <div style={{fontSize:11,color:C.muted,fontWeight:300,marginBottom:12,lineHeight:1.6}}>
@@ -60,7 +59,6 @@ export default function Tab_SECURITY({ C, Card, ADMIN_KEY, adminKey, setAdminKey
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

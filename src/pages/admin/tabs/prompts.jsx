@@ -12,7 +12,6 @@ export default function Tab_PROMPTS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="All AI prompts used in Jiff — with rendered examples">
     <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12,lineHeight:1.6}}>
       Every prompt Jiff sends to Claude. Values shown are real examples. Model and token budget noted per prompt.
@@ -182,7 +181,6 @@ Respond ONLY with valid JSON: {"error":"not_food"} or ["ingredient1","ingredient
 Respond ONLY with JSON: {"subs":[{"name":"substitute","note":"brief note on how to use"}]}`}
     </div>
   </Card>
-</>
     </>
   );
 }

@@ -12,7 +12,6 @@ export default function Tab_RLS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Supabase Row Level Security — live audit">
     <div style={{fontSize:12,color:C.muted,fontWeight:300,marginBottom:12,lineHeight:1.6}}>
       Tests each table with the anonymous key (what an unauthenticated attacker can see).
@@ -121,7 +120,6 @@ export default function Tab_RLS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

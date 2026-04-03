@@ -12,7 +12,6 @@ export default function Tab_TECHDOC({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="Jiff v18.9 — Technical Overview">
     <div style={{fontSize:12,color:C.muted,lineHeight:1.8,fontWeight:300}}>
       Jiff is a React 18 SPA deployed on Vercel, backed by Supabase (PostgreSQL 15) and the Anthropic API.
@@ -315,7 +314,6 @@ export default function Tab_TECHDOC({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

@@ -6,7 +6,6 @@ export default function Tab_CICD({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   <Card title="CI/CD Pipeline">
     <div style={{display:'flex',flexDirection:'column',gap:0}}>
       {[
@@ -52,7 +51,6 @@ export default function Tab_CICD({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
         
     </>
   );

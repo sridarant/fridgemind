@@ -12,7 +12,6 @@ export default function Tab_TOOLS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   {/* Reset trial */}
   <Card title="Reset trial period">
     <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginBottom:12 }}>
@@ -107,7 +106,6 @@ export default function Tab_TOOLS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
 
   {/* Quick actions */}
   
-</>
     </>
   );
 }

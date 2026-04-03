@@ -12,7 +12,6 @@ export default function Tab_COMMS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
   return (
     <>
-<>
   {/* Drip sequence overview */}
   <Card title="Email drip sequence — Mailchimp Customer Journeys">
     <div style={{ fontSize:12, color:C.muted, fontWeight:300, marginBottom:16, lineHeight:1.6 }}>
@@ -148,7 +147,6 @@ export default function Tab_COMMS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
     </>
   );
 }

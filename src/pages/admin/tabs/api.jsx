@@ -34,7 +34,6 @@ export default function Tab_API({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       ))}
     </>
   )}
-</Card>
     </>
   );
 }
