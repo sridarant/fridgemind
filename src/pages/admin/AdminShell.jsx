@@ -28,6 +28,19 @@ const C = {
   shadow:'0 4px 24px rgba(28,10,0,0.08)', green:'#1D9E75', red:'#E53E3E',
   gold:'#FFB800',
 };
+const ADMIN_KEY = 'jiff-admin-2026';
+
+function Card({ title, children, accent, action }) {
+  return (
+    <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16, padding:'20px 24px', marginBottom:20 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:children?16:0 }}>
+        <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color: accent||C.jiff, fontWeight:600 }}>{title}</div>
+        {action && <div>{action}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 import Tab_OVERVIEW from './admin/tabs/overview.jsx';
 import Tab_USERS from './admin/tabs/users.jsx';
@@ -50,36 +63,6 @@ import Tab_ANALYTICS from './admin/tabs/analytics.jsx';
 import Tab_TOKENS from './admin/tabs/tokens.jsx';
 import Tab_PROMPTS from './admin/tabs/prompts.jsx';
 import Tab_UIKIT from './admin/tabs/uikit.jsx';
-
-
-const C = {
-  jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00', cream:'#FFFAF5',
-  muted:'#7C6A5E', border:'rgba(28,10,0,0.10)', borderMid:'rgba(28,10,0,0.18)',
-  shadow:'0 4px 24px rgba(28,10,0,0.08)', green:'#1D9E75', red:'#E53E3E',
-  gold:'#FFB800',
-};
-const ADMIN_KEY = 'jiff-admin-2026'; // Change before production
-
-function Card({ title, children, accent, action }) {
-  return (
-    <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16, padding:'20px 22px', boxShadow:C.shadow, marginBottom:20 }}>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-        <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:accent||C.jiff, fontWeight:500 }}>{title}</div>
-        {action}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function StatPill({ label, value, color }) {
-  return (
-    <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:12, padding:'16px 18px', boxShadow:C.shadow }}>
-      <div style={{ fontFamily:"'Fraunces',serif", fontSize:32, fontWeight:900, color:color||C.jiff, lineHeight:1 }}>{value ?? '—'}</div>
-      <div style={{ fontSize:11, color:C.muted, marginTop:4, fontWeight:300 }}>{label}</div>
-    </div>
-  );
-}
 
 export default function Admin() {
   const navigate   = useNavigate();
