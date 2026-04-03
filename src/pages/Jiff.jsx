@@ -25,6 +25,7 @@ import { GroceryPanel }            from '../components/meal/GroceryPanel.jsx';
 import { CookModeOverlay }         from '../components/meal/CookModeOverlay.jsx';
 import { VideoButton }             from '../components/meal/VideoButton.jsx';
 import { MealCard }               from '../components/meal/MealCard.jsx';
+import { JourneyTiles }           from '../components/common/JourneyTiles.jsx';
 
 
 const MEAL_TYPE_OPTIONS = [
@@ -534,6 +535,7 @@ export default function Jiff() {
   const [familySelected, setFamilySelected] = useState([]);  // [] = everyone
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
   const [showSeasonalPicker, setShowSeasonalPicker] = useState(false);
+  const [journeyMode,    setJourneyMode]    = useState(true);  // home screen journey picker
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
   const season = getCurrentSeason();
   useEffect(() => {
@@ -606,6 +608,98 @@ export default function Jiff() {
     } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
   };
 
+  // ── Reusable streak + history helpers ───────────────────────────
+  const updateStreak = () => {
+    try {
+      const today = new Date().toDateString();
+      const stored = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      const newCount = stored.lastDate === yesterday ? (stored.count || 0) + 1 : 1;
+      try { localStorage.setItem('jiff-streak', JSON.stringify({ count: newCount, lastDate: today })); } catch {}
+      setStreak(newCount);
+      if (user) {
+        fetch('/api/admin?action=meal-history', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id, meals: [], _updateStreak: true, streak: newCount }),
+        }).catch(() => {});
+      }
+    } catch {}
+  };
+
+  const saveToHistory = (generatedMeals) => {
+    if (!user || !generatedMeals?.length) return;
+    fetch('/api/meal-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id, meals: generatedMeals,
+        mealType, cuisine, servings: defaultServings,
+        ingredients: [...new Set([...fridgeItems, ...pantryItems])],
+        generated_at: new Date().toISOString(),
+      }),
+    }).catch(() => {});
+  };
+
+  // ── One-tap generation from journey tiles ────────────────────────
+  const handleGenerateDirect = async (context = {}) => {
+    if (!user) { setGateDismissed(false); return; }
+    if (!checkAccess('generation')) return;
+
+    // Apply tile context
+    if (context.cuisine)  setCuisine(context.cuisine);
+    if (context.mealType && context.mealType !== 'any') setMealType(context.mealType);
+    if (context.servings) setDefaultServings(context.servings);
+
+    // Build a smart ingredient list from pantry + profile for one-tap
+    const tileIngredients = pantryItems.length > 0
+      ? pantryItems
+      : ['rice', 'onion', 'tomato', 'oil', 'salt', 'chilli'];  // Indian pantry defaults
+
+    // Inject context into prompt via a special cuisineContext
+    const cuisineCtx = context.hosting
+      ? 'Indian hosting and entertaining — impressive dishes that feed 8–12 people, can be partially prepped ahead, visually striking. Include a starter, main, and dessert option in the recipe suggestions.'
+      : context.family
+        ? 'family meal — suitable for all ages and dietary preferences in the household'
+        : context.mealType || 'any';
+
+    setView('loading'); setFactIdx(0); setShowFavs(false); setJourneyMode(false);
+    try {
+      const count = isPremium ? PAID_RECIPE_CAP : 1;
+      const res = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: tileIngredients,
+          time, diet,
+          cuisine: cuisineCtx,
+          mealType: context.mealType || mealType,
+          kidsMode: false,
+          count,
+          country, lang,
+          ...(profile?.food_type ? { dietHint: profile.food_type } : {}),
+          ...(context.hosting ? { servings: 10 } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (data.error) { setErrorMsg(data.error); setView('input'); return; }
+      const resultMeals = Array.isArray(data.meals) ? data.meals : data.meals?.meals || [];
+      setMeals(resultMeals);
+      updateStreak();
+      saveToHistory(resultMeals);
+      setView('results');
+    } catch (err) {
+      setErrorMsg('Something went wrong. Please try again.');
+      setView('input');
+    }
+  };
+
+  const handleLeftoverRescue = () => {
+    setJourneyMode(false);
+    // Pre-fill hint and focus the fridge input
+    if (!fridgeItems.includes('leftover')) setFridgeItems(prev => [...prev, 'leftover rice', 'yesterday's curry']);
+    setView('input');
+  };
+
   const handleSubmit = async () => {
     if (!ingredients.length) return;
     // Mandate sign-in before any generation
@@ -637,25 +731,7 @@ export default function Jiff() {
         if (typeof window !== 'undefined' && window._jiffGA) {
           window._jiffGA('meal_generated', { cuisine, mealType, ingredient_count: ingredients.length, is_premium: isPremium });
         }
-        // ── Streak update ────────────────────────────────────────────
-        try {
-          const today = new Date().toDateString();
-          const data  = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
-          const yesterday = new Date(Date.now() - 86400000).toDateString();
-          const newCount = data.lastDate === yesterday ? (data.count || 0) + 1 : 1;
-          // Save streak to Supabase profiles.streak
-          if (typeof window !== 'undefined') {
-            try { localStorage.setItem('jiff-streak', JSON.stringify({ count: newCount, lastDate: today })); } catch {}
-          }
-          setStreak(newCount);
-          if (user) {
-            fetch('/api/admin?action=meal-history', {
-              method: 'POST',
-              headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ userId: user.id, meals: [], _updateStreak: true, streak: newCount }),
-            }).catch(()=>{});
-          }
-        } catch {}
+        updateStreak();
 
         // ── Pantry nudge — items used from pantry ────────────────────
         const usedFromPantry = (pantry || []).filter(p =>
@@ -1023,10 +1099,30 @@ export default function Jiff() {
           </div>
         )}
 
+        {/* ── Journey picker home screen ── */}
+        {journeyMode && user && view === 'input' && (
+          <JourneyTiles
+            profile={profile}
+            season={season}
+            streak={streak}
+            onSelectFridge={() => setJourneyMode(false)}
+            onGenerateDirect={handleGenerateDirect}
+            onLeftoverRescue={handleLeftoverRescue}
+          />
+        )}
+
         {/* ── Input view ── */}
-        {view === 'input' && (
+        {!journeyMode && view === 'input' && (
           <div className="main-layout">
             <div className="main-form">
+              {user && (
+                <button onClick={()=>setJourneyMode(true)}
+                  style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:14,
+                    background:'none',border:'none',cursor:'pointer',fontSize:12,
+                    color:'var(--muted)',fontFamily:"'DM Sans',sans-serif",padding:0}}>
+                  ← Back to home
+                </button>
+              )}
               {/* Post-login profile completion banner */}
               {user && profile && !profile.spice_level && !profile.preferred_cuisines?.length &&
                !sessionStorage.getItem('jiff-prefs-dismissed') && (

@@ -51,10 +51,6 @@ import Tab_TOKENS from './admin/tabs/tokens.jsx';
 import Tab_PROMPTS from './admin/tabs/prompts.jsx';
 import Tab_UIKIT from './admin/tabs/uikit.jsx';
 
-// src/pages/Admin.jsx — Admin dashboard v17
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-
 // ── Status badge for services ────────────────────────────────────
 function StatusBadge({ id, supabaseEnabled }) {
   const [ok, setOk] = React.useState(null);
