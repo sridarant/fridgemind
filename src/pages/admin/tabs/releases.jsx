@@ -37,7 +37,7 @@ export default function Tab_RELEASES({ C, Card, releases, setReleases }) {
 
   return (
     <>
-      <Card title={\`Release history — \${releases.length} entr\${releases.length===1?'y':'ies'}\`}
+      <Card title={`Release history — ${releases.length} entr${releases.length===1?'y':'ies'}`}
         action={<div style={{display:'flex',gap:6}}>
           <button onClick={loadFromSupabase} disabled={busy}
             style={{fontSize:11,padding:'4px 10px',borderRadius:8,border:'1px solid rgba(28,10,0,0.18)',background:'white',cursor:'pointer',fontFamily:"'DM Sans',sans-serif"}}>
