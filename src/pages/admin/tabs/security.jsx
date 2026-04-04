@@ -9,7 +9,7 @@ export default function Tab_SECURITY({ C, Card, ADMIN_KEY, adminKey, setAdminKey
   stats, setStats, users, setUsers, waitlist, setWaitlist,
   feedback, setFeedback, releases, setReleases, loading, setLoading,
   premiumStatus, setPremiumStatus, lookerUrl, setLookerUrl,
-  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
+  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {
   return (
     <>
   <Card title="Vulnerability Scan" accent={C.green}>

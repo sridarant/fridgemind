@@ -9,7 +9,7 @@ export default function Tab_TECHDOC({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   stats, setStats, users, setUsers, waitlist, setWaitlist,
   feedback, setFeedback, releases, setReleases, loading, setLoading,
   premiumStatus, setPremiumStatus, lookerUrl, setLookerUrl,
-  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
+  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {
   return (
     <>
   <Card title="Jiff v18.9 — Technical Overview">

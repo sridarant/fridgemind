@@ -3,7 +3,7 @@ export default function Tab_CRASHES({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
   stats, setStats, users, setUsers, waitlist, setWaitlist,
   feedback, setFeedback, releases, setReleases, loading, setLoading,
   premiumStatus, setPremiumStatus, lookerUrl, setLookerUrl,
-  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {{
+  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {
   return (
     <>
 <Card title={`Crash Reports — ${feedback.filter(f=>f.category==='crash').length} total`}
