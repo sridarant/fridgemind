@@ -535,7 +535,7 @@ export default function Jiff() {
   const [familySelected, setFamilySelected] = useState([]);  // [] = everyone
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
   const [showSeasonalPicker, setShowSeasonalPicker] = useState(false);
-  const [journeyMode,    setJourneyMode]    = useState(true);  // home screen journey picker
+  const [journeyMode,    setJourneyMode]    = useState(false); // starts false; set true after user loads
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
   const season = getCurrentSeason();
   useEffect(() => {
@@ -780,6 +780,13 @@ export default function Jiff() {
     if (user) sessionStorage.setItem('jiff-session-active', '1');
     else sessionStorage.removeItem('jiff-session-active');
   }, [user]);
+
+  // Activate journey picker once a logged-in user is confirmed
+  useEffect(() => {
+    if (user && view === 'input') {
+      setJourneyMode(true);
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleUnload = () => {
@@ -1112,7 +1119,7 @@ export default function Jiff() {
         )}
 
         {/* ── Input view ── */}
-        {!journeyMode && view === 'input' && (
+        {(!journeyMode || !user) && view === 'input' && (
           <div className="main-layout">
             <div className="main-form">
               {user && (
