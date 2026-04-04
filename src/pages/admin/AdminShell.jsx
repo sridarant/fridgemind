@@ -67,6 +67,7 @@ import Tab_UIKIT from './tabs/uikit.jsx';
 export default function Admin() {
   const navigate   = useNavigate();
   const [authed,   setAuthed]   = useState(!!sessionStorage.getItem('jiff-admin-auth'));
+  const [adminKey, setAdminKey] = useState('');
   const [pass,     setPass]     = useState('');
   const [stats,    setStats]    = useState(null);
   const [users,    setUsers]    = useState([]);
