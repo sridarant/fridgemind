@@ -6,9 +6,3 @@ build
 # Playwright
 playwright-report/
 test-results/
-
-echo "*.txt" >> .gitignore
-echo "anthropic key.txt" >> .gitignore
-echo "Gthub Token No Expiry.txt" >> .gitignore
-echo "google oauth.txt" >> .gitignore
-echo "Mailchimp Keys.txt" >> .gitignore

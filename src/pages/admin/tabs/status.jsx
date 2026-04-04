@@ -45,11 +45,7 @@ export default function Tab_STATUS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
       </div>
     ))}
   </Card>
-</>
         )}
-
-        {/* CI/CD */}
-        {activeTab==='cicd' && (
   <Card title="CI/CD Pipeline">
     <div style={{display:'flex',flexDirection:'column',gap:0}}>
       {[
