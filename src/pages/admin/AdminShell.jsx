@@ -369,6 +369,7 @@ export default function Admin() {
             feedback, setFeedback, releases, setReleases, loading, setLoading,
             premiumStatus, setPremiumStatus, lookerUrl, setLookerUrl,
             tokenStats, setTokenStats, rlsStatus, setRlsStatus,
+            exportCSV,
           };
           return (
             <>
