@@ -231,6 +231,14 @@ const bn = {
   error_try_again: 'Something went wrong. Please try again.',
   connection_error: 'Connection error. Please try again.',
 
+
+  favourites_nav: 'Favourites',  // auto-synced
+  serving_label_full: 'serving{plural} — sized for {n} {person}',  // auto-synced
+  journey_fridge_tile: 'What\'s in my fridge?',  // auto-synced
+  journey_leftover_sub: 'Cooked too much? Here\'s what to do',  // auto-synced
+  journey_fridge_shortcut: 'Or type what\'s in your fridge…',  // auto-synced
+  feedback_placeholder: 'Tell us what you think, what\'s broken, or what you\'d love to see…',  // auto-synced
+
 };
 
 export default bn;

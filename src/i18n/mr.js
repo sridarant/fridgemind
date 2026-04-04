@@ -102,5 +102,103 @@ const mr = {
   error_try_again: 'Something went wrong. Please try again.',
   connection_error: 'Connection error. Please try again.',
 
+
+  cuisine_indian: 'Indian',  // auto-synced
+  cuisine_italian: 'Italian',  // auto-synced
+  cuisine_mexican: 'Mexican',  // auto-synced
+  cuisine_mediterranean: 'Mediterranean',  // auto-synced
+  cuisine_japanese: 'Japanese',  // auto-synced
+  cuisine_korean: 'Korean',  // auto-synced
+  cuisine_middleEastern: 'Middle Eastern',  // auto-synced
+  cuisine_french: 'French',  // auto-synced
+  cuisine_brazilian: 'Brazilian',  // auto-synced
+  time_30: '🍳 30 min',  // auto-synced
+  time_60: '🥘 1 hour',  // auto-synced
+  time_any: '🌿 No limit',  // auto-synced
+  diet_veg: 'Vegetarian',  // auto-synced
+  diet_vegan: 'Vegan',  // auto-synced
+  diet_df: 'Dairy-free',  // auto-synced
+  diet_lowCarb: 'Low-carb',  // auto-synced
+  units_imperial: 'Imperial (oz, cups)',  // auto-synced
+  cta_jiffCuisine: 'Jiff me {cuisine} meals',  // auto-synced
+  results_sub: 'Tap ♥ to save · expand for recipe + timers · use scaler to adjust servings',  // auto-synced
+  saved: '❤️ Saved',  // auto-synced
+  see_recipe: 'See full recipe',  // auto-synced
+  collapse: 'Collapse',  // auto-synced
+  method: 'Method',  // auto-synced
+  nutrition: 'Nutrition per serving',  // auto-synced
+  servings_label: 'Servings',  // auto-synced
+  servings_was: '(was {n})',  // auto-synced
+  grocery_needToBuy: 'Need to buy',  // auto-synced
+  grocery_inFridge: 'Already in your fridge',  // auto-synced
+  grocery_copyList: 'Copy list',  // auto-synced
+  grocery_copied: 'Copied!',  // auto-synced
+  grocery_trigger: 'What do I need to buy?',  // auto-synced
+  grocery_seeList: 'See list →',  // auto-synced
+  grocery_all: 'You have everything!',  // auto-synced
+  share_copy: 'Copy text',  // auto-synced
+  share_more: 'More',  // auto-synced
+  share_close: 'Close',  // auto-synced
+  favs_none: 'No saved recipes yet',  // auto-synced
+  favs_empty_title: 'Nothing saved yet',  // auto-synced
+  favs_empty_sub: 'Tap ♥ on any recipe card to save it here.',  // auto-synced
+  reset_btn: '← Try different ingredients',  // auto-synced
+  auth_sub: 'Sign in to sync recipes, pantry & preferences',  // auto-synced
+  auth_email_ph: 'or email',  // auto-synced
+  auth_email_go: 'Go',  // auto-synced
+  auth_dismiss: '×',  // auto-synced
+  pantry_manage: 'manage your pantry',  // auto-synced
+  upgrade_btn: 'Upgrade for unlimited →',  // auto-synced
+  section_meal_type: 'Meal type',  // auto-synced
+  section_ingredients: 'Ingredients available',  // auto-synced
+  section_servings: 'Servings',  // auto-synced
+  section_cuisine: 'Cuisine',  // auto-synced
+  section_time: 'Time available',  // auto-synced
+  section_diet: 'Dietary preference',  // auto-synced
+  or_enter: 'or type ingredients below',  // auto-synced
+  pantry_prepopulated: 'Pre-filled from your pantry',  // auto-synced
+  no_prefs_msg: 'Set your preferences in Profile to personalise every suggestion.',  // auto-synced
+  go_to_profile: 'Go to Profile →',  // auto-synced
+  week_plan: 'Week plan',  // auto-synced
+  goal_plans: 'Goal plans',  // auto-synced
+  history_nav: 'History',  // auto-synced
+  go_premium: '⚡ Go Premium',  // auto-synced
+  favourites_nav: 'Favourites',  // auto-synced
+  cuisine_indian_sub: 'Indian cuisines',  // auto-synced
+  serving_label_full: 'serving{plural} — sized for {n} {person}',  // auto-synced
+  veg_disabled_msg: 'Vegetarian disabled — non-veg ingredient detected',  // auto-synced
+  mealtype_any: 'Any meal',  // auto-synced
+  mealtype_breakfast: 'Breakfast',  // auto-synced
+  mealtype_lunch: 'Lunch',  // auto-synced
+  mealtype_dinner: 'Dinner',  // auto-synced
+  mealtype_snack: 'Snacks',  // auto-synced
+  main_heading: 'What can I make right now?',  // auto-synced
+  fridge_sub: 'Add your vegetables, proteins and main ingredients',  // auto-synced
+  or_type_below: '— or type below —',  // auto-synced
+  pantry_label: 'Pantry & Spices',  // auto-synced
+  pantry_sub: 'Oils, spices, condiments and staples you always have',  // auto-synced
+  need_to_buy: 'Need to buy',  // auto-synced
+  in_fridge: 'In fridge',  // auto-synced
+  see_full_recipe: 'See full recipe',  // auto-synced
+  recipe_ingredients: 'Ingredients',  // auto-synced
+  recipe_method: 'Method',  // auto-synced
+  share_title: 'Share this recipe',  // auto-synced
+  what_to_buy: 'What do I need to buy?',  // auto-synced
+  see_list: 'See list →',  // auto-synced
+  cta_note: 'Add at least one ingredient to get started',  // auto-synced
+  your_prefs: 'Your preferences',  // auto-synced
+  language_label: 'Language',  // auto-synced
+  units_label: 'Units',  // auto-synced
+  edit_prefs: 'Edit preferences →',  // auto-synced
+  auth_perk_favs: 'Favourites & pantry synced across devices',  // auto-synced
+  auth_perk_taste: 'Personalised recipes based on your taste',  // auto-synced
+  auth_send: 'Send link',  // auto-synced
+  add_ingredient: 'Add at least one ingredient',  // auto-synced
+  fridge_label: 'What\'s in your fridge?',  // auto-synced
+  journey_fridge_tile: 'What\'s in my fridge?',  // auto-synced
+  journey_leftover_sub: 'Cooked too much? Here\'s what to do',  // auto-synced
+  journey_fridge_shortcut: 'Or type what\'s in your fridge…',  // auto-synced
+  feedback_placeholder: 'Tell us what you think, what\'s broken, or what you\'d love to see…',  // auto-synced
+
 };
 export default mr;

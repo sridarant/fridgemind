@@ -1,3 +1,68 @@
+## v1.22.0 — 2026-04-04
+
+### Major: v22 — UX Redesign
+
+**Navigation**
+- Bottom tab bar (mobile): Home · Discover · Favourites · Profile
+- "← Home" button on all non-home pages, standardised label
+- Profile dropdown: Profile · History · Insights · Send feedback · Sign out
+- Insights moved inside Profile — removed from separate header link
+
+**Journey tiles — full redesign**
+- Weather banner always visible at top with smart contextual suggestion
+- RIGHT NOW group (2-row): Fridge · Mood · Seasonal / Goal · Order in
+- COOKING FOR group: Family meal (1-tap) · Kids lunchbox · Hosting guests (1-tap)
+- [+ More] toggle: Little Ones (Dishes for kids, Little Chefs) · Plan ahead (Week plan, Leftover rescue) · Traditions (Sacred Kitchen)
+- Mood selector: 5 moods in bottom sheet, each maps to cuisine + complexity + time
+- Order in: India-only bottom sheet with Swiggy · Zomato · Blinkit deep links
+
+**Discover tab (new)**
+- In Season Now: seasonal produce by month, tappable recipe suggestions
+- Coming Up: festival calendar with traditional dish suggestions
+- Explore a Region: weekly rotating regional Indian cuisine spotlight (12 regions)
+- You Haven't Tried: personalised gap detection from meal history
+- Trending This Week: static curated list (data-driven in future)
+- Option 2 architecture: page loads without API call, generation fires on tap only
+
+**Recipe card — full redesign**
+- Tab layout: Ingredients · Method · Grocery
+- Video embedded inline (YouTube iframe, loads on tap, no autoplay)
+- Method: inline step timers + "Focus on this step" per step
+- Cook Mode removed — replaced by Focus step
+- Rating visible in collapsed card header
+- Scale control always accessible in action bar
+
+**Onboarding — 3-screen first-time setup**
+- Screen 1: Diet preference (6 options)
+- Screen 2: Cooking for (Just me / Partner / Family) + kids ages if family
+- Screen 3: Spice level + cuisine preferences (optional, skippable)
+- Saves to Supabase profiles table
+- Never shown again after completion
+
+**Supabase — Phase 8 complete**
+- profiles: streak, last_cooked_at, is_premium, premium_expires_at, trial_started_at, premium_plan, mood_history, behaviour_signals
+- meal_history: rating, cooked_at
+- usage_counts table: per-day recipe count per user
+- updateStreak writes to profiles.streak via /api/admin?action=update-streak
+- Rating writes to meal_history.rating via /api/admin?action=update-rating
+
+**New files**
+- src/lib/discover.js — Discover page logic (seasonal, festival, region, personalisation)
+- src/lib/festival.js — Extended: 12-month seasonal data, 12 regional cuisines, 4 exports
+- src/components/common/BottomNav.jsx
+- src/components/common/WeatherBanner.jsx
+- src/components/common/MoodSelector.jsx
+- src/components/common/OrderInSheet.jsx
+- src/components/common/SeasonalCard.jsx
+- src/pages/Onboarding.jsx
+- src/pages/Discover.jsx
+
+**Prompt optimisations**
+- ~200 token reduction per generation call
+- Mood context: single sentence injection
+- Weather context: temp + condition only (not prose)
+- Cuisine sent as code not full label list
+
 # Jiff — Complete Release History
 
 AI-powered meal suggester. Live at https://jiff-ecru.vercel.app

@@ -235,6 +235,30 @@ export default async function handler(req, res) {
       return res.status(200).json({ releases });
     }
 
+    // ── Update streak in profiles table (Phase 8) ──────────────────
+    if (action === 'update-streak' && req.method === 'POST') {
+      const { userId, streak, lastCooked } = req.body;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const r = await fetch(`${url}/rest/v1/profiles?id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: { ...h, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ streak, last_cooked_at: lastCooked }),
+      });
+      return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
+    }
+
+    // ── Update rating in meal_history (Phase 8) ──────────────────
+    if (action === 'update-rating' && req.method === 'POST') {
+      const { mealId, rating, userId } = req.body;
+      if (!mealId || !userId) return res.status(400).json({ error: 'mealId and userId required' });
+      const r = await fetch(`${url}/rest/v1/meal_history?id=eq.${mealId}&user_id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: { ...h, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ rating, cooked_at: new Date().toISOString() }),
+      });
+      return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
+    }
+
     return res.status(400).json({ error: `Unknown action: ${action}` });
   } catch(e) { return res.status(500).json({ error: e.message }); }
 }

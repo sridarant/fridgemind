@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale, getCurrentSeason } from '../contexts/LocaleContext';
@@ -20,10 +20,6 @@ import { extractCoreName, isAvailable, buildGroceryList } from '../lib/grocery.j
 import { buildShareText } from '../lib/sharing.js';
 import { mealKey, getDietaryLabel } from '../lib/mealKey.js';
 import { getUpcomingFestival } from '../lib/festival.js';
-import { StepTimer, StepWithTimer } from '../components/meal/StepTimer.jsx';
-import { GroceryPanel }            from '../components/meal/GroceryPanel.jsx';
-import { CookModeOverlay }         from '../components/meal/CookModeOverlay.jsx';
-import { VideoButton }             from '../components/meal/VideoButton.jsx';
 import { MealCard }               from '../components/meal/MealCard.jsx';
 import { JourneyTiles }           from '../components/common/JourneyTiles.jsx';
 
@@ -618,9 +614,10 @@ export default function Jiff() {
       try { localStorage.setItem('jiff-streak', JSON.stringify({ count: newCount, lastDate: today })); } catch {}
       setStreak(newCount);
       if (user) {
-        fetch('/api/admin?action=meal-history', {
+        // Write streak to Supabase profiles.streak (Phase 8)
+        fetch('/api/admin?action=update-streak', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, meals: [], _updateStreak: true, streak: newCount }),
+          body: JSON.stringify({ userId: user.id, streak: newCount, lastCooked: new Date().toISOString() }),
         }).catch(() => {});
       }
     } catch {}
@@ -640,6 +637,13 @@ export default function Jiff() {
     }).catch(() => {});
   };
 
+  // ── Handle navigation state from Discover page ──────────────────
+  useEffect(() => {
+    if (generateContextFromNav && user) {
+      handleGenerateDirect(generateContextFromNav);
+    }
+  }, []); // eslint-disable-line
+
   // ── One-tap generation from journey tiles ────────────────────────
   const handleGenerateDirect = async (context = {}) => {
     if (!user) { setGateDismissed(false); return; }
@@ -655,12 +659,16 @@ export default function Jiff() {
       ? pantryItems
       : ['rice', 'onion', 'tomato', 'oil', 'salt', 'chilli'];  // Indian pantry defaults
 
-    // Inject context into prompt via a special cuisineContext
+    // Inject context into prompt
     const cuisineCtx = context.hosting
       ? 'Indian hosting and entertaining — impressive dishes that feed 8–12 people, can be partially prepped ahead, visually striking. Include a starter, main, and dessert option in the recipe suggestions.'
       : context.family
         ? 'family meal — suitable for all ages and dietary preferences in the household'
-        : context.mealType || 'any';
+        : context.moodContext?.prompt
+          ? `${context.moodContext.prompt} — cuisine: ${context.moodContext.cuisineWeight || 'any'}`
+          : context.seasonal
+            ? `seasonal dishes using ${context.season?.items?.slice(0,3).join(', ') || 'seasonal produce'}`
+            : context.mealType || 'any';
 
     setView('loading'); setFactIdx(0); setShowFavs(false); setJourneyMode(false);
     try {
@@ -781,12 +789,17 @@ export default function Jiff() {
     else sessionStorage.removeItem('jiff-session-active');
   }, [user]);
 
-  // Activate journey picker once a logged-in user is confirmed
+  // Activate journey picker + check onboarding on first login
   useEffect(() => {
     if (user && view === 'input') {
       setJourneyMode(true);
+      // Check if onboarding is needed (profile.onboarding_done not set)
+      if (profile && !profile.onboarding_done && !sessionStorage.getItem('jiff-onboarding-shown')) {
+        sessionStorage.setItem('jiff-onboarding-shown', '1');
+        navigate('/onboarding');
+      }
     }
-  }, [user]);
+  }, [user]); // eslint-disable-line
 
   useEffect(() => {
     const handleUnload = () => {
@@ -1444,6 +1457,17 @@ export default function Jiff() {
         )}
 
         {/* ── Results ── */}
+        {/* ── Back to journey from results ── */}
+        {view === 'results' && user && (
+          <div style={{textAlign:'center',padding:'12px 0 4px'}}>
+            <button onClick={()=>{setView('input');setJourneyMode(true);setMeals([]);}}
+              style={{background:'none',border:'none',cursor:'pointer',fontSize:12,
+                color:'var(--muted)',fontFamily:"'DM Sans',sans-serif"}}>
+              ← Cook something else
+            </button>
+          </div>
+        )}
+
         {view === 'results' && (
           <div className="results-wrap">
             {/* Pantry restock nudge */}

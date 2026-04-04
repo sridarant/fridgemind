@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     const validation = await validateApiKey(apiKey, process.env.REACT_APP_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     if (!validation.ok) return res.status(validation.status || 401).json({ error: validation.error });
 
-    const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric', kidsMode=false, kidsPromptOverride=null, tasteProfile=null, familyMembers=[] } = req.body;
+    const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric', kidsMode=false, kidsPromptOverride=null, tasteProfile=null, familyMembers=[], moodContext=null, weatherContext=null, dish=null } = req.body;
     if (!ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
     const maxCount = Math.min(count, validation.record?.tier === 'pro' ? 5 : 3);
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
@@ -118,11 +118,17 @@ export default async function handler(req, res) {
     const dietLabel    = (!diet    || diet    === 'none') ? 'no dietary restrictions' : diet;
     const langMap = { en:'English', hi:'Hindi', ta:'Tamil', es:'Spanish', fr:'French', de:'German' };
     const langName = langMap[language] || 'English';
-    const prompt = `You are a creative chef. Suggest ${maxCount} meals.
+    // Token-efficient context additions
+const moodLine    = moodContext    ? `Mood: ${moodContext.prompt}.` : '';
+const weatherLine = weatherContext ? `Weather: ${weatherContext.temp||'?'}°C ${weatherContext.condition||''}.` : '';
+const dishLine    = dish           ? `Feature this dish: ${dish}.` : '';
+const familyLine  = familyMembers?.length > 0 ? `Family: ${familyMembers.map(m=>m.name||m).join(', ')}.` : '';
+
+const prompt = `Creative chef. Suggest ${maxCount} ${mealType!=='any'?mealType+' ':' '}meals.
 Ingredients: ${ingredients.join(', ')}.
-Time: ${time}. Diet: ${dietLabel}. ${cuisineLabel?`All meals MUST be ${cuisineLabel} cuisine.`:''} Servings: ${servings}. ${units==='imperial'?'Use imperial measurements.':'Use metric measurements.'} ${langName!=='English'?`Respond entirely in ${langName}.`:''}
-Respond ONLY with valid JSON array:
-[{"name":"..","emoji":"..","time":"..","servings":"${servings}","difficulty":"..","description":"..","ingredients":[],"steps":[],"calories":"..","protein":"..","carbs":"..","fat":".."}]`;
+${time} prep. Diet: ${dietLabel}. ${cuisineLabel?'Cuisine: '+cuisineLabel+'.':''} Servings: ${servings}. ${units==='imperial'?'Imperial.':'Metric.'} ${moodLine} ${weatherLine} ${dishLine} ${familyLine} ${langName!=='English'?'Language: '+langName+'.':''}
+JSON only — ${maxCount} objects:
+[{"name":"..","emoji":"..","time":"..","servings":${servings},"diet":"..","description":"..","ingredients":["qty unit item"],"steps":["step text"],"calories":"..","protein":"..","carbs":"..","fat":".."}]`;
     try {
       const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',

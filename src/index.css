@@ -23,3 +23,72 @@ body {
 }
 
 a { color: inherit; text-decoration: none; }
+
+/* ── v22: Bottom navigation ──────────────────────────────────────── */
+.bottom-nav {
+  display: grid !important;
+}
+
+/* Hide bottom nav on desktop */
+@media (min-width: 768px) {
+  .bottom-nav { display: none !important; }
+  /* Add bottom padding on desktop so content isn't cut off */
+  body { padding-bottom: 0; }
+}
+
+/* On mobile, pad page content above bottom nav */
+@media (max-width: 767px) {
+  body { padding-bottom: 64px; }
+}
+
+/* ── v22: Card tabs ──────────────────────────────────────────────── */
+.card-tab-bar {
+  display: flex;
+  border-bottom: 1px solid rgba(28,10,0,0.08);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.card-tab-bar::-webkit-scrollbar { display: none; }
+
+/* ── v22: Onboarding ─────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.onboarding-screen {
+  animation: fadeInUp 0.25s ease;
+}
+
+/* ── v22: Mood selector / OrderIn sheet animation ────────────────── */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── v22: Embedded video aspect ratio ───────────────────────────── */
+.video-embed-wrapper {
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+}
+
+/* ── v22: Journey tile grid responsive ──────────────────────────── */
+@media (max-width: 400px) {
+  .journey-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* ── v22: Page content with bottom nav spacing ───────────────────── */
+.page-with-nav {
+  padding-bottom: 80px;
+}
+
+/* ── General: hide desktop-only elements on mobile ───────────────── */
+@media (max-width: 767px) {
+  .desktop-only { display: none !important; }
+}
+@media (min-width: 768px) {
+  .mobile-only  { display: none !important; }
+}

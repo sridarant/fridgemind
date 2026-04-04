@@ -7,7 +7,11 @@ function StatusBadge({ label, check }) {
   useEffect(() => {
     if (typeof check === 'boolean') { setOk(check); return; }
     if (typeof check === 'string') {
-      fetch(check).then(r => setOk(r.ok)).catch(() => setOk(false));
+      // Any HTTP response (even 405/4xx) means the serverless function is deployed & running.
+      // Only a network error means it's truly unreachable.
+      fetch(check)
+        .then(r => setOk(r.status < 500))
+        .catch(() => setOk(false));
     }
   }, [check]);
   const color = ok === true ? '#1D9E75' : ok === false ? '#E53E3E' : '#9E9E9E';
@@ -48,16 +52,19 @@ export default function Tab_STATUS({ C, Card }) {
 
       <Card title="Environment variables">
         {[
-          ['REACT_APP_SUPABASE_URL',      !!process.env.REACT_APP_SUPABASE_URL],
-          ['REACT_APP_SUPABASE_ANON_KEY', !!process.env.REACT_APP_SUPABASE_ANON_KEY],
-          ['REACT_APP_RAZORPAY_KEY_ID',   !!process.env.REACT_APP_RAZORPAY_KEY_ID],
-          ['REACT_APP_GA_MEASUREMENT_ID', !!process.env.REACT_APP_GA_MEASUREMENT_ID],
-        ].map(([name, set]) => (
+          ['REACT_APP_SUPABASE_URL',      !!process.env.REACT_APP_SUPABASE_URL,      true],
+          ['REACT_APP_SUPABASE_ANON_KEY', !!process.env.REACT_APP_SUPABASE_ANON_KEY, true],
+          ['REACT_APP_RAZORPAY_KEY_ID',   !!process.env.REACT_APP_RAZORPAY_KEY_ID,   false],
+          ['REACT_APP_GA_MEASUREMENT_ID', !!process.env.REACT_APP_GA_MEASUREMENT_ID, false],
+        ].map(([name, set, required]) => (
           <div key={name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
             padding:'7px 0', borderBottom:'1px solid rgba(28,10,0,0.05)', fontSize:12 }}>
-            <code style={{ color:C.ink, fontSize:11 }}>{name}</code>
-            <span style={{ fontWeight:500, color: set ? '#1D9E75' : '#E53E3E', fontSize:11 }}>
-              {set ? '✅ Set' : '❌ Missing'}
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <code style={{ color:C.ink, fontSize:11 }}>{name}</code>
+              {!required && <span style={{fontSize:9,color:C.muted,background:'rgba(28,10,0,0.06)',padding:'1px 5px',borderRadius:4}}>optional</span>}
+            </div>
+            <span style={{ fontWeight:500, color: set ? '#1D9E75' : required ? '#E53E3E' : '#F59E0B', fontSize:11 }}>
+              {set ? '✅ Set' : required ? '❌ Missing' : '⚠️ Not set'}
             </span>
           </div>
         ))}
