@@ -55,8 +55,8 @@ export default function Tab_OVERVIEW({ C, Card, stats, waitlist, loading }) {
       {stats?.weeklyTrend?.length > 0 && (
         <Card title="Activity this week">
           <div style={{ display:'flex', alignItems:'flex-end', gap:8, height:64 }}>
-            {stats.weeklyTrend.map(d => {
-              const max = Math.max(...stats.weeklyTrend.map(x => x.users), 1);
+            {(stats.weeklyTrend||[]).map(d => {
+              const max = Math.max(...(stats.weeklyTrend||[]).map(x => x.users), 1);
               const h   = Math.round((d.users / max) * 52);
               return (
                 <div key={d.day} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>

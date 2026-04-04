@@ -1,96 +1,71 @@
-// src/pages/admin/tabs/status.jsx — Admin tab component
-// Props received from AdminShell: C, Card, ADMIN_KEY, adminKey, stats, users,
-//   waitlist, feedback, releases, loading, premiumStatus, lookerUrl,
-//   tokenStats, rlsStatus, setStats, setUsers, setWaitlist, setFeedback,
-//   setReleases, setLoading, setPremiumStatus, setLookerUrl,
-//   setTokenStats, setRlsStatus, activeTab
+// src/pages/admin/tabs/status.jsx — self-contained, no AdminShell state deps
+import { useState, useEffect } from 'react';
 
-export default function Tab_STATUS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
-  stats, setStats, users, setUsers, waitlist, setWaitlist,
-  feedback, setFeedback, releases, setReleases, loading, setLoading,
-  premiumStatus, setPremiumStatus, lookerUrl, setLookerUrl,
-  tokenStats, setTokenStats, rlsStatus, setRlsStatus }) {
+// StatusBadge defined locally — was previously missing/undefined
+function StatusBadge({ label, check }) {
+  const [ok, setOk] = useState(null);
+  useEffect(() => {
+    if (typeof check === 'boolean') { setOk(check); return; }
+    if (typeof check === 'string') {
+      fetch(check).then(r => setOk(r.ok)).catch(() => setOk(false));
+    }
+  }, [check]);
+  const color = ok === true ? '#1D9E75' : ok === false ? '#E53E3E' : '#9E9E9E';
+  const text  = ok === true ? '✅ OK'    : ok === false ? '❌ Down' : '⏳ Checking…';
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+      padding:'8px 0', borderBottom:'1px solid rgba(28,10,0,0.05)' }}>
+      <span style={{ fontSize:13, color:'#1C0A00' }}>{label}</span>
+      <span style={{ fontSize:12, fontWeight:500, color }}>{text}</span>
+    </div>
+  );
+}
+
+export default function Tab_STATUS({ C, Card }) {
+  const supabaseOk = !!process.env.REACT_APP_SUPABASE_URL;
+
+  const SERVICES = [
+    { label:'Supabase (auth + database)',    check: supabaseOk },
+    { label:'API /api/suggest',              check: '/api/suggest' },
+    { label:'API /api/admin',               check: '/api/admin?action=stats' },
+    { label:'API /api/videos',              check: '/api/videos?check=true' },
+    { label:'API /api/comms',               check: '/api/comms?check=true' },
+    { label:'API /api/payments',            check: '/api/payments?check=true' },
+    { label:'API /api/planner',             check: '/api/planner?check=true' },
+    { label:'Vercel hosting',               check: true },
+  ];
+
   return (
     <>
-  <Card title="Service Status">
-    {[
-      { name:'Vercel (Hosting)',  icon:'▲', detail:'jiff-ecru.vercel.app' },
-      { name:'Supabase DB',       icon:'🐘', detail:'Supabase PostgreSQL 15' },
-      { name:'Anthropic API',     icon:'🤖', detail:'claude-haiku + claude-opus' },
-      { name:'Razorpay',          icon:'💳', detail:'Payments — India only' },
-      { name:'WhatsApp Bot',      icon:'💬', detail:'Meta WhatsApp Cloud API v18' },
-    ].map((svc, i) => (
-      <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid rgba(28,10,0,0.05)'}}>
-        <span style={{fontSize:20,flexShrink:0}}>{svc.icon}</span>
-        <div style={{flex:1}}>
-          <div style={{fontSize:13,fontWeight:500,color:C.ink}}>{svc.name}</div>
-          <div style={{fontSize:11,color:C.muted,fontWeight:300}}>{svc.detail}</div>
+      <Card title="Service status">
+        <div style={{ fontSize:12, color:C.muted, fontWeight:300, marginBottom:12, lineHeight:1.6 }}>
+          Live checks against each service endpoint. Green = responding, red = unreachable.
         </div>
-        <StatusBadge id={i} supabaseEnabled={supabaseEnabled} />
-      </div>
-    ))}
-  </Card>
-  <Card title="Environment">
-    {[
-      ['ANTHROPIC_API_KEY',         'Server-side only — verify in Vercel dashboard'],
-      ['REACT_APP_SUPABASE_URL',     supabaseEnabled ? '✅ Configured' : '❌ Missing — add to Vercel env vars'],
-      ['SUPABASE_SERVICE_ROLE_KEY',  supabaseEnabled ? '✅ Present (enables admin data)' : '⚠️ Missing — Users/Feedback tabs need this'],
-      ['RAZORPAY_KEY_SECRET',        'Server-side only — verify in Vercel dashboard'],
-      ['WHATSAPP_ACCESS_TOKEN',      'Server-side only — verify in Vercel dashboard'],
-      ['MAILCHIMP_API_KEY',          'Server-side only — verify in Vercel dashboard'],
-    ].map(([k,v])=>(
-      <div key={k} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.04)',alignItems:'flex-start'}}>
-        <code style={{fontSize:11,background:'rgba(28,10,0,0.06)',padding:'2px 8px',borderRadius:4,minWidth:180,flexShrink:0,lineHeight:1.8}}>{k}</code>
-        <span style={{fontSize:12,color:v.startsWith('✅')?C.green:v.startsWith('❌')?C.red:v.startsWith('⚠️')?'#854F0B':C.muted,fontWeight:300}}>{v}</span>
-      </div>
-    ))}
-  </Card>
-        )}
-  <Card title="CI/CD Pipeline">
-    <div style={{display:'flex',flexDirection:'column',gap:0}}>
-      {[
-        { step:'1', label:'Developer pushes to GitHub (main branch)', icon:'💻', status:'auto', detail:'git add . → git commit → git push origin main' },
-        { step:'2', label:'GitHub triggers Vercel webhook', icon:'🔗', status:'auto', detail:'Automatic — Vercel listens to GitHub push events' },
-        { step:'3', label:'Vercel runs npm install', icon:'📦', status:'auto', detail:'Installs 267 packages from package.json' },
-        { step:'4', label:'ESLint static analysis', icon:'🔍', status:'auto', detail:'react-scripts build runs ESLint — fails on syntax errors' },
-        { step:'5', label:'React production build', icon:'⚙️', status:'auto', detail:'Webpack bundles src/ → optimised static files in build/' },
-        { step:'6', label:'Vercel deploys to Edge CDN', icon:'🌍', status:'auto', detail:'Deployed to 50+ edge locations globally in ~30 seconds' },
-        { step:'7', label:'Serverless functions deployed', icon:'⚡', status:'auto', detail:'api/*.js → 9 Vercel serverless functions (Node.js 18)' },
-        { step:'8', label:'Playwright E2E tests (optional)', icon:'🧪', status:'manual', detail:'Run manually: npx playwright test — 84 tests in tests/jiff.spec.js' },
-      ].map((s,i)=>(
-        <div key={i} style={{display:'flex',gap:12,padding:'12px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',alignItems:'flex-start'}}>
-          <div style={{width:28,height:28,borderRadius:'50%',background:s.status==='auto'?C.green:'rgba(255,184,0,0.2)',color:s.status==='auto'?'white':'#854F0B',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:700,flexShrink:0}}>
-            {s.step}
+        {SERVICES.map((svc, i) => (
+          <StatusBadge key={i} label={svc.label} check={svc.check} />
+        ))}
+      </Card>
+
+      <Card title="Environment variables">
+        {[
+          ['REACT_APP_SUPABASE_URL',      !!process.env.REACT_APP_SUPABASE_URL],
+          ['REACT_APP_SUPABASE_ANON_KEY', !!process.env.REACT_APP_SUPABASE_ANON_KEY],
+          ['REACT_APP_RAZORPAY_KEY_ID',   !!process.env.REACT_APP_RAZORPAY_KEY_ID],
+          ['REACT_APP_GA_MEASUREMENT_ID', !!process.env.REACT_APP_GA_MEASUREMENT_ID],
+        ].map(([name, set]) => (
+          <div key={name} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+            padding:'7px 0', borderBottom:'1px solid rgba(28,10,0,0.05)', fontSize:12 }}>
+            <code style={{ color:C.ink, fontSize:11 }}>{name}</code>
+            <span style={{ fontWeight:500, color: set ? '#1D9E75' : '#E53E3E', fontSize:11 }}>
+              {set ? '✅ Set' : '❌ Missing'}
+            </span>
           </div>
-          <div style={{flex:1}}>
-            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
-              <span style={{fontSize:14}}>{s.icon}</span>
-              <span style={{fontSize:13,fontWeight:500,color:C.ink}}>{s.label}</span>
-              <span style={{fontSize:10,padding:'1px 7px',borderRadius:20,background:s.status==='auto'?'rgba(29,158,117,0.1)':'rgba(255,184,0,0.15)',color:s.status==='auto'?C.green:'#854F0B',fontWeight:500,marginLeft:'auto',flexShrink:0}}>{s.status==='auto'?'Auto':'Manual'}</span>
-            </div>
-            <div style={{fontSize:11,color:C.muted,fontWeight:300}}>{s.detail}</div>
-          </div>
+        ))}
+        <div style={{ marginTop:10, fontSize:11, color:C.muted, fontWeight:300, lineHeight:1.5 }}>
+          Server-only vars (ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY, RAZORPAY_KEY_SECRET, YOUTUBE_API_KEY)
+          are not visible to the frontend — check them in Vercel Dashboard → Settings → Environment Variables.
         </div>
-      ))}
-    </div>
-  </Card>
-  <Card title="GitHub Actions (Optional)">
-    <div style={{fontSize:12,color:C.muted,fontWeight:300,lineHeight:1.7,marginBottom:12}}>
-      The repo includes <code>.github/workflows/e2e.yml</code> for automated Playwright tests.
-      To activate: add <code>VERCEL_URL</code> secret in GitHub → Settings → Secrets.
-    </div>
-    {[
-      ['Trigger','Push to main + pull requests'],
-      ['Tests','84 Playwright E2E tests'],
-      ['Report','HTML report uploaded as artifact'],
-      ['Status','Workflow file ready — requires VERCEL_URL secret to activate'],
-    ].map(([k,v])=>(
-      <div key={k} style={{display:'flex',gap:12,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
-        <span style={{fontSize:12,color:C.muted,minWidth:80,flexShrink:0,fontWeight:300}}>{k}</span>
-        <span style={{fontSize:12,color:C.ink}}>{v}</span>
-      </div>
-    ))}
-  </Card>
+      </Card>
     </>
   );
 }

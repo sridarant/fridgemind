@@ -146,7 +146,7 @@ export default function Tab_TECHDOC({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
         {comp.props.length > 0 && (
           <div style={{marginBottom:10}}>
             <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:600,marginBottom:6}}>Props</div>
-            {comp.props.map(([pname,ptype,pdesc])=>(
+            {(comp.props||[]).map(([pname,ptype,pdesc])=>(
               <div key={pname} style={{display:'grid',gridTemplateColumns:'110px 110px 1fr',gap:6,padding:'4px 0',fontSize:11,borderBottom:'1px solid rgba(28,10,0,0.03)'}}>
                 <code style={{color:C.jiff}}>{pname}</code>
                 <code style={{color:'#854F0B',fontSize:10}}>{ptype}</code>
@@ -189,7 +189,7 @@ export default function Tab_TECHDOC({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
         </div>
         <div style={{fontSize:12,color:C.muted,fontWeight:300,lineHeight:1.7,marginBottom:8}}>{ctx.desc}</div>
         <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-          {ctx.exports.map(e=>(
+          {(ctx.exports||[]).map(e=>(
             <code key={e} style={{fontSize:10,background:'rgba(28,10,0,0.05)',color:C.ink,padding:'2px 7px',borderRadius:4}}>{e}</code>
           ))}
         </div>
@@ -278,7 +278,7 @@ export default function Tab_TECHDOC({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
     ].map(flow=>(
       <div key={flow.title} style={{marginBottom:16,borderBottom:'1px solid rgba(28,10,0,0.07)',paddingBottom:14}}>
         <div style={{fontSize:13,fontWeight:600,color:C.ink,marginBottom:8}}>{flow.title}</div>
-        {flow.steps.map((step,i)=>(
+        {(flow.steps||[]).map((step,i)=>(
           <div key={i} style={{display:'flex',gap:8,marginBottom:5}}>
             <span style={{fontSize:10,color:C.jiff,fontWeight:700,flexShrink:0,minWidth:18}}>{i+1}.</span>
             <span style={{fontSize:11,color:C.muted,fontWeight:300}}>{step}</span>
