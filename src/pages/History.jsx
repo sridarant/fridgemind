@@ -88,7 +88,7 @@ export default function History() {
     const mealNames = Array.isArray(h.meal)
       ? (Array.isArray(h.meal) ? h.meal : h.meals || [h.meal]).filter(Boolean).map(m => m?.name||'').join(' ')
       : (h.meal?.name || '');
-    const matchSearch = !search || mealNames.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !search || (typeof mealNames === "string" ? mealNames : mealNames.join(" ")).toLowerCase().includes(search.toLowerCase())
       || (h.ingredients || []).some(i => i.toLowerCase().includes(search.toLowerCase()));
     const matchFilter = filter === 'all' || h.meal_type === filter;
     return matchSearch && matchFilter;
@@ -138,7 +138,7 @@ export default function History() {
           <span style={s.logoName}><span style={{color:C.jiff}}>J</span>iff</span>
         </div>
         <div style={{display:'flex', gap:8}}>
-          <button style={s.backBtn} onClick={() => navigate('/app')}>← Back to app</button>
+          <button style={s.backBtn} onClick={() => navigate('/app')}>← Home</button>
         </div>
       </header>
 

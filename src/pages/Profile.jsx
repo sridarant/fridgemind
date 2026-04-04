@@ -86,7 +86,7 @@ export default function Profile() {
           <span style={{fontFamily:"'Fraunces', serif",fontSize:22,fontWeight:900,color:C.ink}}><span style={{color:C.jiff}}>J</span>iff</span>
         </div>
         <div style={{display:'flex',gap:8}}>
-          <button onClick={()=>navigate('/app')} style={{fontSize:13,color:C.muted,background:'none',border:'1.5px solid ' + C.borderMid,borderRadius:8,padding:'7px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>← Back to app</button>
+          <button onClick={()=>navigate('/app')} style={{fontSize:13,color:C.muted,background:'none',border:'1.5px solid ' + C.borderMid,borderRadius:8,padding:'7px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>← Home</button>
           {user && <button onClick={signOut} style={{fontSize:13,color:'#E53E3E',background:'none',border:'1.5px solid rgba(229,62,62,0.3)',borderRadius:8,padding:'7px 14px',cursor:'pointer',fontFamily:"'DM Sans', sans-serif"}}>Sign out</button>}
         </div>
       </header>

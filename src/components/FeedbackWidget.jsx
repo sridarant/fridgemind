@@ -78,7 +78,7 @@ export default function FeedbackWidget() {
         }}
         onMouseEnter={e => e.currentTarget.style.background = C.jiff}
         onMouseLeave={e => e.currentTarget.style.background = C.ink}
-        title="Send feedback"
+        title="Send feedback" className="feedback-tab-btn"
       >
         Feedback
       </button>

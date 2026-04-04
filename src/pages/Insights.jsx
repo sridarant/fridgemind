@@ -176,7 +176,7 @@ export default function Insights() {
             style={{ padding:'6px 14px', borderRadius:20, fontSize:11, cursor:'pointer',
               border:'1.5px solid '+C.border, background:'white', color:C.muted,
               fontFamily:"'DM Sans',sans-serif" }}>
-            ← Back to app
+            ← Home
           </button>
         </div>
       </div>

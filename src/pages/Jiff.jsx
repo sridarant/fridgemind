@@ -998,15 +998,12 @@ export default function Jiff() {
         <header className="header">
           <JiffLogo size="md" spinning={view==='loading'} onClick={()=>navigate('/')} />
           <div className="header-right">
+            {/* Desktop-only nav links — hidden on mobile where BottomNav is used */}
+            <button className="hdr-btn desktop-only" onClick={()=>navigate('/discover')}
+              style={{fontFamily:"'DM Sans',sans-serif"}}>🌟 Discover</button>
+            <button className="hdr-btn desktop-only" onClick={()=>{if(!user){alert('Sign in to view your favourites.');return;}navigate('/favs');}}
+              style={{fontFamily:"'DM Sans',sans-serif"}}>❤️ Favourites</button>
             {trialActive && <div className="trial-badge">⏳ Trial: {trialDaysLeft}d left</div>}
-            <button className={`hdr-btn ${favourites.length>0?'fav-active':''}`} onClick={()=>{if(!user){alert('Sign in to save and view your favourite recipes.');return;}setShowFavs(p=>!p);}}>
-                <IconHeart filled={favourites.length>0}/>Favourites{favourites.length>0&&<span className="fav-badge">{favourites.length}</span>}
-              </button>
-            <button className="hdr-btn" onClick={()=>navigate('/planner')}>📅 {t('week_plan')}</button>
-            {user && <button className="hdr-btn" onClick={()=>navigate('/plans')}>🎯 {t('goal_plans')}</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/little-chefs')}>👶 Kids Meals</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/sacred')}>✨ Sacred Kitchen</button>}
-            {user && <button className="hdr-btn" onClick={()=>navigate('/insights')}>📊 Insights</button>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
             {/* ── Notification bell ── */}
             {user && (
@@ -1081,9 +1078,10 @@ export default function Jiff() {
                       {user.email}
                     </div>
                     {[
-                      {label:'👤 My Profile',   action:()=>navigate('/profile')},
-                      {label:'⚙️ Settings',      action:()=>navigate('/profile')},
-                      {label:'📜 History',       action:()=>navigate('/history')},
+                      {label:'👤 My Profile',    action:()=>navigate('/profile')},
+                      {label:'📜 History',        action:()=>navigate('/history')},
+                      {label:'📊 Insights',       action:()=>navigate('/insights')},
+                      {label:'💬 Send feedback',  action:()=>{ setShowUserMenu(false); document.querySelector('.feedback-tab-btn')?.click(); }},
                     ].map(item=>(
                       <button key={item.label} onClick={()=>{item.action();setShowUserMenu(false);}}
                         style={{width:'100%',padding:'10px 14px',border:'none',background:'white',cursor:'pointer',textAlign:'left',fontSize:13,color:'#1C0A00',fontWeight:400,fontFamily:"'DM Sans',sans-serif",borderBottom:'1px solid rgba(28,10,0,0.05)',transition:'background 0.1s'}}

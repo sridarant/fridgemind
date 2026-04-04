@@ -167,7 +167,7 @@ Respond ONLY with valid JSON, no markdown:
           <button onClick={() => navigate('/app')}
             style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid rgba(28,10,0,0.15)',
               background:'white', fontSize:12, cursor:'pointer', color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>
-            ← Back to App
+            ← Home to App
           </button>
         </div>
       </div>
