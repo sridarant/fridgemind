@@ -19,7 +19,7 @@ export default function Tab_USERS({ C, Card, users, waitlist, feedback,
                 ))}
               </tr></thead>
               <tbody>
-                {users.map((u,i)=>(
+                {(users||[]).map((u,i)=>(
                   <tr key={i} style={{borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
                     <td style={{padding:'6px 8px'}}>{u.name||'—'}</td>
                     <td style={{padding:'6px 8px'}}>{u.email}</td>

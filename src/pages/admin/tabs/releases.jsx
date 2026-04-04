@@ -51,7 +51,7 @@ export default function Tab_RELEASES({ C, Card, releases, setReleases }) {
         {msg&&<div style={{fontSize:12,color:C.green,marginBottom:12,padding:'6px 10px',background:'rgba(29,158,117,0.08)',borderRadius:6}}>{msg}</div>}
         {releases.length===0?(
           <div style={{color:C.muted,fontSize:13,fontWeight:300}}>No releases loaded. Click "Load from Supabase" or set up the auto webhook below.</div>
-        ):releases.map((r,i)=>(
+        ):(releases||[]).map((r,i)=>(
           <div key={i} style={{borderBottom:'1px solid rgba(28,10,0,0.06)',padding:'12px 0'}}>
             <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
               <span style={{fontFamily:"'Fraunces',serif",fontSize:15,fontWeight:700,color:C.ink}}>{r.version}</span>
@@ -75,10 +75,11 @@ export default function Tab_RELEASES({ C, Card, releases, setReleases }) {
           One-time setup. Every production deploy will log automatically to the Supabase releases table.
         </div>
         {[
-          ['1','Vercel Dashboard','Project → Settings → Git → Deploy Hooks'],
-          ['2','Create hook','Name: "Jiff Release Logger" → Branch: main → Copy URL'],
-          ['3','Set trigger','Settings → Integrations → Deploy Notifications → paste URL → "Deployment Succeeded"'],
-          ['4','Verify','Deploy the app → come back here → Load from Supabase → new entry appears'],
+          ['1','Vercel Dashboard','Go to your project → Settings → Git'],
+          ['2','Create Deploy Hook','Scroll to "Deploy Hooks" → Add → Name: "Jiff Release Logger" → Branch: main → Save → Copy the generated URL'],
+          ['3','Add webhook trigger','In your GitHub repo → Settings → Webhooks → Add webhook → Payload URL: paste the Vercel hook URL → Content type: application/json → Select "Just the push event" → Save'],
+          ['4','Alternative: GitHub Action','Or create .github/workflows/release-log.yml that POSTs to /api/deploy-hook after every push to main'],
+          ['5','Verify','Push a commit → wait ~2 min → come back here → "Load from Supabase" → new entry should appear'],
         ].map(([step,label,desc])=>(
           <div key={step} style={{display:'flex',gap:10,padding:'7px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',alignItems:'flex-start'}}>
             <span style={{width:20,height:20,borderRadius:'50%',background:C.jiff,color:'white',fontSize:10,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>{step}</span>

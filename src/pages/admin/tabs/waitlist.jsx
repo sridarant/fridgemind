@@ -17,7 +17,7 @@ export default function Tab_WAITLIST({ C, Card, users, waitlist, feedback,
                 ))}
               </tr></thead>
               <tbody>
-                {waitlist.map((w,i)=>(
+                {(waitlist||[]).map((w,i)=>(
                   <tr key={i} style={{borderBottom:'1px solid rgba(28,10,0,0.04)'}}>
                     <td style={{padding:'6px 8px'}}>{w.email}</td>
                     <td style={{padding:'6px 8px'}}>{w.country||'—'}</td>

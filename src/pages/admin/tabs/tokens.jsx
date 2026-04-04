@@ -59,7 +59,7 @@ export default function Tab_TOKENS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
         {tokenStats.byEndpoint?.length > 0 && (
           <div style={{marginBottom:16}}>
             <div style={{fontSize:11,letterSpacing:'1.5px',textTransform:'uppercase',color:C.muted,fontWeight:500,marginBottom:10}}>By endpoint</div>
-            {tokenStats.byEndpoint.map((row,i)=>(
+            {tokenStats.(byEndpoint||[]).map((row,i)=>(
               <div key={i} style={{display:'grid',gridTemplateColumns:'120px 80px 100px 100px 1fr',gap:8,
                 padding:'8px 0',borderBottom:'1px solid rgba(28,10,0,0.05)',fontSize:12}}>
                 <code style={{color:C.jiff}}>{row.endpoint}</code>
