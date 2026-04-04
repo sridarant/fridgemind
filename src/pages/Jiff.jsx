@@ -786,7 +786,7 @@ export default function Jiff() {
     if (user && view === 'input') {
       setJourneyMode(true);
     }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     const handleUnload = () => {
