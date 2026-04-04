@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fridgemind-v1';
+const CACHE_NAME = 'jiff-v22';
 
 const STATIC_ASSETS = [
   '/',
@@ -22,20 +22,26 @@ self.addEventListener('activate', (event) => {
       Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
+});
+
+// Force all open tabs to reload when a new SW activates
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Never cache API calls
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(request));
     return;
   }
 
+  // Network-first for everything else
   event.respondWith(
     fetch(request)
       .then((response) => {

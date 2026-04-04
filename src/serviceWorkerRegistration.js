@@ -10,7 +10,8 @@ export function registerSW() {
             const newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('Jiff updated — reload for latest version.');
+                // Force reload to get the new version
+                window.location.reload();
               }
             });
           });
