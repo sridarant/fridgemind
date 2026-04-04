@@ -50,7 +50,7 @@ export default function Tab_COMMS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
           <code style={{ fontSize:11, background:'rgba(255,69,0,0.08)', color:C.jiff, padding:'2px 8px', borderRadius:4 }}>{seq.tag}</code>
           <span style={{ fontSize:11, color:C.muted, fontWeight:300 }}>Trigger: {seq.trigger}</span>
         </div>
-        {seq.(emails||[]).map((e,i) => (
+        {(seq.emails||[]).map((e,i) => (
           <div key={i} style={{ display:'grid', gridTemplateColumns:'80px 1fr', gap:8,
             padding:'8px 12px', background:'rgba(28,10,0,0.02)', borderRadius:8, marginBottom:6 }}>
             <div style={{ fontSize:11, color:C.muted, fontWeight:500 }}>{e.day}</div>
