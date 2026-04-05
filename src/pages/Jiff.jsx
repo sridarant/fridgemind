@@ -1259,7 +1259,10 @@ export default function Jiff() {
                   {t('main_heading')}
                 </h1>
                 <p style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20}}>
-                  {isPremium ? '⚡ Premium · ' + PAID_RECIPE_CAP + ' recipes per search' : trialActive ? `🎁 Free trial · 1 recipe preview · ${trialDaysLeft} days              <div className="card">
+                  {isPremium ? '⚡ Premium · ' + PAID_RECIPE_CAP + ' recipes per search' : trialActive ? '🎁 Free trial · 1 recipe preview · ' + trialDaysLeft + ' days left' : ''}
+                </p>
+              </div>
+              <div className="card">
 
                 {/* ── Fridge header + photo ── */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
