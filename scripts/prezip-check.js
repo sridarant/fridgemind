@@ -111,7 +111,58 @@ for (const file of srcFiles) {
 }
 if (styleTemplateIssues === 0) ok(`Template literal check: ${styleTemplateClean} lines scanned, 0 issues`);
 
-// ── 4. Named import ↔ export cross-check ─────────────────────────
+
+// ── 4. Corrupted template literals (JSX content swallowed into template) ──
+// Catches: lines where a template literal has swallowed JSX markup
+// Pattern: backtick + JSX closing tag or JSX attribute on the SAME line after ${}
+// This is the specific corruption caused by partial string replacements
+console.log('\n── Corrupted template literal check ──');
+let unterminatedIssues = 0, unterminatedClean = 0;
+// The corruption pattern: template literal followed immediately by JSX angle-bracket content
+// e.g. `...${expr}days              <div className="card">
+const corruptedTemplateRe = /`[^`]*\$\{[^`]*<(?:div|span|p|button|a|h[1-6]|section|nav|header|footer)\b/;
+for (const file of srcFiles) {
+  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (corruptedTemplateRe.test(line)) {
+      err(`${path.relative(ROOT, file)}:${i + 1} — template literal may have swallowed JSX content: ${line.trim().slice(0, 80)}`);
+      unterminatedIssues++;
+    }
+    unterminatedClean++;
+  }
+}
+if (unterminatedIssues === 0) ok(`Corrupted template check: ${unterminatedClean} lines scanned, 0 issues`);
+
+
+// ── 5. JSX block comment inside opening tag (invalid between props) ──
+// Catches: <Comp prop={x} {/* comment */} /> — must use // instead
+console.log('\n── Block comment inside JSX tag ──');
+let jsxCommentIssues = 0, jsxCommentClean = 0;
+for (const file of srcFiles) {
+  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const cur = lines[i].trim();
+    // Line is a standalone {/* */} comment block
+    if (cur.startsWith('{/*') && cur.endsWith('*/}')) {
+      // Check the previous non-empty line to see if we're inside a JSX tag
+      for (let j = i - 1; j >= Math.max(0, i - 5); j--) {
+        const prev = lines[j].trim();
+        if (!prev) continue;
+        // If previous line ends with a JSX prop assignment, we're inside a tag
+        if (/=\{[^}]*\}$/.test(prev) || /=["'][^"']*["']$/.test(prev)) {
+          err(`${path.relative(ROOT, file)}:${i + 1} — block comment inside JSX tag (use // instead): ${cur.slice(0, 60)}`);
+          jsxCommentIssues++;
+        }
+        break;
+      }
+    }
+    jsxCommentClean++;
+  }
+}
+if (jsxCommentIssues === 0) ok(`Block comment check: ${jsxCommentClean} lines scanned, 0 issues`);
+
+// ── 6. Named import ↔ export cross-check ─────────────────────────
 console.log('\n── Named import/export verification ──');
 let exportChecked = 0, exportFailed = 0;
 for (const file of srcFiles) {
@@ -148,13 +199,13 @@ for (const file of srcFiles) {
 }
 if (exportFailed === 0) ok(`Exports: ${exportChecked} named imports verified`);
 
-// ── 5. API function count ─────────────────────────────────────────
+// ── 7. API function count ─────────────────────────────────────────
 console.log('\n── API function count (Vercel Hobby limit: 12) ──');
 const apiCount = apiFiles.length;
 if (apiCount > 12) err(`${apiCount}/12 — over limit`);
 else ok(`${apiCount}/12 (${12 - apiCount} slots free): ${apiFiles.map(f => path.basename(f)).join(', ')}`);
 
-// ── 6. vercel.json rewrite destinations exist ─────────────────────
+// ── 8. vercel.json rewrite destinations exist ─────────────────────
 console.log('\n── vercel.json rewrite integrity ──');
 const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 let rewriteOk = 0;
@@ -169,7 +220,7 @@ for (const r of (vj.rewrites || [])) {
 }
 ok(`${rewriteOk}/${(vj.rewrites || []).length} rewrites valid`);
 
-// ── 7. Key file existence ─────────────────────────────────────────
+// ── 9. Key file existence ─────────────────────────────────────────
 console.log('\n── Key file existence ──');
 const required = [
   'src/pages/Admin.jsx',

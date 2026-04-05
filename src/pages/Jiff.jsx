@@ -1283,7 +1283,7 @@ export default function Jiff() {
                   pantryIngredients={[]}
                   placeholder="cabbage, chicken, eggs…"
                   lang={lang}
-                  {/* Translation handled internally by IngredientInput via /api/suggest?action=translate */}
+                  // Translation handled internally via /api/suggest?action=translate
                 />
 
                 {/* ── Quick-add chips ── */}
