@@ -369,7 +369,7 @@ export default function Plans() {
                         </ul>
                         <div style={{ display:'flex', gap:6, marginTop:10, flexWrap:'wrap' }}>
                           <VideoButton recipeName={meal.name||''} compact={true}/>
-                          <a href={`https://www.swiggy.com/search?query=${encodeURIComponent(meal.name||'')}`}
+                          <a href={'https://www.swiggy.com/search?query=' + (encodeURIComponent(meal.name||''))}
                             target="_blank" rel="noopener noreferrer"
                             style={{ padding:'5px 10px', borderRadius:8, border:'1px solid rgba(252,128,25,0.25)', background:'rgba(252,128,25,0.05)', color:'#FC8019', fontSize:11, fontWeight:500, textDecoration:'none' }}>
                             🛵 Order

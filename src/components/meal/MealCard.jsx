@@ -236,7 +236,7 @@ export function MealCard({
                     border:'none', background:'none',
                     fontSize:12, fontWeight: activeTab===tab.id ? 600 : 400,
                     color:       activeTab===tab.id ? C.jiff : C.muted,
-                    borderBottom: activeTab===tab.id ? `2px solid ${C.jiff}` : '2px solid transparent',
+                    borderBottom: activeTab===tab.id ? '2px solid ' + C.jiff : '2px solid transparent',
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
                     transition:'all 0.12s',
                   }}>

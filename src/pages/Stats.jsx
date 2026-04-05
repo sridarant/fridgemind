@@ -147,7 +147,7 @@ export default function Stats() {
                 <span style={{ fontSize:11, color:C.muted }}>{d.users}</span>
                 <div style={{
                   width:'100%', borderRadius:'4px 4px 0 0',
-                  height: animated ? `${(d.users / maxWeekly) * 70}px` : '0',
+                  height: animated ? ((d.users / maxWeekly) * 70) + 'px' : '0',
                   background: d.day === 'Sat' ? C.jiff : 'rgba(255,69,0,0.3)',
                   transition:`height 1s ease ${i * 0.1}s`,
                   minHeight: 4,

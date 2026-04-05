@@ -55,7 +55,7 @@ export default function Tab_RLS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
             <code style={{color:C.ink,fontSize:11}}>{r.table}</code>
             <span style={{fontSize:11,color:C.muted}}>HTTP {r.status}</span>
             <span style={{fontSize:11,fontWeight:600,color:r.safe?C.green:C.red}}>
-              {r.safe ? '✓ Safe' : `⚠ ${r.count} rows`}
+              {r.safe ? '✓ Safe' : '⚠ ' + r.count + ' rows'}
             </span>
             <span style={{fontSize:10,color:C.muted}}>{r.safe ? 'Blocked as expected' : 'EXPOSED — add RLS policy'}</span>
           </div>
@@ -67,7 +67,7 @@ export default function Tab_RLS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
           color: rlsStatus.results.every(r=>r.safe) ? C.green : C.red}}>
           {rlsStatus.results.every(r=>r.safe)
             ? '✓ All tables protected — no data exposed to unauthenticated requests'
-            : `⚠ ${rlsStatus.results.filter(r=>!r.safe).length} table(s) exposed — run Phase 8 SQL in SUPABASE_SETUP.md`}
+            : '⚠ ' + rlsStatus.results.filter(r=>!r.safe).length + ' table(s) exposed — run Phase 8 SQL in SUPABASE_SETUP.md'}
         </div>
       </>
     )}

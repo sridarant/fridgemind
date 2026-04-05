@@ -433,10 +433,10 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
         {['🌶️','🧅','🥩','🫛'].map((e,i)=>(
           <span key={i} className="ingredient-fly" style={{
             position:'absolute', fontSize:18, lineHeight:1,
-            '--tx': `${[60,-60,50,-50][i]}px`,
-            '--ty': `${[-40,-30,-55,-25][i]}px`,
-            animationDelay: `${i*0.3}s`,
-            animationDuration: `${1.2 + i*0.2}s`,
+            '--tx': [60,-60,50,-50][i] + 'px',
+            '--ty': [-40,-30,-55,-25][i] + 'px',
+            animationDelay: (i*0.3) + 's',
+            animationDuration: (1.2 + i*0.2) + 's',
           }}>{e}</span>
         ))}
         {/* Plate appearing */}
@@ -689,9 +689,9 @@ export default function Jiff() {
         : context.goalContext?.prompt
           ? context.goalContext.prompt
           : context.moodContext?.prompt
-            ? `${context.moodContext.prompt} — cuisine: ${context.moodContext.cuisineWeight || 'any'}`
+            ? context.moodContext.prompt + ' — cuisine: ' + (context.moodContext.cuisineWeight || 'any')
             : context.seasonal
-              ? `seasonal dishes using ${context.season?.items?.slice(0,3).join(', ') || 'seasonal produce'}`
+              ? 'seasonal dishes using ' + (context.season?.items?.slice(0,3).join(', ') || 'seasonal produce')
               : context.mealType || 'any';
 
     setView('loading'); setFactIdx(0); setShowFavs(false); setJourneyMode(false);
@@ -1640,9 +1640,9 @@ div>
               <div style={{fontSize:12,fontWeight:500,color:'var(--muted)',marginBottom:10}}>🛵 Can't cook today? Order it instead</div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 {meals?.[0]?.name && [
-                  {name:'Swiggy',  color:'#FC8019', url:`https://www.swiggy.com/search?query=${encodeURIComponent(meals[0].name)}`},
-                  {name:'Zomato',  color:'#CB202D', url:`https://www.zomato.com/search?q=${encodeURIComponent(meals[0].name)}`},
-                  {name:'EatSure', color:'#E84855', url:`https://eatsure.com/search?query=${encodeURIComponent(meals[0].name)}`},
+                  {name:'Swiggy',  color:'#FC8019', url:'https://www.swiggy.com/search?query='+encodeURIComponent(meals[0].name)},
+                  {name:'Zomato',  color:'#CB202D', url:'https://www.zomato.com/search?q='+encodeURIComponent(meals[0].name)},
+                  {name:'EatSure', color:'#E84855', url:'https://eatsure.com/search?query='+encodeURIComponent(meals[0].name)},
                 ].map(d=>(
                   <a key={d.name} href={d.url} target="_blank" rel="noopener noreferrer"
                     style={{padding:'7px 16px',borderRadius:10,textDecoration:'none',fontSize:12,fontWeight:600,color:'white',background:d.color,display:'inline-block'}}>

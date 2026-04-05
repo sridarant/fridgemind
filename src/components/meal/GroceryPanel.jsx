@@ -58,7 +58,7 @@ export function GroceryPanel({ meal, fridgeIngredients = [], onClose, country: c
             <div className="grocery-header-sub">
               {need.length === 0
                 ? 'You have everything!'
-                : `${need.length} to buy · ${have.length} in fridge`}
+                : need.length + ' to buy · ' + have.length + ' in fridge'}
             </div>
           </div>
         </div>
@@ -76,12 +76,12 @@ export function GroceryPanel({ meal, fridgeIngredients = [], onClose, country: c
           : (
             <div className="grocery-items">
               {need.map((ing, i) => (
-                <div key={i} className="grocery-item need" onClick={() => toggle(`n-${i}`)}>
-                  <div className={`grocery-checkbox ${checked[`n-${i}`] ? 'checked' : ''}`}>
+                <div key={i} className="grocery-item need" onClick={() => toggle('n-'+i)}>
+                  <div className={'grocery-checkbox ' + (checked['n-'+i] ? 'checked' : '')}>
                     <svg viewBox="0 0 12 12"><polyline points="10 2 5 9 2 6" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </div>
-                  <div className={`grocery-item-text ${checked[`n-${i}`] ? 'checked-text' : ''}`}>{ing}</div>
-                  <a href={`https://blinkit.com/s/?q=${encodeURIComponent(stripQty(ing))}`}
+                  <div className={'grocery-item-text ' + (checked['n-'+i] ? 'checked-text' : '')}>{ing}</div>
+                  <a href={'https://blinkit.com/s/?q=' + (encodeURIComponent(stripQty(ing)))}
                     target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
                     style={{ marginLeft:'auto', flexShrink:0, fontSize:10, fontWeight:500, color:'#1A8A3E',
                       background:'rgba(26,138,62,0.08)', border:'1px solid rgba(26,138,62,0.22)',
@@ -125,7 +125,7 @@ export function GroceryPanel({ meal, fridgeIngredients = [], onClose, country: c
         </a>
         {need.length > 0 && (
           <a className="grocery-action-btn"
-            href={`https://blinkit.com/s/?q=${encodeURIComponent(need.map(stripQty).join(', '))}`}
+            href={'https://blinkit.com/s/?q=' + (encodeURIComponent(need.map(stripQty).join(', ')))}
             target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
             style={{ background:'#1A8A3E', color:'white', border:'none',
               textDecoration:'none', display:'flex', alignItems:'center', gap:5 }}>

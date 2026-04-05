@@ -192,8 +192,8 @@ Respond ONLY with valid JSON:
 
         {/* Generate button */}
         <button onClick={generate} disabled={loading}
-          style={{ width:'100%', padding:'16px', borderRadius:16, background:loading ? C.border : `linear-gradient(135deg, ${C.gold}, #8B6914)`, color:loading ? C.muted : 'white', border:'none', fontSize:15, fontWeight:700, cursor:loading ? 'not-allowed' : 'pointer', marginBottom:16, transition:'all 0.2s', boxShadow:loading ? 'none' : '0 4px 16px rgba(184,134,11,0.35)' }}>
-          {loading ? '⏳ Finding sacred recipes…' : `✨ Generate ${count} Sacred Recipe${count>1?'s':''}`}
+          style={{ width:'100%', padding:'16px', borderRadius:16, background:loading ? C.border : 'linear-gradient(135deg, ' + C.gold + ', #8B6914)', color:loading ? C.muted : 'white', border:'none', fontSize:15, fontWeight:700, cursor:loading ? 'not-allowed' : 'pointer', marginBottom:16, transition:'all 0.2s', boxShadow:loading ? 'none' : '0 4px 16px rgba(184,134,11,0.35)' }}>
+          {loading ? '⏳ Finding sacred recipes…' : '✨ Generate ' + count + ' Sacred Recipe' + (count > 1 ? 's' : '')}
         </button>
 
         {error && <div style={{ padding:'12px 16px', background:'rgba(229,62,62,0.08)', border:'1px solid rgba(229,62,62,0.2)', borderRadius:12, fontSize:13, color:'#C53030', marginBottom:16 }}>{error}</div>}

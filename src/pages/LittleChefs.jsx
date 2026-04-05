@@ -119,7 +119,7 @@ function ChefRecipeCard({ meal }) {
                 background:'rgba(28,10,0,0.04)', borderRadius:20,
                 color:C.ink, border:'1px solid ' + (C.border),
               }}>
-                {typeof ing === 'string' ? ing : `${ing.qty || ''} ${ing.name || ing}`}
+                {typeof ing === 'string' ? ing : ((ing.qty || '') + ' ' + (ing.name || ing))}
               </span>
             ))}
           </div>

@@ -21,8 +21,8 @@ export default function WeatherBanner({ onTap }) {
 
   // Even without weather data, show a seasonal suggestion
   const bannerText = weather
-    ? `${weather.emoji} ${weather.temp}°C${city ? ' · ' + city : ''}`
-    : `${season.emoji} ${season.label}`;
+    ? weather.emoji + ' ' + weather.temp + '°C' + (city ? ' · ' + city : '')
+    : season.emoji + ' ' + season.label;
 
   return (
     <button

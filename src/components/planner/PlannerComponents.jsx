@@ -140,7 +140,7 @@ function MealSlot({ meal, type, servings }) {
             <div onClick={e=>e.stopPropagation()}>
               <VideoButton recipeName={meal.name||''} compact={true}/>
             </div>
-            <a href={`https://www.swiggy.com/search?query=${encodeURIComponent(meal.name||'')}`}
+            <a href={'https://www.swiggy.com/search?query=' + (encodeURIComponent(meal.name||''))}
               target="_blank" rel="noopener noreferrer" onClick={e=>e.stopPropagation()}
               style={{padding:'4px 10px',borderRadius:6,border:'1px solid rgba(252,128,25,0.2)',background:'rgba(252,128,25,0.05)',color:'#FC8019',fontSize:10,fontWeight:500,textDecoration:'none'}}>
               🛵 Order
