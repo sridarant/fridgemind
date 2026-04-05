@@ -50,7 +50,7 @@ function Tile({ emoji, label, sub, color, bg, border, oneTap, onClick, wide }) {
           position:'absolute', top:10, right:10,
           fontSize:8, fontWeight:700, color:color || C.jiff,
           background: bg || 'rgba(255,69,0,0.08)',
-          border:`1px solid ${border || 'rgba(255,69,0,0.2)'}`,
+          border:'1px solid ' + (border || 'rgba(255,69,0,0.2)'),
           borderRadius:5, padding:'1px 5px', letterSpacing:'0.5px',
         }}>1-TAP</span>
       )}
@@ -149,7 +149,7 @@ export function JourneyTiles({
       <button onClick={() => setShowMore(m => !m)}
         style={{
           display:'flex', alignItems:'center', gap:6,
-          background:'none', border:`1px solid ${C.border}`,
+          background:'none', border:'1px solid ' + (C.border),
           borderRadius:20, padding:'6px 16px', fontSize:12,
           color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
           margin:'0 auto', marginBottom:showMore?20:0,

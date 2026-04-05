@@ -43,7 +43,7 @@ export default function Tab_OVERVIEW({ C, Card, stats, waitlist, loading }) {
             <div key={c.name} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
               <div style={{ fontSize:12, color:C.ink, width:130, flexShrink:0 }}>{c.name}</div>
               <div style={{ flex:1, height:6, background:'rgba(28,10,0,0.07)', borderRadius:3 }}>
-                <div style={{ height:'100%', width:`${c.pct}%`, background:C.jiff, borderRadius:3, transition:'width 0.8s ease' }}/>
+                <div style={{ height:'100%', width:(c.pct) + '%', background:C.jiff, borderRadius:3, transition:'width 0.8s ease' }}/>
               </div>
               <div style={{ fontSize:11, color:C.muted, width:70, textAlign:'right' }}>{c.count?.toLocaleString()} · {c.pct}%</div>
             </div>

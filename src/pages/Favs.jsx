@@ -51,14 +51,14 @@ function SignInPrompt() {
           <input type="email" value={email} onChange={e=>setEmail(e.target.value)}
             placeholder="or enter your email"
             style={{
-              flex:1, padding:'11px 14px', border:`1px solid ${C.border}`,
+              flex:1, padding:'11px 14px', border:'1px solid ' + (C.border),
               borderRadius:10, fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none',
             }}
           />
           <button onClick={()=>{ if(email.includes('@')){ signInWithEmail?.(email); setSent(true); }}}
             style={{
               padding:'11px 16px', background:'rgba(28,10,0,0.06)',
-              border:`1px solid ${C.border}`, borderRadius:10,
+              border:'1px solid ' + (C.border), borderRadius:10,
               fontSize:12, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", color:C.ink,
             }}>
             Go
@@ -173,7 +173,7 @@ export default function Favs() {
           {/* Sort */}
           <select value={sort} onChange={e => setSort(e.target.value)}
             style={{
-              fontSize:12, border:`1px solid ${C.border}`, borderRadius:8,
+              fontSize:12, border:'1px solid ' + (C.border), borderRadius:8,
               padding:'5px 10px', background:'white', color:C.ink,
               fontFamily:"'DM Sans',sans-serif", cursor:'pointer', outline:'none',
             }}>
@@ -196,7 +196,7 @@ export default function Favs() {
           placeholder="Search your favourites…"
           style={{
             width:'100%', boxSizing:'border-box',
-            padding:'9px 14px', border:`1px solid ${C.border}`,
+            padding:'9px 14px', border:'1px solid ' + (C.border),
             borderRadius:10, fontSize:13, outline:'none',
             fontFamily:"'DM Sans',sans-serif",
           }}
@@ -213,7 +213,7 @@ export default function Favs() {
               <button key={c} onClick={() => setFilter(c)}
                 style={{
                   padding:'5px 12px', borderRadius:20, whiteSpace:'nowrap',
-                  border:`1.5px solid ${filter===c ? C.jiff : C.border}`,
+                  border:'1.5px solid ' + (filter===c ? C.jiff : C.border),
                   background: filter===c ? 'rgba(255,69,0,0.07)' : 'white',
                   color: filter===c ? C.jiff : C.muted,
                   fontSize:11, fontWeight: filter===c ? 600 : 400,
@@ -280,7 +280,7 @@ export default function Favs() {
                       <button onClick={() => setExpanded(null)}
                         style={{
                           width:'100%', padding:'8px', fontSize:12, color:C.muted,
-                          background:'none', border:`1px solid ${C.border}`,
+                          background:'none', border:'1px solid ' + (C.border),
                           borderRadius:8, cursor:'pointer', marginBottom:8,
                           fontFamily:"'DM Sans',sans-serif",
                         }}>
@@ -293,7 +293,7 @@ export default function Favs() {
                       onClick={() => setExpanded(meal.name + i)}
                       style={{
                         width:'100%', background:'white',
-                        border:`1px solid ${C.border}`, borderRadius:14,
+                        border:'1px solid ' + (C.border), borderRadius:14,
                         padding:'14px 12px', cursor:'pointer',
                         textAlign:'left', fontFamily:"'DM Sans',sans-serif",
                         display:'flex', flexDirection:'column', gap:6,

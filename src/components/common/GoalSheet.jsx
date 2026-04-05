@@ -69,7 +69,7 @@ export default function GoalSheet({ onSelect, onClose }) {
                 display:'flex', flexDirection:'column',
                 alignItems:'flex-start', gap:8,
                 padding:'16px 14px',
-                border:`1.5px solid ${C.border}`,
+                border:'1.5px solid ' + (C.border),
                 borderRadius:16, background:'white',
                 cursor:'pointer', textAlign:'left',
                 fontFamily:"'DM Sans',sans-serif",
@@ -100,7 +100,7 @@ export default function GoalSheet({ onSelect, onClose }) {
           style={{
             width:'100%', padding:'12px',
             background:'rgba(28,10,0,0.03)',
-            border:`1px solid ${C.border}`,
+            border:'1px solid ' + (C.border),
             borderRadius:12, fontSize:13,
             color:C.muted, cursor:'pointer',
             fontFamily:"'DM Sans',sans-serif",

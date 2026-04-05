@@ -80,7 +80,32 @@ for (const file of allFiles) {
 }
 if (apostropheIssues === 0) ok(`Apostrophe check: ${linesScanned} lines scanned, 0 issues`);
 
-// ── 3. Named import ↔ export cross-check ─────────────────────────
+
+// ── 3. Template literal in CSS style prop (causes "Identifier after number") ──
+// Catches: border:`1.5px solid ${expr}` — safe: border:'1.5px solid ' + expr
+// This specific pattern causes Babel parser to misread numeric CSS values like 1.5px
+console.log('\n── Template literal in style prop values ──');
+let styleTemplateIssues = 0, styleTemplateClean = 0;
+const cssProps = /(?:border|background|color|boxShadow|outline|padding|margin|width|height|fontSize|borderRadius):`[^`]*\$\{/;
+for (const file of srcFiles) {
+  const lines = fs.readFileSync(file, 'utf8').split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i]
+      .replace(/`(?:[^`\\]|\\.)*`/g, '``')  // strip non-style templates first
+      .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+      .replace(/\/\/.*/g, '');
+    // Re-check with original line for style prop template literals
+    if (cssProps.test(lines[i])) {
+      err(`${path.relative(ROOT, file)}:${i + 1} — template literal in style prop (use string concat instead): ${lines[i].trim().slice(0, 70)}`);
+      styleTemplateIssues++;
+    } else {
+      styleTemplateClean++;
+    }
+  }
+}
+if (styleTemplateIssues === 0) ok(`Style template check: ${styleTemplateClean} lines scanned, 0 issues`);
+
+// ── 4. Named import ↔ export cross-check ─────────────────────────
 console.log('\n── Named import/export verification ──');
 let exportChecked = 0, exportFailed = 0;
 for (const file of srcFiles) {
@@ -117,13 +142,13 @@ for (const file of srcFiles) {
 }
 if (exportFailed === 0) ok(`Exports: ${exportChecked} named imports verified`);
 
-// ── 4. API function count ─────────────────────────────────────────
+// ── 5. API function count ─────────────────────────────────────────
 console.log('\n── API function count (Vercel Hobby limit: 12) ──');
 const apiCount = apiFiles.length;
 if (apiCount > 12) err(`${apiCount}/12 — over limit`);
 else ok(`${apiCount}/12 (${12 - apiCount} slots free): ${apiFiles.map(f => path.basename(f)).join(', ')}`);
 
-// ── 5. vercel.json rewrite destinations exist ─────────────────────
+// ── 6. vercel.json rewrite destinations exist ─────────────────────
 console.log('\n── vercel.json rewrite integrity ──');
 const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 let rewriteOk = 0;
@@ -138,7 +163,7 @@ for (const r of (vj.rewrites || [])) {
 }
 ok(`${rewriteOk}/${(vj.rewrites || []).length} rewrites valid`);
 
-// ── 6. Key file existence ─────────────────────────────────────────
+// ── 7. Key file existence ─────────────────────────────────────────
 console.log('\n── Key file existence ──');
 const required = [
   'src/pages/Admin.jsx',

@@ -21,7 +21,7 @@ const C = {
 
 // ── Reusable style helpers ────────────────────────────────────────
 const pill = (active) => ({
-  border:`1.5px solid ${active ? C.jiff : C.borderMid}`,
+  border:'1.5px solid ' + (active ? C.jiff : C.borderMid),
   background: active ? 'rgba(255,69,0,0.08)' : 'white',
   color: active ? C.jiff : C.muted,
   borderRadius:20, padding:'7px 14px', fontSize:13,
@@ -164,7 +164,7 @@ function WeekStrip({ mealHistory }) {
           padding:'8px 4px',
           background: d.isToday ? 'rgba(255,69,0,0.06)' : 'rgba(28,10,0,0.02)',
           borderRadius:10,
-          border:`1px solid ${d.isToday ? 'rgba(255,69,0,0.2)' : C.border}`,
+          border:'1px solid ' + (d.isToday ? 'rgba(255,69,0,0.2)' : C.border),
         }}>
           <span style={{ fontSize:9, color:C.muted, fontWeight:500 }}>{d.label}</span>
           <span style={{ fontSize:14 }}>{d.cooked ? '✓' : '–'}</span>
@@ -285,7 +285,7 @@ export default function Profile() {
         <button onClick={() => navigate('/app')}
           style={{
             fontSize:13, color:C.muted, background:'none',
-            border:`1px solid ${C.border}`, borderRadius:8,
+            border:'1px solid ' + (C.border), borderRadius:8,
             padding:'6px 12px', cursor:'pointer',
             fontFamily:"'DM Sans',sans-serif",
           }}>
@@ -369,7 +369,7 @@ export default function Profile() {
             <SectionLabel>Allergies / foods to avoid</SectionLabel>
             <div onClick={() => allergyRef.current?.focus()}
               style={{
-                border:`1.5px solid ${C.borderMid}`, borderRadius:12,
+                border:'1.5px solid ' + (C.borderMid), borderRadius:12,
                 padding:'10px 12px', background:C.cream, minHeight:50,
                 display:'flex', flexWrap:'wrap', gap:6, alignItems:'flex-start',
                 cursor:'text', marginBottom:24,
@@ -421,7 +421,7 @@ export default function Profile() {
                 <div key={i} style={{
                   display:'flex', alignItems:'center', justifyContent:'space-between',
                   padding:'12px 14px', background:'white',
-                  border:`1px solid ${C.border}`, borderRadius:12,
+                  border:'1px solid ' + (C.border), borderRadius:12,
                 }}>
                   <div>
                     <span style={{ fontSize:13, fontWeight:600, color:C.ink }}>{m.name}</span>
@@ -439,7 +439,7 @@ export default function Profile() {
             {/* Add member */}
             <div style={{
               padding:'14px', background:'rgba(28,10,0,0.02)',
-              border:`1px solid ${C.border}`, borderRadius:14,
+              border:'1px solid ' + (C.border), borderRadius:14,
             }}>
               <div style={{ fontSize:12, fontWeight:600, color:C.ink, marginBottom:10 }}>
                 Add member
@@ -449,13 +449,13 @@ export default function Profile() {
                   placeholder="Name"
                   style={{
                     flex:1, minWidth:120, padding:'9px 12px',
-                    border:`1px solid ${C.border}`, borderRadius:8,
+                    border:'1px solid ' + (C.border), borderRadius:8,
                     fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none',
                   }}
                 />
                 <select value={newMemberDietary} onChange={e => setNewMemberDietary(e.target.value)}
                   style={{
-                    padding:'9px 12px', border:`1px solid ${C.border}`,
+                    padding:'9px 12px', border:'1px solid ' + (C.border),
                     borderRadius:8, fontSize:13, fontFamily:"'DM Sans',sans-serif",
                     outline:'none', background:'white', cursor:'pointer',
                   }}>
@@ -489,7 +489,7 @@ export default function Profile() {
                 <button key={id}
                   onClick={() => setActiveGoal(activeGoal === id ? '' : id)}
                   style={{
-                    padding:'14px 12px', border:`2px solid ${activeGoal===id ? C.jiff : C.border}`,
+                    padding:'14px 12px', border:'2px solid ' + (activeGoal===id ? C.jiff : C.border),
                     borderRadius:14, background: activeGoal===id ? 'rgba(255,69,0,0.06)' : 'white',
                     cursor:'pointer', textAlign:'left',
                     fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
@@ -511,7 +511,7 @@ export default function Profile() {
                 placeholder="e.g. 1800"
                 style={{
                   width:120, padding:'9px 12px',
-                  border:`1px solid ${C.border}`, borderRadius:8,
+                  border:'1px solid ' + (C.border), borderRadius:8,
                   fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none',
                 }}
               />
@@ -534,7 +534,7 @@ export default function Profile() {
             {cookedCount > 0 && (
               <div style={{
                 padding:'12px 16px', background:'white',
-                border:`1px solid ${C.border}`, borderRadius:12,
+                border:'1px solid ' + (C.border), borderRadius:12,
                 fontSize:13, color:C.ink,
               }}>
                 🍳 {cookedCount} recipes rated this week
@@ -564,7 +564,7 @@ export default function Profile() {
                     onClick={() => setLang(l.code)}
                     style={{
                       padding:'8px 16px', minHeight:40,
-                      border:`1.5px solid ${isActive ? C.jiff : C.borderMid}`,
+                      border:'1.5px solid ' + (isActive ? C.jiff : C.borderMid),
                       background: isActive ? C.jiff : 'white',
                       color: isActive ? 'white' : C.muted,
                       borderRadius:20, fontSize:13, cursor:'pointer',
@@ -616,7 +616,7 @@ export default function Profile() {
             {user && (
               <div style={{
                 padding:'14px 16px', background:'white',
-                border:`1px solid ${C.border}`, borderRadius:12, marginBottom:12,
+                border:'1px solid ' + (C.border), borderRadius:12, marginBottom:12,
                 fontSize:13, color:C.muted,
               }}>
                 Signed in as <strong style={{ color:C.ink }}>{user.email}</strong>

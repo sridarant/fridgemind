@@ -55,7 +55,7 @@ function BarRow({ label, pct, count, color = C.jiff }) {
         <span style={{ fontSize:12, color:C.muted }}>{count.toLocaleString()} · {pct}%</span>
       </div>
       <div style={{ height:6, background:'rgba(28,10,0,0.07)', borderRadius:3, overflow:'hidden' }}>
-        <div style={{ height:'100%', width:`${pct}%`, background:color, borderRadius:3, transition:'width 1s ease' }}/>
+        <div style={{ height:'100%', width:(pct) + '%', background:color, borderRadius:3, transition:'width 1s ease' }}/>
       </div>
     </div>
   );

@@ -1391,7 +1391,7 @@ export default function Jiff() {
                             onClick={()=>setCuisine(isActive?'any':id)}
                             style={{
                               padding:'5px 12px', borderRadius:20, whiteSpace:'nowrap', flexShrink:0,
-                              border:`1.5px solid ${isActive?'var(--jiff)':'rgba(28,10,0,0.10)'}`,
+                              border:'1.5px solid ' + (isActive ? 'var(--jiff)' : 'rgba(28,10,0,0.10)'),
                               background: isActive?'rgba(255,69,0,0.07)':'white',
                               color: isActive?'var(--jiff)':'var(--muted)',
                               fontSize:11, cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
@@ -1471,7 +1471,7 @@ div>
               {trialActive && !isPremium && (
                 <div className="trial-card">
                   <div className="trial-card-title">⏳ Free trial</div>
-                  <div className="trial-bar-track"><div className="trial-bar-fill" style={{width:`${(trialDaysLeft/TRIAL_DAYS)*100}%`}}/></div>
+                  <div className="trial-bar-track"><div className="trial-bar-fill" style={{width:((trialDaysLeft/TRIAL_DAYS)*100) + '%'}}/></div>
                   <div className="trial-days">{trialDaysLeft} of {TRIAL_DAYS} days remaining</div>
                   <button className="trial-upgrade-btn" onClick={()=>navigate('/pricing')}>⚡ Upgrade — unlock {PAID_RECIPE_CAP} recipes</button>
                 </div>

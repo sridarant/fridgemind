@@ -351,7 +351,7 @@ export default function Planner() {
                     style={{
                       display:'flex',flexDirection:'column',alignItems:'center',gap:3,
                       padding:'8px 4px',borderRadius:12,
-                      border:`1.5px solid ${activeDay===i?'#FF4500':'rgba(28,10,0,0.08)'}`,
+                      border:'1.5px solid ' + (activeDay===i?'#FF4500':'rgba(28,10,0,0.08)'),
                       background:activeDay===i?'rgba(255,69,0,0.06)':isToday?'rgba(255,184,0,0.06)':'white',
                       cursor:'pointer',fontFamily:"'DM Sans',sans-serif",
                     }}>

@@ -95,7 +95,7 @@ export default function Onboarding() {
 
       {/* Progress bar */}
       <div style={{ height:3, background:'rgba(28,10,0,0.06)', margin:'16px 24px 0' }}>
-        <div style={{ height:'100%', width:`${progress}%`, background:C.jiff, borderRadius:2, transition:'width 0.3s ease' }}/>
+        <div style={{ height:'100%', width:(progress) + '%', background:C.jiff, borderRadius:2, transition:'width 0.3s ease' }}/>
       </div>
 
       {/* Content */}
@@ -171,7 +171,7 @@ export default function Onboarding() {
                     <button key={String(val)} onClick={() => setHasKids(val)}
                       style={{
                         flex:1, padding:'10px',
-                        border:`2px solid ${hasKids === val ? C.jiff : C.border}`,
+                        border:'2px solid ' + (hasKids === val ? C.jiff : C.border),
                         borderRadius:10, background: hasKids === val ? 'rgba(255,69,0,0.06)' : 'white',
                         cursor:'pointer', fontSize:13, fontFamily:"'DM Sans',sans-serif",
                         color: C.ink, fontWeight: hasKids === val ? 600 : 400,
@@ -188,7 +188,7 @@ export default function Onboarding() {
                         <button key={age} onClick={() => toggleKidsAge(age)}
                           style={{
                             flex:1, padding:'8px 4px', fontSize:11, fontFamily:"'DM Sans',sans-serif",
-                            border:`1.5px solid ${kidsAges.includes(age) ? C.jiff : C.border}`,
+                            border:'1.5px solid ' + (kidsAges.includes(age) ? C.jiff : C.border),
                             borderRadius:8, background: kidsAges.includes(age) ? 'rgba(255,69,0,0.06)' : 'white',
                             cursor:'pointer', color:C.ink,
                           }}>
@@ -223,7 +223,7 @@ export default function Onboarding() {
                   <button key={n} onClick={() => setSpice(n)}
                     style={{
                       flex:1, padding:'10px 0', fontSize:18,
-                      border:`2px solid ${spice >= n ? C.jiff : C.border}`,
+                      border:'2px solid ' + (spice >= n ? C.jiff : C.border),
                       borderRadius:10,
                       background: spice >= n ? 'rgba(255,69,0,0.07)' : 'white',
                       cursor:'pointer',
@@ -263,7 +263,7 @@ export default function Onboarding() {
                           <button key={item.id} onClick={() => toggleCuisine(item.id)}
                             style={{
                               padding:'5px 12px', borderRadius:20, fontSize:11,
-                              border:`1.5px solid ${cuisines.includes(item.id) ? C.jiff : C.border}`,
+                              border:'1.5px solid ' + (cuisines.includes(item.id) ? C.jiff : C.border),
                               background: cuisines.includes(item.id) ? 'rgba(255,69,0,0.07)' : 'white',
                               color: cuisines.includes(item.id) ? C.jiff : C.muted,
                               cursor:'pointer', fontFamily:"'DM Sans',sans-serif",

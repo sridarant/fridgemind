@@ -25,7 +25,7 @@ function DayLunchCard({ day, lunchData }) {
   if (!lunchData) return null;
   return (
     <div style={{
-      background:'white', border:`1px solid ${C.border}`,
+      background:'white', border:'1px solid ' + (C.border),
       borderRadius:14, overflow:'hidden', marginBottom:10,
     }}>
       <button onClick={() => setOpen(o => !o)}
@@ -161,7 +161,7 @@ Respond ONLY with valid JSON:
         background:'rgba(255,250,245,0.96)', backdropFilter:'blur(10px)',
       }}>
         <button onClick={() => navigate('/app')}
-          style={{ fontSize:13, color:C.muted, background:'none', border:`1px solid ${C.border}`, borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          style={{ fontSize:13, color:C.muted, background:'none', border:'1px solid ' + (C.border), borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
           ← Home
         </button>
         <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>
@@ -188,7 +188,7 @@ Respond ONLY with valid JSON:
                 <button key={a.id} onClick={() => setAge(a.id)}
                   style={{
                     display:'flex', alignItems:'center', gap:12, padding:'14px 16px',
-                    border:`2px solid ${age===a.id ? C.jiff : C.border}`,
+                    border:'2px solid ' + (age===a.id ? C.jiff : C.border),
                     borderRadius:14, background: age===a.id ? 'rgba(255,69,0,0.06)' : 'white',
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
                   }}>
@@ -208,7 +208,7 @@ Respond ONLY with valid JSON:
                 <button key={a} onClick={() => toggleAllergen(a)}
                   style={{
                     padding:'7px 14px', borderRadius:20, fontSize:13,
-                    border:`1.5px solid ${allergens.includes(a) ? C.jiff : C.border}`,
+                    border:'1.5px solid ' + (allergens.includes(a) ? C.jiff : C.border),
                     background: allergens.includes(a) ? 'rgba(255,69,0,0.07)' : 'white',
                     color: allergens.includes(a) ? C.jiff : C.muted,
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
@@ -264,7 +264,7 @@ Respond ONLY with valid JSON:
                 </div>
               </div>
               <button onClick={() => setView('input')}
-                style={{ padding:'7px 12px', fontSize:12, background:'none', border:`1px solid ${C.border}`, borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
                 ← Edit
               </button>
             </div>

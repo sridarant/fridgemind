@@ -315,13 +315,13 @@ export function MealCard({
               {/* Share */}
               <div style={{ position:'relative' }}>
                 <button onClick={() => setShowShare(s => !s)}
-                  style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:`1px solid ${C.border}`, borderRadius:8, padding:'6px 12px', fontSize:12, color:C.ink, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                  style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:'1px solid ' + (C.border), borderRadius:8, padding:'6px 12px', fontSize:12, color:C.ink, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
                   <IconShare /> Share
                 </button>
                 {showShare && (
                   <>
                     <div onClick={() => setShowShare(false)} style={{ position:'fixed', inset:0, zIndex:100 }}/>
-                    <div style={{ position:'absolute', bottom:'calc(100% + 6px)', left:0, background:'white', border:`1px solid ${C.border}`, borderRadius:12, padding:'8px', zIndex:101, minWidth:140, boxShadow:'0 8px 24px rgba(28,10,0,0.1)' }}>
+                    <div style={{ position:'absolute', bottom:'calc(100% + 6px)', left:0, background:'white', border:'1px solid ' + (C.border), borderRadius:12, padding:'8px', zIndex:101, minWidth:140, boxShadow:'0 8px 24px rgba(28,10,0,0.1)' }}>
                       <button onClick={handleCopy} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:C.ink, cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
                         <IconCopy /> {copied ? '✓ Copied!' : 'Copy recipe'}
                       </button>

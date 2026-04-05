@@ -71,7 +71,7 @@ Include fun meal names kids will enjoy.`,
         background:'rgba(255,250,245,0.96)', backdropFilter:'blur(10px)',
       }}>
         <button onClick={() => navigate('/app')}
-          style={{ fontSize:13, color:C.muted, background:'none', border:`1px solid ${C.border}`, borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          style={{ fontSize:13, color:C.muted, background:'none', border:'1px solid ' + (C.border), borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
           ← Home
         </button>
         <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>
@@ -97,7 +97,7 @@ Include fun meal names kids will enjoy.`,
                 <button key={a.id} onClick={() => setAge(a.id)}
                   style={{
                     display:'flex', alignItems:'center', gap:12, padding:'13px 16px',
-                    border:`2px solid ${age===a.id ? C.jiff : C.border}`,
+                    border:'2px solid ' + (age===a.id ? C.jiff : C.border),
                     borderRadius:14, background: age===a.id ? 'rgba(255,69,0,0.06)' : 'white',
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
                   }}>
@@ -114,7 +114,7 @@ Include fun meal names kids will enjoy.`,
               {OCCASIONS.map(o => (
                 <button key={o.id} onClick={() => setOccasion(o.id)}
                   style={{
-                    padding:'13px 12px', border:`2px solid ${occasion===o.id ? C.jiff : C.border}`,
+                    padding:'13px 12px', border:'2px solid ' + (occasion===o.id ? C.jiff : C.border),
                     borderRadius:14, background: occasion===o.id ? 'rgba(255,69,0,0.06)' : 'white',
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
                     display:'flex', flexDirection:'column', alignItems:'flex-start', gap:6, minHeight:70,
@@ -164,7 +164,7 @@ Include fun meal names kids will enjoy.`,
               <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:C.ink }}>
                 Kid-approved recipes 👶
               </div>
-              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:`1px solid ${C.border}`, borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>← Edit</button>
+              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>← Edit</button>
             </div>
             {meals.map((meal, i) => (
               <MealCard key={i} meal={meal} isFav={false} onToggleFav={()=>{}} rating={0} onRate={()=>{}} pantry={pantry||[]} />

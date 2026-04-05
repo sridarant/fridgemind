@@ -36,14 +36,14 @@ function ChefStep({ step, num, total }) {
     <div style={{
       padding:'16px', marginBottom:10,
       background: done ? 'rgba(29,158,117,0.06)' : 'white',
-      border:`2px solid ${done ? C.green : isSafe ? 'rgba(217,119,6,0.3)' : C.border}`,
+      border:'2px solid ' + (done ? C.green : isSafe ? 'rgba(217,119,6,0.3)' : C.border),
       borderRadius:16, transition:'all 0.2s',
     }}>
       <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
         <button onClick={() => setDone(d => !d)}
           style={{
             width:32, height:32, borderRadius:'50%', flexShrink:0,
-            border:`2px solid ${done ? C.green : C.border}`,
+            border:'2px solid ' + (done ? C.green : C.border),
             background: done ? C.green : 'white',
             color: done ? 'white' : C.muted,
             fontSize:16, cursor:'pointer', display:'flex',
@@ -82,7 +82,7 @@ function ChefRecipeCard({ meal }) {
 
   return (
     <div style={{
-      background:'white', border:`1px solid ${C.border}`,
+      background:'white', border:'1px solid ' + (C.border),
       borderRadius:20, overflow:'hidden', marginBottom:16,
       fontFamily:"'DM Sans',sans-serif",
     }}>
@@ -117,7 +117,7 @@ function ChefRecipeCard({ meal }) {
               <span key={i} style={{
                 fontSize:12, padding:'4px 10px',
                 background:'rgba(28,10,0,0.04)', borderRadius:20,
-                color:C.ink, border:`1px solid ${C.border}`,
+                color:C.ink, border:'1px solid ' + (C.border),
               }}>
                 {typeof ing === 'string' ? ing : `${ing.qty || ''} ${ing.name || ing}`}
               </span>
@@ -132,7 +132,7 @@ function ChefRecipeCard({ meal }) {
           style={{
             width:'100%', padding:'13px', background:showSteps ? 'rgba(124,58,237,0.07)' : C.jiff,
             color: showSteps ? C.purple : 'white',
-            border:`2px solid ${showSteps ? 'rgba(124,58,237,0.3)' : 'transparent'}`,
+            border:'2px solid ' + (showSteps ? 'rgba(124,58,237,0.3)' : 'transparent'),
             borderRadius:12, fontSize:14, fontWeight:600,
             cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
             marginBottom: showSteps ? 16 : 0, transition:'all 0.15s',
@@ -202,7 +202,7 @@ Age notes: ${selectedAge?.note}.`,
         background:'rgba(255,250,245,0.96)', backdropFilter:'blur(10px)',
       }}>
         <button onClick={() => navigate('/app')}
-          style={{ fontSize:13, color:C.muted, background:'none', border:`1px solid ${C.border}`, borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+          style={{ fontSize:13, color:C.muted, background:'none', border:'1px solid ' + (C.border), borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
           ← Home
         </button>
         <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>
@@ -228,7 +228,7 @@ Age notes: ${selectedAge?.note}.`,
                 <button key={a.id} onClick={() => setAge(a.id)}
                   style={{
                     display:'flex', alignItems:'center', gap:12, padding:'13px 16px',
-                    border:`2px solid ${age===a.id ? C.purple : C.border}`,
+                    border:'2px solid ' + (age===a.id ? C.purple : C.border),
                     borderRadius:14, background: age===a.id ? 'rgba(124,58,237,0.06)' : 'white',
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
                   }}>
@@ -247,7 +247,7 @@ Age notes: ${selectedAge?.note}.`,
                 <button key={s.id} onClick={() => setSkill(s.id)}
                   style={{
                     display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
-                    border:`2px solid ${skill===s.id ? C.purple : C.border}`,
+                    border:'2px solid ' + (skill===s.id ? C.purple : C.border),
                     borderRadius:14, background: skill===s.id ? 'rgba(124,58,237,0.06)' : 'white',
                     cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
                   }}>
@@ -299,7 +299,7 @@ Age notes: ${selectedAge?.note}.`,
               <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:C.ink }}>
                 Ready to cook! 🧑‍🍳
               </div>
-              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:`1px solid ${C.border}`, borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>← Edit</button>
+              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>← Edit</button>
             </div>
             {meals.map((meal, i) => <ChefRecipeCard key={i} meal={meal} />)}
             {meals.length === 0 && (

@@ -68,7 +68,7 @@ export default function Tab_TOKENS({ C, Card, ADMIN_KEY, adminKey, setAdminKey,
                 <span style={{color:C.muted,fontSize:11}}>{row.output_tokens?.toLocaleString()} out</span>
                 <div style={{background:'rgba(28,10,0,0.06)',borderRadius:4,height:8,alignSelf:'center'}}>
                   <div style={{height:'100%',borderRadius:4,background:C.jiff,
-                    width:`${Math.min(100,(row.total_tokens/(tokenStats.totalTokens||1))*100)}%`}}/>
+                    width:(Math.min(100,(row.total_tokens/(tokenStats.totalTokens||1))*100)) + '%'}}/>
                 </div>
               </div>
             ))}

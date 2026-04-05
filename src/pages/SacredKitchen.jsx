@@ -233,7 +233,7 @@ function SacredMealCard({ meal, servings, video, onFetchVideo }) {
   return (
     <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:20, marginBottom:16, boxShadow:C.shadow, overflow:'hidden' }}>
       {/* Top accent bar */}
-      <div style={{ height:3, background:`linear-gradient(90deg, ${C.gold}, #D4A82A)` }}/>
+      <div style={{ height:3, background:'linear-gradient(90deg, ' + (C.gold) + ', #D4A82A)' }}/>
 
       <div style={{ padding:'18px 20px' }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:8 }}>

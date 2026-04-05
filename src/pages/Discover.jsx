@@ -116,7 +116,7 @@ export default function Discover() {
           <div style={{ marginBottom:28 }}>
             <SectionHeader emoji="🎉" title="Coming Up" sub={festival ? `${festival.emoji} ${festival.name} — cook traditionally` : `${upcomingFestivals[0]?.emoji} ${upcomingFestivals[0]?.name} in ${upcomingFestivals[0]?.daysFromNow} days`} />
             <div style={{
-              background:   'white', border:`1px solid ${C.border}`,
+              background:   'white', border:'1px solid ' + (C.border),
               borderRadius: 14, padding:'14px 16px',
             }}>
               {(festival || upcomingFestivals[0]) && (() => {
@@ -141,7 +141,7 @@ export default function Discover() {
         {/* 3. Explore a Region */}
         <div style={{ marginBottom:28 }}>
           <SectionHeader emoji="🌍" title="Explore a Region" sub={`This week: ${featuredRegion.name}, ${featuredRegion.state}`} />
-          <div style={{ background:'white', border:`1px solid ${C.border}`, borderRadius:14, padding:'14px 16px' }}>
+          <div style={{ background:'white', border:'1px solid ' + (C.border), borderRadius:14, padding:'14px 16px' }}>
             <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
               <span style={{ fontSize:28 }}>{featuredRegion.emoji}</span>
               <div>
@@ -165,7 +165,7 @@ export default function Discover() {
               onClick={() => generateWith({ cuisine: untried, type:'explore' })}
               style={{
                 width:'100%', padding:'16px', background:'white',
-                border:`1px solid ${C.border}`, borderRadius:14,
+                border:'1px solid ' + (C.border), borderRadius:14,
                 display:'flex', alignItems:'center', justifyContent:'space-between',
                 cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
               }}
@@ -193,7 +193,7 @@ export default function Discover() {
                 style={{
                   display:'flex', alignItems:'center', gap:12,
                   padding:'12px 14px', background:'white',
-                  border:`1px solid ${C.border}`, borderRadius:12,
+                  border:'1px solid ' + (C.border), borderRadius:12,
                   cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s',
                 }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = C.jiff}

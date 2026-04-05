@@ -35,7 +35,7 @@ function BarChart({ data, color }) {
             {d.label}
           </div>
           <div style={{ flex:1, height:8, background:'rgba(28,10,0,0.06)', borderRadius:4 }}>
-            <div style={{ height:'100%', width:`${(d.count/max)*100}%`, background:color||C.jiff,
+            <div style={{ height:'100%', width:((d.count/max)*100) + '%', background:color||C.jiff,
               borderRadius:4, transition:'width 0.8s ease' }}/>
           </div>
           <div style={{ fontSize:11, color:C.muted, width:24, textAlign:'right', flexShrink:0 }}>
@@ -301,7 +301,7 @@ export default function Insights() {
                     <div style={{ width:60, fontSize:12, color:C.ink }}>{'⭐'.repeat(r.stars)}</div>
                     <div style={{ flex:1, height:8, background:'rgba(28,10,0,0.06)', borderRadius:4 }}>
                       <div style={{ height:'100%', background:C.gold, borderRadius:4,
-                        width:`${data.ratedCount ? (r.count/data.ratedCount)*100 : 0}%`,
+                        width:(data.ratedCount ? (r.count/data.ratedCount)*100 : 0) + '%',
                         transition:'width 0.8s ease' }}/>
                     </div>
                     <div style={{ fontSize:11, color:C.muted, width:20, textAlign:'right' }}>{r.count}</div>
