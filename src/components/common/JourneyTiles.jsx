@@ -139,7 +139,7 @@ export function JourneyTiles({
           onClick={() => onGenerateDirect?.({ mealType:'dinner', family:true })} />
         <Tile emoji="🍱" label="Kids' lunchbox" sub="School-friendly"
           color="#F59E0B" bg="rgba(245,158,11,0.07)" border="rgba(245,158,11,0.2)"
-          onClick={() => navigate('/little-chefs', { state:{ mode:'lunchbox' } })} />
+          onClick={() => navigate('/little-chefs/lunchbox')} />
         <Tile emoji="🎉" label="Hosting guests" sub="8–12 people" oneTap
           color="#2563EB" bg="rgba(37,99,235,0.07)" border="rgba(37,99,235,0.2)"
           onClick={() => onGenerateDirect?.({ hosting:true, servings:10 })} />
@@ -165,10 +165,10 @@ export function JourneyTiles({
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10, marginBottom:24 }}>
             <Tile emoji="👶" label="Dishes for kids" sub="Age-safe & fun"
               color="#F59E0B" bg="rgba(245,158,11,0.07)" border="rgba(245,158,11,0.2)"
-              onClick={() => navigate('/little-chefs', { state:{ mode:'dishes' } })} />
+              onClick={() => navigate('/little-chefs/dishes')} />
             <Tile emoji="🧑‍🍳" label="Little Chefs" sub="Kids can cook"
               color="#1D9E75" bg="rgba(29,158,117,0.07)" border="rgba(29,158,117,0.2)"
-              onClick={() => navigate('/little-chefs', { state:{ mode:'chefs' } })} />
+              onClick={() => navigate('/little-chefs')} />
           </div>
 
           {/* Plan ahead */}

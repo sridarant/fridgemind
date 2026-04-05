@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import JiffLogo from '../components/JiffLogo';
+import { CUISINE_GROUPS, ALL_CUISINES } from '../lib/cuisine.js';
 
 const C = {
   jiff: '#FF4500', ink: '#1C0A00', cream: '#FFFAF5',
@@ -28,10 +29,7 @@ const COOKING_FOR = [
   { id:'family',   emoji:'👨‍👩‍👧', label:'My family'    },
 ];
 
-const CUISINES = [
-  'South Indian','North Indian','Bengali','Gujarati','Punjabi',
-  'Rajasthani','Kerala','Hyderabadi','Continental','Chinese','Italian','Any',
-];
+
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -51,12 +49,10 @@ export default function Onboarding() {
   const [spice,    setSpice]    = useState(3);
   const [cuisines, setCuisines] = useState([]);
 
-  const toggleCuisine = (c) => {
-    if (c === 'Any') { setCuisines(['Any']); return; }
-    setCuisines(prev => {
-      const without = prev.filter(x => x !== 'Any');
-      return without.includes(c) ? without.filter(x => x !== c) : [...without, c];
-    });
+  const toggleCuisine = (id) => {
+    setCuisines(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   const toggleKidsAge = (age) => {
@@ -241,30 +237,47 @@ export default function Onboarding() {
               </div>
             </div>
 
-            {/* Favourite cuisines */}
-            <div>
+            {/* Favourite cuisines — grouped taxonomy (same IDs as Profile) */}
+            <div style={{ overflowY:'auto', maxHeight:'40vh' }}>
               <div style={{ fontSize:13, fontWeight:600, color:C.ink, marginBottom:12 }}>
                 Favourite cuisines? <span style={{ fontWeight:300, color:C.muted }}>(pick any)</span>
               </div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                {CUISINES.map(c => (
-                  <button key={c} onClick={() => toggleCuisine(c)}
-                    style={{
-                      padding:      '6px 14px',
-                      borderRadius: 20,
-                      fontSize:     12,
-                      border:       `1.5px solid ${cuisines.includes(c) ? C.jiff : C.border}`,
-                      background:   cuisines.includes(c) ? 'rgba(255,69,0,0.07)' : 'white',
-                      cursor:       'pointer',
-                      fontFamily:   "'DM Sans', sans-serif",
-                      color:        cuisines.includes(c) ? C.jiff : C.ink,
-                      fontWeight:   cuisines.includes(c) ? 600 : 400,
-                      transition:   'all 0.12s',
-                    }}>
-                    {c}
-                  </button>
-                ))}
-              </div>
+              {CUISINE_GROUPS.map(group => (
+                <div key={group.id} style={{ marginBottom:16 }}>
+                  <div style={{
+                    fontSize:9, letterSpacing:'2px', textTransform:'uppercase',
+                    color:C.jiff, fontWeight:700, marginBottom:8,
+                    paddingBottom:4, borderBottom:'1px solid rgba(255,69,0,0.15)',
+                  }}>
+                    {group.label}
+                  </div>
+                  {group.sections.map(section => (
+                    <div key={section.id} style={{ marginBottom:section.label ? 8 : 0 }}>
+                      {section.label && (
+                        <div style={{ fontSize:10, fontWeight:600, color:C.muted, marginBottom:5 }}>
+                          {section.label}
+                        </div>
+                      )}
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                        {section.items.map(item => (
+                          <button key={item.id} onClick={() => toggleCuisine(item.id)}
+                            style={{
+                              padding:'5px 12px', borderRadius:20, fontSize:11,
+                              border:`1.5px solid ${cuisines.includes(item.id) ? C.jiff : C.border}`,
+                              background: cuisines.includes(item.id) ? 'rgba(255,69,0,0.07)' : 'white',
+                              color: cuisines.includes(item.id) ? C.jiff : C.muted,
+                              cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
+                              fontWeight: cuisines.includes(item.id) ? 600 : 400,
+                              transition:'all 0.12s',
+                            }}>
+                            {cuisines.includes(item.id) ? '✓ ' : ''}{item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </>
         )}

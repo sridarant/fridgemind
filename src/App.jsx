@@ -26,6 +26,8 @@ import ApiDocs       from './pages/ApiDocs';
 import Admin         from './pages/Admin';
 import Insights      from './pages/Insights';
 import LittleChefs   from './pages/LittleChefs';
+import KidsLunchbox  from './pages/KidsLunchbox';
+import KidsDishes    from './pages/KidsDishes';
 import SacredKitchen from './pages/SacredKitchen';
 
 // Pages that show the bottom nav
@@ -52,7 +54,9 @@ function AppShell() {
         <Route path="/api-docs"    element={<ApiDocs />}       />
         <Route path="/admin"       element={<Admin />}         />
         <Route path="/insights"    element={<Insights />}      />
-        <Route path="/little-chefs" element={<LittleChefs />} />
+        <Route path="/little-chefs"          element={<LittleChefs />}   />
+        <Route path="/little-chefs/lunchbox"  element={<KidsLunchbox />}  />
+        <Route path="/little-chefs/dishes"    element={<KidsDishes />}    />
         <Route path="/sacred"      element={<SacredKitchen />} />
         {/* /favs — renders Jiff with favourites panel open */}
         <Route path="/favs"        element={<Favs />} />

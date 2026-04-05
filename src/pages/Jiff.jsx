@@ -20,6 +20,7 @@ import { extractCoreName, isAvailable, buildGroceryList } from '../lib/grocery.j
 import { buildShareText } from '../lib/sharing.js';
 import { mealKey, getDietaryLabel } from '../lib/mealKey.js';
 import { getUpcomingFestival } from '../lib/festival.js';
+import { QUICK_ADD_STAPLES } from '../lib/cuisine.js';
 import { MealCard }               from '../components/meal/MealCard.jsx';
 import { JourneyTiles }           from '../components/common/JourneyTiles.jsx';
 
@@ -454,9 +455,7 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
       </div>
 
       <div style={{fontFamily:"'Fraunces',serif",fontSize:'clamp(20px,3.5vw,28px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-0.5px',marginBottom:8}}>
-        {cuisine !== 'any'
-          ? `Finding ${cuisine}${mealType !== 'any' ? ' ' + mealType : ''} recipes…`
-          : `Jiffing your ${mealType !== 'any' ? mealType : 'meal'}…`}
+        {loadingMessage}
       </div>
       <div style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20,minHeight:20}}>{fact}</div>
       {isPremium && (
@@ -468,6 +467,20 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
   );
 }
 
+
+const TILE_LOADING_MSGS = {
+  family:   'Planning for the whole family... 👨‍👩‍👧',
+  hosting:  'Preparing an impressive spread... 🎉',
+  mood:     'Finding something that matches your vibe... 😊',
+  seasonal: 'Pulling in what's fresh right now... 🌿',
+  weather:  'Picking recipes for today's weather... 🌤️',
+  goal:     'Finding recipes that work for your goal... 🎯',
+  discover: 'Getting that recipe ready... ⚡',
+  planner:  'Building your 7-day menu... 📅',
+  trending: 'Grabbing a trending recipe... 🔥',
+  regional: 'Exploring this week's region... 🌍',
+  festival: 'Bringing in the festival flavours... 🎉',
+};
 
 export default function Jiff() {
   const navigate = useNavigate();
@@ -533,7 +546,8 @@ export default function Jiff() {
   const [familySelected, setFamilySelected] = useState([]);  // [] = everyone
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
   const [showSeasonalPicker, setShowSeasonalPicker] = useState(false);
-  const [journeyMode,    setJourneyMode]    = useState(false); // starts false; set true after user loads
+  const [journeyMode,    setJourneyMode]    = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Finding your perfect recipes... ⚡'); // starts false; set true after user loads
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
   const season = getCurrentSeason();
   useEffect(() => {
@@ -648,6 +662,12 @@ export default function Jiff() {
 
   // ── One-tap generation from journey tiles ────────────────────────
   const handleGenerateDirect = async (context = {}) => {
+    // Set contextual loading message
+    const msgKey = context.mood ? 'mood' : context.seasonal ? 'seasonal'
+      : context.weather ? 'weather' : context.hosting ? 'hosting'
+      : context.family ? 'family' : context.goal ? 'goal'
+      : context.type || 'discover';
+    setLoadingMessage(TILE_LOADING_MSGS[msgKey] || 'Finding your perfect recipes... ⚡');
     if (!user) { setGateDismissed(false); return; }
     if (!checkAccess('generation')) return;
 
@@ -675,6 +695,7 @@ export default function Jiff() {
               : context.mealType || 'any';
 
     setView('loading'); setFactIdx(0); setShowFavs(false); setJourneyMode(false);
+    setLoadingMessage('Checking what you can make... 🧊');
     try {
       const count = isPremium ? PAID_RECIPE_CAP : 1;
       const res = await fetch('/api/suggest', {
@@ -1007,6 +1028,11 @@ export default function Jiff() {
               style={{fontFamily:"'DM Sans',sans-serif"}}>❤️ Favourites</button>
             {trialActive && <div className="trial-badge">⏳ Trial: {trialDaysLeft}d left</div>}
             {user && !isPremium && <button className="hdr-btn premium" onClick={()=>navigate('/pricing')}>⚡ {t('go_premium')}</button>}
+            <button className="hdr-btn" onClick={()=>navigate('/profile', { state:{ tab:'settings' } })}
+              title="Settings"
+              style={{padding:'6px 10px',fontSize:16,lineHeight:1}}>
+              ⚙️
+            </button>
             {/* ── Notification bell ── */}
             {user && (
               <div style={{position:'relative'}}>
@@ -1233,88 +1259,162 @@ export default function Jiff() {
                   {t('main_heading')}
                 </h1>
                 <p style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20}}>
-                  {isPremium ? `⚡ Premium · ${PAID_RECIPE_CAP} recipes per search` : trialActive ? `🎁 Free trial · 1 recipe preview · ${trialDaysLeft} days left` : ''}
-                </p>
-              </div>
-              <div className="card">
+                  {isPremium ? `⚡ Premium · ${PAID_RECIPE_CAP} recipes per search` : trialActive ? `🎁 Free trial · 1 recipe preview · ${trialDaysLeft} days              <div className="card">
 
-                {/* ── What's in your fridge? — photo + text input for veg/meat/main items ── */}
-                <div className="section">
-                  <div className="section-label" style={{marginBottom:6}}>{t('fridge_label')}</div>
-                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:10}}>{t('fridge_sub')}</div>
+                {/* ── Fridge header + photo ── */}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                  <div>
+                    <div className="section-label" style={{marginBottom:2}}>{t('fridge_label')}</div>
+                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>{t('fridge_sub')}</div>
+                  </div>
                   <FridgePhotoUpload
                     onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
                     existingIngredients={fridgeItems}
                   />
-                  <div style={{fontSize:11,color:'var(--muted)',textAlign:'center',margin:'8px 0',fontWeight:400,letterSpacing:'0.5px'}}>{t('or_type_below')}</div>
-                  <IngredientInput
-                    ingredients={fridgeItems}
-                    onChange={setFridgeItems}
-                    pantryIngredients={[]}
-                    placeholder="cabbage, chicken, eggs, potatoes…"
-                    lang={lang}
-                  />
                 </div>
 
-                {/* ── Pantry & Spices — pre-populated from profile ── */}
-                <div className="section">
-                  <div className="section-label">
-                    {t('pantry_label')}
-                    {pantry?.length > 0 && (
-                      <span style={{fontSize:10,fontWeight:400,color:'var(--muted)',marginLeft:8,textTransform:'none',letterSpacing:0}}>
-                        {t('pantry_prepopulated')}
-                      </span>
-                    )}
+                {/* ── Ingredient tag input with voice + translate ── */}
+                <IngredientInput
+                  ingredients={fridgeItems}
+                  onChange={setFridgeItems}
+                  pantryIngredients={[]}
+                  placeholder="cabbage, chicken, eggs…"
+                  lang={lang}
+                  onTranslate={async (text) => {
+                    try {
+                      const r = await fetch('/api/comms?action=translate', {
+                        method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({ text }),
+                      });
+                      const d = await r.json();
+                      return d.english || text;
+                    } catch { return text; }
+                  }}
+                />
+
+                {/* ── Quick-add chips ── */}
+                <div style={{marginTop:10,marginBottom:14}}>
+                  <div style={{fontSize:10,letterSpacing:'1px',textTransform:'uppercase',color:'var(--muted)',fontWeight:500,marginBottom:7}}>
+                    Quick add
                   </div>
-                  <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginBottom:8}}>{t('pantry_sub')}</div>
-                  <IngredientInput
-                    ingredients={pantryItems}
-                    onChange={setPantryItems}
-                    pantryIngredients={pantry || []}
-                    placeholder="salt, oil, cumin, turmeric, garlic…"
-                  />
+                  <div style={{
+                    display:'flex', gap:6, overflowX:'auto',
+                    paddingBottom:4, scrollbarWidth:'none', msOverflowStyle:'none',
+                  }}>
+                    {(pantry?.length > 0
+                      ? pantry.filter(p => !fridgeItems.includes(p)).slice(0,8)
+                      : QUICK_ADD_STAPLES.filter(s => !fridgeItems.includes(s)).slice(0,8)
+                    ).map(item => (
+                      <button key={item}
+                        onClick={() => setFridgeItems(prev => [...new Set([...prev, item])])}
+                        style={{
+                          padding:'5px 12px', borderRadius:20, whiteSpace:'nowrap',
+                          border:'1.5px solid rgba(28,10,0,0.10)',
+                          background:'rgba(255,250,245,0.8)',
+                          fontSize:11, color:'var(--muted)',
+                          cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
+                          flexShrink:0, transition:'all 0.12s',
+                        }}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--jiff)';e.currentTarget.style.color='var(--jiff)';}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor='rgba(28,10,0,0.10)';e.currentTarget.style.color='var(--muted)';}}>
+                        + {item}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* ── Meal Type, Servings & Time — 3 column layout ── */}
-                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:18}}>
-                  {/* Meal Type */}
-                  <div style={{background:'rgba(255,250,245,0.8)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12,padding:'12px 14px'}}>
-                    <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:8}}>{t('section_meal_type')}</div>
-                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
-                      {MEAL_TYPE_OPTIONS.map(o=>(
-                        <button key={o.id}
-                          className={`meal-type-chip ${mealType===o.id?'active':''}`}
-                          onClick={()=>setMealType(o.id)}
-                          style={{justifyContent:'flex-start',padding:'5px 8px',borderRadius:8,fontSize:12}}>
-                          <span>{o.emoji}</span><span>{t('mealtype_'+o.id)||o.label}</span>
-                        </button>
-                      ))}
+                {/* ── Pantry strip — read-only, shows assumed staples ── */}
+                {pantry?.length > 0 && (
+                  <div style={{
+                    padding:'8px 12px', marginBottom:14,
+                    background:'rgba(29,158,117,0.04)',
+                    border:'1px solid rgba(29,158,117,0.15)',
+                    borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8,
+                  }}>
+                    <div style={{fontSize:11,color:'#1D9E75',fontWeight:300,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                      <span style={{fontWeight:500}}>Pantry assumed: </span>
+                      {pantry.slice(0,5).join(', ')}{pantry.length > 5 ? ` +${pantry.length-5} more` : ''}
                     </div>
+                    <button onClick={()=>navigate('/profile',{state:{tab:'pantry'}})}
+                      style={{fontSize:10,color:'#1D9E75',background:'none',border:'1px solid rgba(29,158,117,0.3)',borderRadius:6,padding:'3px 8px',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+                      Edit
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Simplified 3 filters ── */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+                  {/* Diet */}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_diet')}</div>
+                    <select value={Array.isArray(foodType)?foodType[0]||'any':foodType||'any'}
+                      onChange={e=>setFoodType([e.target.value])}
+                      style={{width:'100%',padding:'8px 6px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,fontSize:11,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none',cursor:'pointer'}}>
+                      <option value="any">Any</option>
+                      <option value="veg">Veg</option>
+                      <option value="non-veg">Non-veg</option>
+                      <option value="vegan">Vegan</option>
+                      <option value="jain">Jain</option>
+                    </select>
                   </div>
                   {/* Servings */}
-                  <div style={{background:'rgba(255,250,245,0.8)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12,padding:'12px 14px'}}>
-                    <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:8}}>{t('section_servings')}</div>
-                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
-                      <button className="serving-btn" disabled={defaultServings<=1} onClick={()=>setDefaultServings(s=>Math.max(1,s-1))}>−</button>
-                      <div className="serving-count" style={{fontSize:20,minWidth:28}}>{defaultServings}</div>
-                      <button className="serving-btn" disabled={defaultServings>=12} onClick={()=>setDefaultServings(s=>Math.min(12,s+1))}>+</button>
-                    </div>
-                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,lineHeight:1.4}}>
-                      {defaultServings} {defaultServings===1?'person':'people'}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_servings')}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:4,padding:'6px 8px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,background:'white'}}>
+                      <button onClick={()=>setDefaultServings(s=>Math.max(1,s-1))} disabled={defaultServings<=1}
+                        style={{background:'none',border:'none',fontSize:14,cursor:'pointer',color:'var(--muted)',padding:'0 2px',lineHeight:1}}>−</button>
+                      <span style={{flex:1,textAlign:'center',fontSize:13,fontWeight:600,color:'var(--ink)'}}>{defaultServings}</span>
+                      <button onClick={()=>setDefaultServings(s=>Math.min(12,s+1))} disabled={defaultServings>=12}
+                        style={{background:'none',border:'none',fontSize:14,cursor:'pointer',color:'var(--muted)',padding:'0 2px',lineHeight:1}}>+</button>
                     </div>
                   </div>
-                  {/* Time Available */}
-                  <div style={{background:'rgba(255,250,245,0.8)',border:'1px solid rgba(28,10,0,0.08)',borderRadius:12,padding:'12px 14px'}}>
-                    <div style={{fontSize:10,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:8}}>{t('section_time')}</div>
-                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
-                      {TIME_OPTIONS.map(o=>(
-                        <button key={o.id} className={`chip ${time===o.id?'active':''}`}
-                          onClick={()=>setTime(o.id)}
-                          style={{borderRadius:8,fontSize:11,padding:'4px 10px',textAlign:'left'}}>
-                          {o.label}
-                        </button>
-                      ))}
+                  {/* Time */}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_time')}</div>
+                    <select value={time} onChange={e=>setTime(e.target.value)}
+                      style={{width:'100%',padding:'8px 6px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,fontSize:11,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none',cursor:'pointer'}}>
+                      <option value="20 min">20 min</option>
+                      <option value="30 min">30 min</option>
+                      <option value="45 min">45 min</option>
+                      <option value="60 min">1 hour</option>
+                      <option value="any">Any time</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* ── Per-session cuisine picker ── */}
+                {profile?.preferred_cuisines?.length > 0 && (
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:7}}>
+                      Cuisine
                     </div>
+                    <div style={{
+                      display:'flex', gap:6, overflowX:'auto',
+                      paddingBottom:4, scrollbarWidth:'none', msOverflowStyle:'none',
+                    }}>
+                      {profile.preferred_cuisines.map(id => {
+                        const label = ALL_CUISINES?.find(c=>c.id===id)?.label || id;
+                        const isActive = (cuisine === id) || (profile.preferred_cuisines.indexOf(id)===0 && cuisine==='any');
+                        return (
+                          <button key={id}
+                            onClick={()=>setCuisine(isActive?'any':id)}
+                            style={{
+                              padding:'5px 12px', borderRadius:20, whiteSpace:'nowrap', flexShrink:0,
+                              border:`1.5px solid ${isActive?'var(--jiff)':'rgba(28,10,0,0.10)'}`,
+                              background: isActive?'rgba(255,69,0,0.07)':'white',
+                              color: isActive?'var(--jiff)':'var(--muted)',
+                              fontSize:11, cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
+                              fontWeight: isActive?600:400, transition:'all 0.12s',
+                            }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+div>
                   </div>
                 </div>
 

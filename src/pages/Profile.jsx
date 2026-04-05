@@ -4,7 +4,7 @@
 // Cuisine pool: full grouped taxonomy from cuisine.js
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate }                  from 'react-router-dom';
+import { useNavigate, useLocation }     from 'react-router-dom';
 import { useAuth }                      from '../contexts/AuthContext';
 import { useLocale }                    from '../contexts/LocaleContext';
 import { parseFoodTypeIds }             from '../lib/dietary';
@@ -182,7 +182,9 @@ export default function Profile() {
   } = useAuth();
   const { lang, setLang, units, setUnits, supportedLanguages } = useLocale();
 
-  const [activeTab, setActiveTab] = useState('taste');
+  const location  = useLocation();
+  const initTab   = location?.state?.tab || 'taste';
+  const [activeTab, setActiveTab] = useState(initTab);
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
 
@@ -547,7 +549,7 @@ export default function Profile() {
           <div>
             <SectionLabel>Language</SectionLabel>
             <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:24 }}>
-              {(supportedLanguages || [
+              {[
                 {code:'en',label:'English'},
                 {code:'ta',label:'தமிழ்'},
                 {code:'hi',label:'हिंदी'},
@@ -555,12 +557,24 @@ export default function Profile() {
                 {code:'kn',label:'ಕನ್ನಡ'},
                 {code:'mr',label:'मराठी'},
                 {code:'te',label:'తెలుగు'},
-              ]).map(l => (
-                <button key={l.code} onClick={() => setLang(l.code)}
-                  style={{ ...pill(lang === l.code), minHeight:40 }}>
-                  {l.label}
-                </button>
-              ))}
+              ].map(l => {
+                const isActive = (lang || 'en') === l.code;
+                return (
+                  <button key={l.code}
+                    onClick={() => setLang(l.code)}
+                    style={{
+                      padding:'8px 16px', minHeight:40,
+                      border:`1.5px solid ${isActive ? C.jiff : C.borderMid}`,
+                      background: isActive ? C.jiff : 'white',
+                      color: isActive ? 'white' : C.muted,
+                      borderRadius:20, fontSize:13, cursor:'pointer',
+                      fontFamily:"'DM Sans', sans-serif",
+                      fontWeight: isActive ? 600 : 400, transition:'all 0.12s',
+                    }}>
+                    {isActive && '✓ '}{l.label}
+                  </button>
+                );
+              })}
             </div>
 
             <SectionLabel>Units</SectionLabel>

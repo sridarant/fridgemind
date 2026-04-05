@@ -55,7 +55,17 @@ export default function OrderInSheet({ city = '', onClose }) {
       }}>
         <style>{'@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}'}</style>
 
-        <div style={{ width:40, height:4, background:'rgba(28,10,0,0.12)', borderRadius:2, margin:'0 auto 20px' }}/>
+        <div style={{ display:'flex', alignItems:'center', marginBottom:20 }}>
+          <div style={{ flex:1, display:'flex', justifyContent:'center' }}>
+            <div style={{ width:40, height:4, background:'rgba(28,10,0,0.12)', borderRadius:2 }}/>
+          </div>
+          <button onClick={onClose}
+            style={{ background:'none', border:'1px solid rgba(28,10,0,0.1)', borderRadius:'50%',
+              width:28, height:28, cursor:'pointer', color:'rgba(28,10,0,0.4)', fontSize:14,
+              display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1, flexShrink:0 }}>
+            ✕
+          </button>
+        </div>
 
         <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:'#1C0A00', marginBottom:4 }}>
           Order in instead
