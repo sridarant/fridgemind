@@ -666,11 +666,13 @@ export default function Jiff() {
       ? 'Indian hosting and entertaining — impressive dishes that feed 8–12 people, can be partially prepped ahead, visually striking. Include a starter, main, and dessert option in the recipe suggestions.'
       : context.family
         ? 'family meal — suitable for all ages and dietary preferences in the household'
-        : context.moodContext?.prompt
-          ? `${context.moodContext.prompt} — cuisine: ${context.moodContext.cuisineWeight || 'any'}`
-          : context.seasonal
-            ? `seasonal dishes using ${context.season?.items?.slice(0,3).join(', ') || 'seasonal produce'}`
-            : context.mealType || 'any';
+        : context.goalContext?.prompt
+          ? context.goalContext.prompt
+          : context.moodContext?.prompt
+            ? `${context.moodContext.prompt} — cuisine: ${context.moodContext.cuisineWeight || 'any'}`
+            : context.seasonal
+              ? `seasonal dishes using ${context.season?.items?.slice(0,3).join(', ') || 'seasonal produce'}`
+              : context.mealType || 'any';
 
     setView('loading'); setFactIdx(0); setShowFavs(false); setJourneyMode(false);
     try {

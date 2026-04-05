@@ -197,9 +197,7 @@ export default function Planner() {
             <span className="logo-name"><span style={{color:'#FF4500'}}>J</span>iff</span>
           </div>
           <div className="nav-links">
-            <button className="nav-link" onClick={()=>navigate('/plans')}>🎯 Goal Plan</button>
-            <button className="nav-link" onClick={()=>navigate('/little-chefs')}>👶 Kids Meals</button>
-            <button className="nav-link" onClick={()=>navigate('/app')}>← Home to App</button>
+            <button className="nav-link" onClick={()=>navigate('/app')}>← Home</button>
           </div>
         </header>
 
@@ -306,43 +304,164 @@ export default function Planner() {
         )}
 
         {view==='results' && plan && (
-          <>
-            <div className="results-wrap">
-              <div className="plan-header">
-                <div>
-                  <div className="plan-title">Your 7-day menu ⚡</div>
-                  <div className="plan-sub">{mealCount} meals · {servings} serving{servings!==1?'s':''} each · tap any meal to expand</div>
+          <div style={{padding:'16px 20px', maxWidth:720, margin:'0 auto', paddingBottom:80}}>
+            {/* Plan header */}
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+              <div>
+                <div style={{fontFamily:"'Fraunces',serif",fontSize:20,fontWeight:700,color:'#1C0A00'}}>
+                  Your 7-day menu ⚡
                 </div>
-                <div className="plan-actions">
-                  <button className="plan-btn secondary" onClick={handleSubmit}><IconRefresh/>Regenerate</button>
-                  <button className={`plan-btn grocery ${showGrocery?'active':''}`} onClick={()=>setShowGrocery(p=>!p)}>
-                    🛒 {showGrocery?'Hide':'Grocery list'}
-                  </button>
-                  <button className="plan-btn" onClick={()=>setView('input')}>← Edit</button>
+                <div style={{fontSize:12,color:'#7C6A5E',fontWeight:300}}>
+                  {mealCount} meals · {servings} serving{servings!==1?'s':''} each
                 </div>
               </div>
-
-              <div className="days-tabs">
-                {DAYS.map((d,i)=>(
-                  <button key={d} className={`day-tab ${activeDay===i?'active':''}`} onClick={()=>setActiveDay(i)}>{DAYS_SHORT[i]}</button>
-                ))}
-              </div>
-
-              <div className="day-meals-grid">
-                {selectedTypes.map(type=>{
-                  const mt = MEAL_TYPE_OPTIONS.find(m=>m.id===type);
-                  return (
-                    <div key={type} className="meal-slot-card">
-                      <div className="meal-slot-type" style={{color:mt?.color||'#FF4500'}}>{mt?.emoji} {mt?.label}</div>
-                      <MealSlot meal={plan[DAYS[activeDay]]?.meals?.[type]} type={type} servings={servings}/>
-                    </div>
-                  );
-                })}
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={()=>setShowGrocery(p=>!p)}
+                  style={{
+                    padding:'7px 12px',fontSize:12,border:'1px solid rgba(28,10,0,0.12)',
+                    borderRadius:8,background:showGrocery?'rgba(255,69,0,0.07)':'white',
+                    color:showGrocery?'#FF4500':'#7C6A5E',cursor:'pointer',
+                    fontFamily:"'DM Sans',sans-serif",
+                  }}>
+                  🛒 {showGrocery?'Hide':'Grocery'}
+                </button>
+                <button onClick={handleSubmit}
+                  style={{
+                    padding:'7px 14px',fontSize:12,background:'#FF4500',color:'white',
+                    border:'none',borderRadius:8,cursor:'pointer',fontWeight:500,
+                    fontFamily:"'DM Sans',sans-serif",
+                  }}>
+                  ⚡ Regenerate
+                </button>
               </div>
             </div>
 
+            {/* Week strip — emoji + cooked status */}
+            <div style={{
+              display:'grid',gridTemplateColumns:'repeat(7,1fr)',
+              gap:4,marginBottom:20,
+            }}>
+              {DAYS.map((day,i) => {
+                const meals = plan[day]?.meals || {};
+                const firstMeal = Object.values(meals)[0];
+                const emoji = firstMeal?.emoji || '🍽️';
+                const isToday = i === new Date().getDay() - 1;
+                return (
+                  <button key={day} onClick={()=>setActiveDay(i)}
+                    style={{
+                      display:'flex',flexDirection:'column',alignItems:'center',gap:3,
+                      padding:'8px 4px',borderRadius:12,
+                      border:`1.5px solid ${activeDay===i?'#FF4500':'rgba(28,10,0,0.08)'}`,
+                      background:activeDay===i?'rgba(255,69,0,0.06)':isToday?'rgba(255,184,0,0.06)':'white',
+                      cursor:'pointer',fontFamily:"'DM Sans',sans-serif",
+                    }}>
+                    <span style={{fontSize:9,color:'#7C6A5E',fontWeight:500}}>
+                      {DAYS_SHORT[i]}
+                    </span>
+                    <span style={{fontSize:16}}>{emoji}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Accordion — active day expanded, rest collapsed */}
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {DAYS.map((day,i) => {
+                const dayPlan = plan[day];
+                const isOpen = activeDay === i;
+                const firstEmoji = Object.values(dayPlan?.meals||{})[0]?.emoji||'🍽️';
+                return (
+                  <div key={day} style={{
+                    background:'white',border:'1px solid rgba(28,10,0,0.08)',
+                    borderRadius:14,overflow:'hidden',
+                    boxShadow: isOpen?'0 4px 16px rgba(28,10,0,0.07)':'none',
+                    transition:'box-shadow 0.15s',
+                  }}>
+                    {/* Day header — always visible */}
+                    <button onClick={()=>setActiveDay(isOpen?-1:i)}
+                      style={{
+                        width:'100%',padding:'14px 16px',
+                        display:'flex',alignItems:'center',gap:10,
+                        border:'none',background:'none',cursor:'pointer',
+                        fontFamily:"'DM Sans',sans-serif",
+                      }}>
+                      <span style={{fontSize:20}}>{firstEmoji}</span>
+                      <div style={{flex:1,textAlign:'left'}}>
+                        <div style={{fontSize:14,fontWeight:600,color:'#1C0A00'}}>
+                          {day}
+                        </div>
+                        {!isOpen && (
+                          <div style={{fontSize:11,color:'#7C6A5E',fontWeight:300}}>
+                            {Object.values(dayPlan?.meals||{}).map(m=>m?.name).filter(Boolean).slice(0,2).join(' · ')}
+                          </div>
+                        )}
+                      </div>
+                      <span style={{
+                        fontSize:16,color:'#7C6A5E',
+                        transform:isOpen?'rotate(180deg)':'none',
+                        transition:'transform 0.2s',
+                      }}>▾</span>
+                    </button>
+
+                    {/* Expanded day content */}
+                    {isOpen && (
+                      <div style={{borderTop:'1px solid rgba(28,10,0,0.06)',padding:'0 0 4px'}}>
+                        {selectedTypes.map(type => {
+                          const mt = MEAL_TYPE_OPTIONS.find(m=>m.id===type);
+                          const meal = dayPlan?.meals?.[type];
+                          return (
+                            <div key={type} style={{
+                              padding:'12px 16px',
+                              borderBottom:'1px solid rgba(28,10,0,0.04)',
+                            }}>
+                              <div style={{
+                                fontSize:10,letterSpacing:'1px',textTransform:'uppercase',
+                                color:mt?.color||'#FF4500',fontWeight:600,marginBottom:6,
+                              }}>
+                                {mt?.emoji} {mt?.label}
+                              </div>
+                              {meal ? (
+                                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+                                  <div>
+                                    <div style={{fontSize:14,fontWeight:600,color:'#1C0A00'}}>
+                                      {meal.emoji} {meal.name}
+                                    </div>
+                                    <div style={{fontSize:11,color:'#7C6A5E',marginTop:2}}>
+                                      {meal.time && `⏱ ${meal.time}`}
+                                      {meal.calories && ` · ~${meal.calories} kcal`}
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={()=>navigate('/app',{state:{generateContext:{dish:meal.name,type:'planner'}}})}
+                                    style={{
+                                      padding:'6px 12px',fontSize:11,
+                                      background:'rgba(255,69,0,0.07)',
+                                      border:'1px solid rgba(255,69,0,0.2)',
+                                      borderRadius:8,color:'#FF4500',
+                                      cursor:'pointer',fontWeight:500,
+                                      fontFamily:"'DM Sans',sans-serif",
+                                      flexShrink:0,
+                                    }}>
+                                    Cook this →
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{fontSize:12,color:'#7C6A5E',fontStyle:'italic'}}>
+                                  Not planned
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
             {showGrocery && <GrocerySection plan={plan} mealTypes={selectedTypes}/>}
-          </>
+          </div>
         )}
       </div>
     </>

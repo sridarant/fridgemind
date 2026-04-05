@@ -235,6 +235,18 @@ export default async function handler(req, res) {
       return res.status(200).json({ releases });
     }
 
+    // ── Update last used cuisine (per-session picker) ───────────────
+    if (action === 'update-cuisine' && req.method === 'POST') {
+      const { userId, cuisine } = req.body;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const r = await fetch(`${url}/rest/v1/profiles?id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: { ...h, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ last_cuisine: cuisine }),
+      });
+      return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
+    }
+
     // ── Update streak in profiles table (Phase 8) ──────────────────
     if (action === 'update-streak' && req.method === 'POST') {
       const { userId, streak, lastCooked } = req.body;

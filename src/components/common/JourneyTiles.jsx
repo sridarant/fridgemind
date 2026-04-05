@@ -10,6 +10,7 @@ import MoodSelector from './MoodSelector.jsx';
 import OrderInSheet from './OrderInSheet.jsx';
 import SeasonalCard from './SeasonalCard.jsx';
 import WeatherBanner from './WeatherBanner.jsx';
+import GoalSheet    from './GoalSheet.jsx';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E',
@@ -77,6 +78,7 @@ export function JourneyTiles({
   const [showMood,    setShowMood]    = useState(false);
   const [showOrder,   setShowOrder]   = useState(false);
   const [showMore,    setShowMore]    = useState(false);
+  const [showGoal,    setShowGoal]    = useState(false);
 
   const isIndia = (country || 'IN') === 'IN';
 
@@ -121,7 +123,7 @@ export function JourneyTiles({
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:24 }}>
         <Tile emoji="🎯" label="I have a goal" sub="Plans & targets"
           color="#1D9E75" bg="rgba(29,158,117,0.07)" border="rgba(29,158,117,0.2)"
-          onClick={() => navigate('/plans')} />
+          onClick={() => setShowGoal(true)} />
         {isIndia && (
           <Tile emoji="🛵" label="Order in instead" sub="Swiggy · Zomato · Blinkit"
             color="#FC8019" bg="rgba(252,128,25,0.07)" border="rgba(252,128,25,0.2)"
@@ -190,22 +192,7 @@ export function JourneyTiles({
         </>
       )}
 
-      {/* Fridge shortcut */}
-      <div onClick={onSelectFridge} style={{
-        padding:'12px 16px', background:'rgba(28,10,0,0.02)',
-        border:`1px solid ${C.border}`, borderRadius:14,
-        display:'flex', alignItems:'center', gap:10, cursor:'pointer',
-      }}>
-        <span style={{ fontSize:18 }}>🔍</span>
-        <span style={{ flex:1, fontSize:13, color:C.muted, fontWeight:300 }}>
-          Or type what's in your fridge…
-        </span>
-        <span style={{ fontSize:11, color:C.jiff, fontWeight:500,
-          background:'rgba(255,69,0,0.07)', borderRadius:8, padding:'4px 10px',
-          border:'1px solid rgba(255,69,0,0.15)' }}>
-          Open fridge →
-        </span>
-      </div>
+
 
       {/* Modals */}
       {showMood && (
@@ -221,6 +208,15 @@ export function JourneyTiles({
         <OrderInSheet
           city={profile?.city || ''}
           onClose={() => setShowOrder(false)}
+        />
+      )}
+      {showGoal && (
+        <GoalSheet
+          onSelect={({ id, ...goal }) => {
+            setShowGoal(false);
+            onGenerateDirect?.({ goal: id, goalContext: goal });
+          }}
+          onClose={() => setShowGoal(false)}
         />
       )}
     </div>

@@ -152,8 +152,34 @@ export default async function handler(req, res) {
     } catch { return res.status(500).json({ error: 'Premium trigger failed.' }); }
   }
 
+  // ── Translate ingredient name to English ─────────────────────────
+  if (action === 'translate' && req.method === 'POST') {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ error: 'text required' });
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 30,
+          messages: [{ role:'user', content:`Translate this ingredient name to English. Return ONLY the English name, nothing else: "${text}"` }],
+        }),
+      });
+      const d = await r.json();
+      const english = d.content?.[0]?.text?.trim() || text;
+      return res.status(200).json({ english, original: text });
+    } catch {
+      return res.status(500).json({ english: text, original: text });
+    }
+  }
+
   return res.status(400).json({
     error: `Unknown action: ${action}`,
-    valid: ['feedback', 'email', 'welcome', 'trial_start', 'trial_expired', 'premium_confirm'],
+    valid: ['feedback', 'email', 'welcome', 'trial_start', 'trial_expired', 'premium_confirm', 'translate'],
   });
 }

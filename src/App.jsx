@@ -13,6 +13,7 @@ import ErrorBoundary   from './components/ErrorBoundary';
 import Landing       from './pages/Landing';
 import Jiff          from './pages/Jiff';
 import Discover      from './pages/Discover';
+import Favs          from './pages/Favs';
 import Onboarding    from './pages/Onboarding';
 import Planner       from './pages/Planner';
 import Profile       from './pages/Profile';
@@ -54,7 +55,7 @@ function AppShell() {
         <Route path="/little-chefs" element={<LittleChefs />} />
         <Route path="/sacred"      element={<SacredKitchen />} />
         {/* /favs — renders Jiff with favourites panel open */}
-        <Route path="/favs"        element={<Jiff showFavsOnLoad />} />
+        <Route path="/favs"        element={<Favs />} />
       </Routes>
 
       {showNav && <BottomNav />}
