@@ -47,7 +47,40 @@ for (const file of allFiles) {
 }
 if (errors === 0) ok(`Braceless if check: ${ifClean} lines scanned, 0 issues`);
 
-// ── 2. Named import ↔ export cross-check ─────────────────────────
+
+// ── 2. Unescaped apostrophe inside single-quoted JS string values ──
+// Catches: 'what\'s', 'today\'s' assigned as JS string values (=, :, [, ()
+// Specifically: after = or : or , or ( or [, find 'text with word'word'
+// JSX text nodes and comments are excluded by requiring the string assign context.
+// Pattern: assignment/delimiter then single-quote then word-apostrophe-word
+console.log('\n── Unescaped apostrophe in JS string values ──');
+let apostropheIssues = 0, linesScanned = 0;
+// Matches: optional whitespace, then = or : or , or ( or [, then optional space,
+// then single-quote, then any chars, then \w'\w (the bug pattern)
+const assignedStringApostrophe = /(?:=|:|,|\(|\[)\s*'[^'\n]*\w'\w/;
+for (const file of allFiles) {
+  const src = fs.readFileSync(file, 'utf8');
+  const lines = src.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    // Strip template literals, double-quoted strings, and line comments
+    line = line
+      .replace(/`(?:[^`\\]|\\.)*`/g, '``')
+      .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+      .replace(/\/\/.*/g, '');
+    linesScanned++;
+    if (assignedStringApostrophe.test(line)) {
+      // Extra guard: skip if the apostrophe is escaped
+      if (!/\\'./.test(line)) {
+        err(`${path.relative(ROOT, file)}:${i + 1} — unescaped apostrophe in single-quoted string value: ${lines[i].trim().slice(0, 70)}`);
+        apostropheIssues++;
+      }
+    }
+  }
+}
+if (apostropheIssues === 0) ok(`Apostrophe check: ${linesScanned} lines scanned, 0 issues`);
+
+// ── 3. Named import ↔ export cross-check ─────────────────────────
 console.log('\n── Named import/export verification ──');
 let exportChecked = 0, exportFailed = 0;
 for (const file of srcFiles) {
@@ -84,13 +117,13 @@ for (const file of srcFiles) {
 }
 if (exportFailed === 0) ok(`Exports: ${exportChecked} named imports verified`);
 
-// ── 3. API function count ─────────────────────────────────────────
+// ── 4. API function count ─────────────────────────────────────────
 console.log('\n── API function count (Vercel Hobby limit: 12) ──');
 const apiCount = apiFiles.length;
 if (apiCount > 12) err(`${apiCount}/12 — over limit`);
 else ok(`${apiCount}/12 (${12 - apiCount} slots free): ${apiFiles.map(f => path.basename(f)).join(', ')}`);
 
-// ── 4. vercel.json rewrite destinations exist ─────────────────────
+// ── 5. vercel.json rewrite destinations exist ─────────────────────
 console.log('\n── vercel.json rewrite integrity ──');
 const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 let rewriteOk = 0;
@@ -105,7 +138,7 @@ for (const r of (vj.rewrites || [])) {
 }
 ok(`${rewriteOk}/${(vj.rewrites || []).length} rewrites valid`);
 
-// ── 5. Key file existence ─────────────────────────────────────────
+// ── 6. Key file existence ─────────────────────────────────────────
 console.log('\n── Key file existence ──');
 const required = [
   'src/pages/Admin.jsx',

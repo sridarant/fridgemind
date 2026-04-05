@@ -1,3 +1,67 @@
+## v1.22.6 — 2026-04-05
+
+### Fix: Apostrophe syntax error
+- Fixed unescaped apostrophe in `TILE_LOADING_MSGS` constant (`week's`, `today's`)
+- Added permanent apostrophe-in-string check to `prezip-check.js` (check #2)
+- Check catches `\w'\w` pattern in single-quoted JS string assignments before zip
+
+---
+
+## v1.22.5 — 2026-04-05
+
+### Kids pages redesign (3 separate routes), bug fixes, fridge view refresh
+
+**New pages**
+- `/little-chefs/lunchbox` → `KidsLunchbox.jsx` — 5-day school lunchbox planner (accordion per day, main + snack + drink, allergen selection)
+- `/little-chefs/dishes` → `KidsDishes.jsx` — parent selects age + occasion → 4 kid-safe recipe cards
+- `/little-chefs` → `LittleChefs.jsx` rewritten — guided child cooking with ⚠️ "Ask an adult" callouts per step, tick-off progress, skill + age selection
+
+**Fridge view refresh**
+- Quick-add chips (from pantry first, then QUICK_ADD_STAPLES fallback), horizontal scroll
+- Pantry strip — read-only row showing assumed staples with Edit link to Profile
+- 3 simplified dropdowns (Diet · Servings · Time) replacing old multi-section form
+- Per-session cuisine picker from user's saved pool, saves to Supabase `last_cuisine`
+- Photo scan icon moved to top-right (secondary access)
+- Fridge shortcut row removed from home — tile is sole entry point
+
+**Bug fixes**
+- Onboarding cuisine now uses `cuisine.js` taxonomy IDs — syncs correctly with Profile My Taste tab
+- Language selector in Profile Settings: single-select with ✓ indicator, correct initial state
+- ⚙️ Settings icon added to header (next to Go Premium), opens Profile Settings tab directly
+- All bottom sheets (MoodSelector, OrderInSheet, GoalSheet) now have ✕ close button
+- Contextual loading messages per tile (mood, weather, seasonal, goal, fridge, kids, discover)
+
+**Cleanup**
+- `onTranslate` prop removed from fridge IngredientInput — translation handled natively inside IngredientInput via `/api/suggest?action=translate` (already existed)
+- Duplicate translate action in `api/comms.js` retained for backwards compatibility
+
+---
+
+## v1.22.4 — 2026-04-05
+
+### Profile redesign, Favourites page, GoalSheet, Planner accordion, cuisine taxonomy
+
+**New files**
+- `src/lib/cuisine.js` — single source of truth: Regional (South/North/East NE/West/Central/Street Food) · Global · Special Requirements taxonomy, pool logic, tile mapping, GOAL_CONTEXTS
+- `src/components/common/GoalSheet.jsx` — 5-goal bottom sheet (2-col grid), one tap fires generation
+- `src/pages/Favs.jsx` — dedicated favourites page with sort (rating/cuisine), filter chips, guest prompt, localStorage → Supabase migration on first sign-in
+
+**Profile — 4 tabs**
+- My Taste: diet, spice, skill, allergies, full cuisine pool selector
+- Family: members + kids ages
+- Goals: active goal chips, calorie target, 7-day cooked strip, advisory note
+- Settings: language, units, country, sign out
+- Stats banner: streak · cooked · avg rating
+
+**Planner**
+- Week strip with emoji per day (tap to expand/collapse)
+- Accordion: today expanded by default, rest collapsed
+- Silent regenerate, Cook this → navigates to /app with dish context
+
+**API**
+- `api/comms.js` — translate action (claude-haiku, auto-detect language)
+- `api/admin.js` — update-cuisine (saves last_cuisine to profiles)
+
 ## v1.22.0 — 2026-04-04
 
 ### Major: v22 — UX Redesign

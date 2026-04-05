@@ -472,13 +472,13 @@ const TILE_LOADING_MSGS = {
   family:   'Planning for the whole family... 👨‍👩‍👧',
   hosting:  'Preparing an impressive spread... 🎉',
   mood:     'Finding something that matches your vibe... 😊',
-  seasonal: 'Pulling in what's fresh right now... 🌿',
-  weather:  'Picking recipes for today's weather... 🌤️',
+  seasonal: 'Pulling in what\'s fresh right now... 🌿',
+  weather:  'Picking recipes for today\'s weather... 🌤️',
   goal:     'Finding recipes that work for your goal... 🎯',
   discover: 'Getting that recipe ready... ⚡',
   planner:  'Building your 7-day menu... 📅',
   trending: 'Grabbing a trending recipe... 🔥',
-  regional: 'Exploring this week's region... 🌍',
+  regional: "Exploring this week's region... 🌍",
   festival: 'Bringing in the festival flavours... 🎉',
 };
 
@@ -1280,16 +1280,7 @@ export default function Jiff() {
                   pantryIngredients={[]}
                   placeholder="cabbage, chicken, eggs…"
                   lang={lang}
-                  onTranslate={async (text) => {
-                    try {
-                      const r = await fetch('/api/comms?action=translate', {
-                        method:'POST', headers:{'Content-Type':'application/json'},
-                        body: JSON.stringify({ text }),
-                      });
-                      const d = await r.json();
-                      return d.english || text;
-                    } catch { return text; }
-                  }}
+                  {/* Translation handled internally by IngredientInput via /api/suggest?action=translate */}
                 />
 
                 {/* ── Quick-add chips ── */}
