@@ -211,7 +211,7 @@ export function MealCard({
             </div>
           </div>
           <div style={{ fontSize:11, color:C.muted, marginTop:6, display:'flex', alignItems:'center', gap:6 }}>
-            <span style={{ fontSize:16, transform:`rotate(${expanded?'180deg':'0deg'})`, display:'inline-block', transition:'transform 0.2s' }}>▾</span>
+            <span style={{ fontSize:16, transform:'rotate(' + (expanded ? '180deg' : '0deg') + ')', display:'inline-block', transition:'transform 0.2s' }}>▾</span>
             <span>{expanded ? 'Collapse' : 'See recipe'}</span>
           </div>
         </div>

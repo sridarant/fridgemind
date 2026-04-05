@@ -103,7 +103,7 @@ export default function KidsLunchbox() {
 Each day: a main lunchbox dish, a snack, and a drink suggestion.
 Rules: School-friendly (no strong smells, no mess, no nuts if allergen selected), nutritious, kid-approved.
 Age notes: ${selectedAge?.note}.
-${allergens.length > 0 ? `Avoid allergens: ${allergens.join(', ')}.` : ''}
+${allergens.length > 0 ? 'Avoid allergens: ' + allergens.join(', ') + '.' : ''}
 Respond ONLY with valid JSON:
 {
   "Monday":    {"emoji":"🍱","main":{"name":"...","note":"..."},"snack":{"name":"...","note":"..."},"drink":{"name":"...","note":"..."}},

@@ -116,7 +116,7 @@ export default function FridgePhotoUpload({ onIngredients }) {
           <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
             <span style={{ display:'inline-block', width:14, height:14, border:'2px solid rgba(255,69,0,0.3)', borderTopColor:C.jiff, borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
             <span style={{ fontSize:13, color:C.muted, fontWeight:300 }}>
-              Scanning {previews.length > 1 ? `${previews.length} photos` : 'photo'}…
+              Scanning {previews.length > 1 ? previews.length + ' photos' : 'photo'}…
             </span>
             <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
           </div>

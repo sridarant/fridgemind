@@ -1001,7 +1001,7 @@ export default function Jiff() {
               </div>
               <div className="gate-plans">
                 {Object.values(plans).map(plan=>(
-                  <div key={plan.id} className={`gate-plan ${gatePlan===plan.id?'selected':''}`} onClick={()=>setGatePlan(plan.id)}>
+                  <div key={plan.id} className={'gate-plan ' + (gatePlan===plan.id?'selected':'')} onClick={()=>setGatePlan(plan.id)}>
                     <div className="gate-plan-price">{plan.price}</div>
                     <div className="gate-plan-label">{plan.label}<br/>{plan.period}</div>
                     {plan.saving&&<div className="gate-plan-saving">{plan.saving}</div>}
@@ -1065,7 +1065,7 @@ export default function Jiff() {
                             No notifications yet
                           </div>
                         ) : (Array.isArray(notifications)?notifications:[]).map(n => (
-                          <div key={n.id} className={`notif-item ${n.read ? '' : 'unread'}`}>
+                          <div key={n.id} className={'notif-item ' + (n.read ? '' : 'unread')}>
                             <span style={{fontSize:20,lineHeight:1,marginTop:2,flexShrink:0}}>{n.icon}</span>
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:6,marginBottom:2}}>
@@ -1259,7 +1259,7 @@ export default function Jiff() {
                   {t('main_heading')}
                 </h1>
                 <p style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20}}>
-                  {isPremium ? `⚡ Premium · ${PAID_RECIPE_CAP} recipes per search` : trialActive ? `🎁 Free trial · 1 recipe preview · ${trialDaysLeft} days              <div className="card">
+                  {isPremium ? '⚡ Premium · ' + PAID_RECIPE_CAP + ' recipes per search' : trialActive ? `🎁 Free trial · 1 recipe preview · ${trialDaysLeft} days              <div className="card">
 
                 {/* ── Fridge header + photo ── */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
@@ -1510,7 +1510,7 @@ div>
     {/* Cuisine card — grouped: Indian Regional + International */}
               <div className="sidebar-card">
                 <div className="sidebar-card-title">{t('section_cuisine')}</div>
-                <button className={`cuisine-chip ${cuisine==='any'?'active-any':''}`}
+                <button className={'cuisine-chip' + (cuisine==='any' ? ' active-any' : '')}
                   onClick={()=>setCuisine('any')}
                   style={{marginBottom:10,width:'100%',justifyContent:'center'}}>
                   <span style={{fontSize:13}}>🌍</span><span style={{fontSize:12}}>{t('cuisine_any')}</span>
@@ -1519,7 +1519,7 @@ div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:12}}>
                   {INDIAN_CUISINES.map(o=>(
                     <button key={o.id}
-                      className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
+                      className={'cuisine-chip ' + (cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':'')}
                       onClick={()=>setCuisine(o.id)} style={{fontSize:11,padding:'4px 9px'}}>
                       <span style={{fontSize:12}}>{o.flag}</span><span>{o.label}</span>
                     </button>
@@ -1529,7 +1529,7 @@ div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
                   {GLOBAL_CUISINES.map(o=>(
                     <button key={o.id}
-                      className={`cuisine-chip ${cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':''}`}
+                      className={'cuisine-chip ' + (cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':'')}
                       onClick={()=>setCuisine(o.id)} style={{fontSize:11,padding:'4px 9px'}}>
                       <span style={{fontSize:12}}>{o.flag}</span><span>{o.label}</span>
                     </button>

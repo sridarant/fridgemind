@@ -114,7 +114,7 @@ export default function Discover() {
         {/* 2. Coming Up — festival */}
         {(festival || upcomingFestivals.length > 0) && (
           <div style={{ marginBottom:28 }}>
-            <SectionHeader emoji="🎉" title="Coming Up" sub={festival ? `${festival.emoji} ${festival.name} — cook traditionally` : `${upcomingFestivals[0]?.emoji} ${upcomingFestivals[0]?.name} in ${upcomingFestivals[0]?.daysFromNow} days`} />
+            <SectionHeader emoji="🎉" title="Coming Up" sub={festival ? festival.emoji + ' ' + festival.name + ' — cook traditionally' : (upcomingFestivals[0]?.emoji + ' ' + upcomingFestivals[0]?.name + ' in ' + upcomingFestivals[0]?.daysFromNow + ' days')} />
             <div style={{
               background:   'white', border:'1px solid ' + (C.border),
               borderRadius: 14, padding:'14px 16px',

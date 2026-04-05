@@ -81,29 +81,35 @@ for (const file of allFiles) {
 if (apostropheIssues === 0) ok(`Apostrophe check: ${linesScanned} lines scanned, 0 issues`);
 
 
-// ── 3. Template literal in CSS style prop (causes "Identifier after number") ──
-// Catches: border:`1.5px solid ${expr}` — safe: border:'1.5px solid ' + expr
-// This specific pattern causes Babel parser to misread numeric CSS values like 1.5px
-console.log('\n── Template literal in style prop values ──');
+// ── 3. Template literal patterns that cause Babel parse errors ──────────
+// Two confirmed failure patterns in Vercel's Babel version:
+// A) CSS prop with template literal: border:`1.5px solid ${expr}` (numeric + identifier)
+// B) JSX text ternary with template: {cond ? `text ${expr}` : ''} (text node context)
+// NOT flagged: className={`x ${y}`} — works fine in production (standard JSX)
+console.log('\n── Template literal Babel parse patterns ──');
 let styleTemplateIssues = 0, styleTemplateClean = 0;
-const cssProps = /(?:border|background|color|boxShadow|outline|padding|margin|width|height|fontSize|borderRadius):`[^`]*\$\{/;
+// Pattern A: CSS property in style object with template literal
+const cssPropsRe = /(?:border|background|color|boxShadow|outline|padding|margin|width|height|fontSize|borderRadius|transform|opacity|flex|gridTemplateColumns):`[^`]*\$\{/;
+// Pattern B: JSX text node ternary with template literal
+// {expr ? `text ${var}` : ''}  — dangerous in JSX text position
+const jsxTextTernaryRe = /\{[^}]+\?\s*`[^`]*\$\{[^}]+\}[^`]*`\s*:/;
+
 for (const file of srcFiles) {
   const lines = fs.readFileSync(file, 'utf8').split('\n');
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i]
-      .replace(/`(?:[^`\\]|\\.)*`/g, '``')  // strip non-style templates first
-      .replace(/"(?:[^"\\]|\\.)*"/g, '""')
-      .replace(/\/\/.*/g, '');
-    // Re-check with original line for style prop template literals
-    if (cssProps.test(lines[i])) {
-      err(`${path.relative(ROOT, file)}:${i + 1} — template literal in style prop (use string concat instead): ${lines[i].trim().slice(0, 70)}`);
+    const line = lines[i];
+    if (cssPropsRe.test(line)) {
+      err(`${path.relative(ROOT, file)}:${i + 1} — template literal in CSS style prop (use string concat): ${line.trim().slice(0, 75)}`);
+      styleTemplateIssues++;
+    } else if (jsxTextTernaryRe.test(line)) {
+      err(`${path.relative(ROOT, file)}:${i + 1} — template literal in JSX text ternary (use string concat): ${line.trim().slice(0, 75)}`);
       styleTemplateIssues++;
     } else {
       styleTemplateClean++;
     }
   }
 }
-if (styleTemplateIssues === 0) ok(`Style template check: ${styleTemplateClean} lines scanned, 0 issues`);
+if (styleTemplateIssues === 0) ok(`Template literal check: ${styleTemplateClean} lines scanned, 0 issues`);
 
 // ── 4. Named import ↔ export cross-check ─────────────────────────
 console.log('\n── Named import/export verification ──');

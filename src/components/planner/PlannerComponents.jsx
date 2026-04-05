@@ -82,7 +82,7 @@ function GrocerySection({ plan, mealTypes }) {
         <div className="grocery-card-hdr">
           <div>
             <div className="grocery-card-title">🛒 Weekly grocery list</div>
-            <div className="grocery-card-sub">{items.length} items · tap to tick off{checkedCount>0?` · ${checkedCount} done`:''}</div>
+            <div className="grocery-card-sub">{items.length} items · tap to tick off{checkedCount>0?' · ' + checkedCount + ' done':''}</div>
           </div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             <button className={`g-action-btn copy ${copied?'copied':''}`} style={{background:copied?'#1D9E75':'rgba(255,250,245,0.1)',color:'white',border:copied?'none':'1.5px solid rgba(255,250,245,0.2)'}} onClick={handleCopy}>

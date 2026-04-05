@@ -29,7 +29,7 @@ export async function reverseGeocode(lat, lon) {
     const city    = data.address?.suburb || data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
     const country = data.address?.country || '';
     const state   = data.address?.state || '';
-    return { city, state, country, display: city ? `${city}, ${country}` : country };
+    return { city, state, country, display: city ? city + ', ' + country : country };
   } catch {
     return { city: '', state: '', country: '', display: '' };
   }

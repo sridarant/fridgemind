@@ -122,7 +122,7 @@ export default function Stats() {
                     <span style={{ fontSize:11, color:C.muted }}>{c.users}</span>
                   </div>
                   <div style={{ height:4, background:'rgba(28,10,0,0.07)', borderRadius:2, overflow:'hidden' }}>
-                    <div style={{ height:'100%', width: animated ? `${c.pct}%` : '0%', background:C.jiff, borderRadius:2, transition:'width 1.2s ease' }}/>
+                    <div style={{ height:'100%', width: animated ? c.pct + '%' : '0%', background:C.jiff, borderRadius:2, transition:'width 1.2s ease' }}/>
                   </div>
                 </div>
               </div>
