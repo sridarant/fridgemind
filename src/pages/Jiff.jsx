@@ -1324,7 +1324,7 @@ export default function Jiff() {
                   }}>
                     <div style={{fontSize:11,color:'#1D9E75',fontWeight:300,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                       <span style={{fontWeight:500}}>Pantry assumed: </span>
-                      {pantry.slice(0,5).join(', ')}{pantry.length > 5 ? ` +${pantry.length-5} more` : ''}
+                      {pantry.slice(0,5).join(', ')}{pantry.length > 5 ? ' +' + (pantry.length-5) + ' more' : ''}
                     </div>
                     <button onClick={()=>navigate('/profile',{state:{tab:'pantry'}})}
                       style={{fontSize:10,color:'#1D9E75',background:'none',border:'1px solid rgba(29,158,117,0.3)',borderRadius:6,padding:'3px 8px',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
