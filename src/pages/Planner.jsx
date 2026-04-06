@@ -10,6 +10,13 @@ import { useAuth }   from '../contexts/AuthContext';
 // ── Components + helpers → src/components/planner/PlannerComponents.jsx ──
 
 // ── Main component ─────────────────────────────────────────────────
+const MEAL_TYPE_OPTIONS = [
+  { id:'breakfast', label:'Breakfast', emoji:'🌅', color:'#F59E0B' },
+  { id:'lunch',     label:'Lunch',     emoji:'☀️', color:'#3B82F6' },
+  { id:'dinner',    label:'Dinner',    emoji:'🌙', color:'#8B5CF6' },
+  { id:'snack',     label:'Snack',     emoji:'🍎', color:'#10B981' },
+];
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}

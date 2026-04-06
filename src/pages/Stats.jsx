@@ -91,7 +91,7 @@ export default function Stats() {
           <span style={{ fontSize:22 }}>⚡</span>
           <span style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink }}><span style={{ color:C.jiff }}>J</span>iff</span>
         </div>
-        <button onClick={() => navigate('/app')} style={{ fontSize:13, color:C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.18)', borderRadius:8, padding:'6px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>← Back to app</button>
+        <button onClick={() => navigate('/app')} style={{ fontSize:13, color:C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.18)', borderRadius:8, padding:'6px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>← Home to app</button>
       </header>
 
       <div style={{ maxWidth:900, margin:'0 auto', padding:'40px 24px 80px' }}>

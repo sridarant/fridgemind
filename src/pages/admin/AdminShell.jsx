@@ -280,14 +280,14 @@ export default function Admin() {
               style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer',
                 border:'1.5px solid '+C.border, background:'white', color:C.muted,
                 fontFamily:"'DM Sans',sans-serif", display:'flex', alignItems:'center', gap:5 }}>
-              🏠 Home
+              ← Home
             </button>
           )}
           <button onClick={()=>{sessionStorage.removeItem('jiff-admin-auth');navigate('/app');}}
             style={{ padding:'6px 14px', borderRadius:20, fontSize:12, cursor:'pointer',
               border:'1.5px solid rgba(229,62,62,0.25)', background:'rgba(229,62,62,0.05)',
               color:C.red, fontFamily:"'DM Sans',sans-serif" }}>
-            &#8592; Exit
+            Sign out
           </button>
         </div>
       </header>

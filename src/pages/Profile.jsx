@@ -266,8 +266,8 @@ export default function Profile() {
     { id:'taste',    label:'My Taste'  },
     { id:'family',   label:'Family'    },
     { id:'goals',    label:'Goals'     },
-    { id:'settings', label:'Settings'  },
   ];
+  const isSettingsView = activeTab === 'settings';
 
   return (
     <div style={{
@@ -312,23 +312,33 @@ export default function Profile() {
         {user && <StatsBanner streak={streak} cookedCount={cookedCount} avgRating={avgRating} />}
 
         {/* Tab bar — horizontal scroll on mobile */}
-        <div style={{
-          display:'flex', gap:8, marginBottom:24,
-          overflowX:'auto', paddingBottom:4,
-          scrollbarWidth:'none', msOverflowStyle:'none',
-        }}>
-          {TABS.map(tab => (
-            <button key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                ...pill(activeTab === tab.id),
-                whiteSpace:'nowrap', flexShrink:0,
-                padding:'8px 16px', minHeight:36,
-              }}>
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Settings view: no tab bar, back button instead */}
+        {isSettingsView ? (
+          <button onClick={() => setActiveTab('taste')}
+            style={{ display:'flex', alignItems:'center', gap:6, marginBottom:20, background:'none',
+              border:'none', cursor:'pointer', fontSize:13, color:C.muted,
+              fontFamily:"'DM Sans',sans-serif", padding:0 }}>
+            ← Back to Profile
+          </button>
+        ) : (
+          <div style={{
+            display:'flex', gap:8, marginBottom:24,
+            overflowX:'auto', paddingBottom:4,
+            scrollbarWidth:'none', msOverflowStyle:'none',
+          }}>
+            {TABS.map(tab => (
+              <button key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  ...pill(activeTab === tab.id),
+                  whiteSpace:'nowrap', flexShrink:0,
+                  padding:'8px 16px', minHeight:36,
+                }}>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* ── MY TASTE TAB ── */}
         {activeTab === 'taste' && (

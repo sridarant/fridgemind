@@ -18,9 +18,7 @@ export default function UsersTab() {
   const [search,   setSearch]  = useState('');
 
   useEffect(() => {
-    fetch('/api/admin?action=users', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}',
-    })
+    fetch('/api/admin?action=users', { method:'GET' })
       .then(r => r.json())
       .then(d => { setUsers(Array.isArray(d?.users) ? d.users : []); setLoading(false); })
       .catch(() => setLoading(false));

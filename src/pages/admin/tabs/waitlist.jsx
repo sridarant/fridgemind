@@ -17,9 +17,7 @@ export default function WaitlistTab() {
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?action=waitlist', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}',
-    })
+    fetch('/api/admin?action=waitlist', { method:'GET' })
       .then(r => r.json())
       .then(d => { setWaitlist(Array.isArray(d?.waitlist) ? d.waitlist : []); setLoading(false); })
       .catch(() => setLoading(false));

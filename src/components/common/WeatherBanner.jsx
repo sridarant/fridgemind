@@ -54,19 +54,7 @@ export default function WeatherBanner({ onTap }) {
           {suggestion.text}
         </div>
       </div>
-      <span style={{
-        fontSize:     11,
-        color:        '#FF4500',
-        fontWeight:   500,
-        background:   'rgba(255,69,0,0.08)',
-        borderRadius: 8,
-        padding:      '4px 10px',
-        border:       '1px solid rgba(255,69,0,0.15)',
-        flexShrink:   0,
-        whiteSpace:   'nowrap',
-      }}>
-        {suggestion.cta} →
-      </span>
+
     </button>
   );
 }

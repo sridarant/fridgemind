@@ -391,7 +391,7 @@ const styles = `
 // ── MealCard → extracted to src/components/meal/MealCard.jsx ──────
 // ── Main ──────────────────────────────────────────────────────────
 // ── LoadingView — shows latency warning after 10s ─────────────────
-function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CAP, factIdx }) {
+function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CAP, factIdx, loadingMessage }) {
   const FACTS = [
     'Raiding your fridge…','Cross-referencing 50,000+ recipes…',
     'Matching cuisine and flavour profile…','Crunching nutrition numbers…',
@@ -547,6 +547,7 @@ export default function Jiff() {
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
   const [showSeasonalPicker, setShowSeasonalPicker] = useState(false);
   const [journeyMode,    setJourneyMode]    = useState(false);
+  const [inputMode,      setInputMode]      = useState('direct'); // 'direct' | 'fridge' | 'leftover'
   const [loadingMessage, setLoadingMessage] = useState('Finding your perfect recipes... ⚡'); // starts false; set true after user loads
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
   // SUPABASE_SYNC: ratings from meal_history loaded in useEffect below
@@ -642,7 +643,7 @@ export default function Jiff() {
 
   const saveToHistory = (generatedMeals) => {
     if (!user || !generatedMeals?.length) return;
-    fetch('/api/meal-history', {
+    fetch('/api/admin?action=meal-history', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -729,8 +730,9 @@ export default function Jiff() {
 
   const handleLeftoverRescue = () => {
     setJourneyMode(false);
-    // Pre-fill hint and focus the fridge input
-    if (!fridgeItems.includes('leftover')) setFridgeItems(prev => [...prev, 'leftover rice', 'leftover curry']);
+    setInputMode('leftover');
+    setFridgeItems(['leftover rice', 'leftover curry']);
+    setLoadingMessage('Rescuing your leftovers... ♻️');
     setView('input');
   };
 
@@ -784,7 +786,7 @@ export default function Jiff() {
         };
         // jiff-history migrated to Supabase meal_history (localStorage write removed)
         if (user) {
-          fetch('/api/meal-history', {
+          fetch('/api/admin?action=meal-history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: user.id, meals: data.meals, mealType, cuisine, servings: defaultServings, ingredients }),
@@ -937,16 +939,12 @@ export default function Jiff() {
   // ── Sync ratings from Supabase meal_history ──────────────────────
   useEffect(() => {
     if (!user) return;
-    fetch('/api/admin?action=meal-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
-    })
+    fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!Array.isArray(data?.meals)) return;
+        if (!Array.isArray(data?.history)) return;
         const supaRatings = {};
-        data.meals.forEach(m => {
+        data.history.forEach(m => {
           if (m.meal_name && m.rating) supaRatings[m.meal_name] = m.rating;
         });
         if (Object.keys(supaRatings).length > 0) {
@@ -1170,7 +1168,7 @@ export default function Jiff() {
             profile={profile}
             season={season}
             streak={streak}
-            onSelectFridge={() => setJourneyMode(false)}
+            onSelectFridge={() => { setJourneyMode(false); setInputMode('fridge'); setLoadingMessage('Checking what you can make... 🧊'); }}
             onGenerateDirect={handleGenerateDirect}
             onLeftoverRescue={handleLeftoverRescue}
           />
@@ -1181,7 +1179,7 @@ export default function Jiff() {
           <div className="main-layout">
             <div className="main-form">
               {user && (
-                <button onClick={()=>setJourneyMode(true)}
+                <button onClick={()=>{ setJourneyMode(true); setInputMode('direct'); }}
                   style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:14,
                     background:'none',border:'none',cursor:'pointer',fontSize:12,
                     color:'var(--muted)',fontFamily:"'DM Sans',sans-serif",padding:0}}>
@@ -1208,84 +1206,76 @@ export default function Jiff() {
                   </div>
                 </div>
               )}
-              {/* Smart greeting with weather/time/location */}
-              {user && (
-                <SmartGreeting
-                  user={user}
-                  profile={profile}
-                  onCountryDetected={(code) => setCountry(code)}
-                  onSuggestRecipe={(suggestion, autoMealType) => {
-                    if (autoMealType && autoMealType !== 'any') setMealType(autoMealType);
-                    // Pre-fill the suggested dish as a fridge ingredient hint and auto-submit
-                    if (suggestion?.dish) {
-                      setFridgeItems(prev => prev.includes(suggestion.dish.toLowerCase()) ? prev : [...prev, suggestion.dish.toLowerCase()]);
-                    }
-                    // Small delay so state settles before submit
-                    setTimeout(() => { if (ingredients.length || suggestion?.dish) handleSubmit(); }, 150);
-                  }}
-                />
-              )}
-
-              {/* ── Streak badge + Seasonal nudge ── */}
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12,alignItems:'center'}}>
-                {streak >= 2 && (
-                  <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(255,184,0,0.1)',border:'1px solid rgba(255,184,0,0.3)',borderRadius:20,padding:'4px 12px',fontSize:12,color:'#854F0B',fontWeight:500}}>
-                    🔥 {streak}-day streak!
-                  </div>
-                )}
-                {season?.items?.length > 0 && (
-                  <div style={{position:'relative',display:'inline-block'}}>
-                    <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(29,158,117,0.08)',border:'1px solid rgba(29,158,117,0.2)',borderRadius:20,padding:'4px 12px',fontSize:12,color:'#1D9E75',fontWeight:300,cursor:'pointer'}}
-                      onClick={()=>setShowSeasonalPicker(p=>!p)}>
-                      {season.emoji} In season: {season.items.slice(0,3).join(', ')} · <span style={{fontWeight:500}}>tap to add</span>
-                    </div>
-                    {showSeasonalPicker && (
-                      <>
-                        <div onClick={()=>setShowSeasonalPicker(false)} style={{position:'fixed',inset:0,zIndex:49}}/>
-                        <div style={{position:'absolute',top:'calc(100% + 6px)',left:0,background:'white',border:'1px solid rgba(28,10,0,0.12)',borderRadius:12,boxShadow:'0 8px 24px rgba(28,10,0,0.12)',padding:'12px 14px',zIndex:50,minWidth:260,fontFamily:"'DM Sans',sans-serif"}}>
-                          <div style={{fontSize:11,letterSpacing:'1px',textTransform:'uppercase',color:'#1D9E75',fontWeight:600,marginBottom:8}}>Pick an ingredient to add</div>
-                          <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:10}}>
-                            {season.items.slice(0,6).map(item=>(
-                              <button key={item} onClick={()=>{if(!fridgeItems.includes(item))setFridgeItems(p=>[...p,item]);setShowSeasonalPicker(false);}}
-                                style={{padding:'4px 11px',borderRadius:20,border:'1.5px solid rgba(28,10,0,0.15)',background:'white',fontSize:11,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",transition:'all 0.1s'}}
-                                onMouseEnter={e=>e.target.style.borderColor='#1D9E75'}
-                                onMouseLeave={e=>e.target.style.borderColor='rgba(28,10,0,0.15)'}>
-                                {item}
-                              </button>
-                            ))}
-                          </div>
-                          <div style={{borderTop:'1px solid rgba(28,10,0,0.08)',paddingTop:10,fontSize:11,color:'#7C6A5E',marginBottom:6}}>Don't have it? Order now:</div>
-                          <div style={{display:'flex',gap:6}}>
-                            {[['Blinkit','#1A8A3E'],['Zepto','#5B21B6'],['Swiggy','#FC8019']].map(([name,color])=>(
-                              <a key={name} href={'https://'+name.toLowerCase()+'.com/s/?q='+encodeURIComponent(season.items.slice(0,3).join(' '))} target="_blank" rel="noopener noreferrer"
-                                onClick={()=>setShowSeasonalPicker(false)}
-                                style={{flex:1,background:color,color:'white',borderRadius:8,padding:'6px 0',fontSize:10,fontWeight:600,cursor:'pointer',textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                                {name}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      </>
+              {/* ── Direct mode: show SmartGreeting + streak + heading ── */}
+              {inputMode === 'direct' && (
+                <>
+                  {user && (
+                    <SmartGreeting
+                      user={user}
+                      profile={profile}
+                      onCountryDetected={(code) => setCountry(code)}
+                      onSuggestRecipe={(suggestion, autoMealType) => {
+                        if (autoMealType && autoMealType !== 'any') setMealType(autoMealType);
+                        if (suggestion?.dish) {
+                          setFridgeItems(prev => prev.includes(suggestion.dish.toLowerCase()) ? prev : [...prev, suggestion.dish.toLowerCase()]);
+                        }
+                        setTimeout(() => { if (ingredients.length || suggestion?.dish) handleSubmit(); }, 100);
+                      }}
+                    />
+                  )}
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12,alignItems:'center'}}>
+                    {streak >= 2 && (
+                      <div style={{display:'inline-flex',alignItems:'center',gap:5,background:'rgba(255,69,0,0.08)',borderRadius:20,padding:'4px 12px',fontSize:11,color:'var(--jiff)',fontWeight:500}}>
+                        🔥 {streak}-day streak!
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
+                  <div style={{marginBottom:6}}>
+                    <h1 style={{fontFamily:"'Fraunces', serif",fontSize:'clamp(26px,4vw,40px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-1px',lineHeight:1.05,marginBottom:6}}>
+                      {t('main_heading')}
+                    </h1>
+                    <p style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20}}>
+                      {isPremium ? '⚡ Premium · ' + PAID_RECIPE_CAP + ' recipes per search' : trialActive ? '🎁 Free trial · 1 recipe preview · ' + trialDaysLeft + ' days left' : ''}
+                    </p>
+                  </div>
+                </>
+              )}
 
-              <div style={{marginBottom:6}}>
-                <h1 style={{fontFamily:"'Fraunces', serif",fontSize:'clamp(26px,4vw,40px)',fontWeight:900,color:'var(--ink)',letterSpacing:'-1px',lineHeight:1.05,marginBottom:6}}>
-                  {t('main_heading')}
-                </h1>
-                <p style={{fontSize:13,color:'var(--muted)',fontWeight:300,marginBottom:20}}>
-                  {isPremium ? '⚡ Premium · ' + PAID_RECIPE_CAP + ' recipes per search' : trialActive ? '🎁 Free trial · 1 recipe preview · ' + trialDaysLeft + ' days left' : ''}
-                </p>
-              </div>
-              <div className="card">
+              {/* ── Fridge mode: clean minimal header ── */}
+              {inputMode === 'fridge' && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:900,color:'var(--ink)',marginBottom:4}}>
+                    🧊 What's in your fridge?
+                  </div>
+                  <div style={{fontSize:13,color:'var(--muted)',fontWeight:300}}>
+                    Add what you have — Jiff finds what you can make.
+                  </div>
+                </div>
+              )}
+
+              {/* ── Leftover mode: clean rescue header ── */}
+              {inputMode === 'leftover' && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'Fraunces',serif",fontSize:22,fontWeight:900,color:'var(--ink)',marginBottom:4}}>
+                    ♻️ Rescue your leftovers
+                  </div>
+                  <div style={{fontSize:13,color:'var(--muted)',fontWeight:300}}>
+                    Tell Jiff what you have left — it will turn it into something great.
+                  </div>
+                </div>
+              )}
+
+                            <div className="card">
 
                 {/* ── Fridge header + photo ── */}
                 <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
                   <div>
-                    <div className="section-label" style={{marginBottom:2}}>{t('fridge_label')}</div>
-                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>{t('fridge_sub')}</div>
+                    <div className="section-label" style={{marginBottom:2}}>
+                      {inputMode === 'leftover' ? 'What leftovers do you have?' : t('fridge_label')}
+                    </div>
+                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>
+                      {inputMode === 'leftover' ? 'Add what you have — Jiff will rescue it.' : t('fridge_sub')}
+                    </div>
                   </div>
                   <FridgePhotoUpload
                     onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
@@ -1561,6 +1551,7 @@ export default function Jiff() {
             cuisine={cuisine} mealType={mealType}
             ingredients={ingredients} isPremium={isPremium}
             PAID_RECIPE_CAP={PAID_RECIPE_CAP} factIdx={factIdx}
+            loadingMessage={loadingMessage}
           />
         )}
 

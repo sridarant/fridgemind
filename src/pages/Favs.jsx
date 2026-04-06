@@ -103,15 +103,12 @@ export default function Favs() {
       setRatings(stored);
     } catch {}
     if (!user) return;
-    fetch('/api/admin?action=meal-history', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ userId: user.id }),
-    })
+    fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' })
       .then(r => r.json())
       .then(d => {
-        if (!Array.isArray(d?.meals)) return;
+        if (!Array.isArray(d?.history)) return;
         const supaRatings = {};
-        d.meals.forEach(m => { if (m.meal_name && m.rating) supaRatings[m.meal_name] = m.rating; });
+        d.history.forEach(m => { if (m.meal_name && m.rating) supaRatings[m.meal_name] = m.rating; });
         if (Object.keys(supaRatings).length > 0) {
           setRatings(prev => {
             const merged = { ...prev, ...supaRatings };

@@ -17,10 +17,7 @@ export default function CrashesTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?action=feedback', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ type:'crash' }),
-    })
+    fetch('/api/admin?action=feedback', { method:'GET' })
       .then(r => r.json())
       .then(d => { setCrashes(Array.isArray(d?.feedback) ? d.feedback.filter(f => f.type === 'crash') : []); setLoading(false); })
       .catch(() => setLoading(false));

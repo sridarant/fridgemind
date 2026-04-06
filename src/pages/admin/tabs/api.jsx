@@ -28,7 +28,7 @@ export default function ApiTab() {
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?action=stats', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' })
+    fetch('/api/admin?action=stats', { method:'GET' })
       .then(r => r.json())
       .then(d => { setEnvStatus(d.envStatus || null); setLoading(false); })
       .catch(() => setLoading(false));

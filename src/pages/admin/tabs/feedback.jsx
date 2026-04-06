@@ -21,9 +21,7 @@ export default function FeedbackTab() {
   const [filter,  setFilter]  = useState('all');
 
   useEffect(() => {
-    fetch('/api/admin?action=feedback', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:'{}',
-    })
+    fetch('/api/admin?action=feedback', { method:'GET' })
       .then(r => r.json())
       .then(d => { setItems(Array.isArray(d?.feedback) ? d.feedback : []); setLoading(false); })
       .catch(() => setLoading(false));

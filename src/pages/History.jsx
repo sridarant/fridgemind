@@ -47,11 +47,7 @@ export default function History() {
 
     if (!user) { setLoading(false); return; }
     // Also fetch from server if available
-    fetch('/api/admin?action=meal-history', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id }),
-    })
+    fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' })
       .then(r => r.json())
       .then(d => {
         if (d.history?.length) {

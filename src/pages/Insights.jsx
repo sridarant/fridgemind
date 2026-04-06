@@ -63,11 +63,7 @@ export default function Insights() {
 
       if (user) {
         try {
-          const res = await fetch('/api/admin?action=meal-history', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: user.id }),
-          });
+          const res = await fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' });
           const d = await res.json();
           if (Array.isArray(d?.meals) && d.meals.length > 0) {
             history = d.meals.map(m => ({
