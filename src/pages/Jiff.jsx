@@ -1408,11 +1408,6 @@ export default function Jiff() {
                   </div>
                 )}
 
-div>
-                  </div>
-                </div>
-
-
                 <div className="cta-wrap">
                           {/* Festival banner */}
         {(()=>{const f=getUpcomingFestival(); return f ? (
