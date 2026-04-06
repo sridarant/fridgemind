@@ -96,13 +96,32 @@ export default function Favs() {
     setMigrated(true);
   }, [user]);
 
-  // Load ratings from localStorage cache
+  // Load ratings: localStorage first, then merge Supabase
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem('jiff-ratings') || '{}');
       setRatings(stored);
     } catch {}
-  }, []);
+    if (!user) return;
+    fetch('/api/admin?action=meal-history', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userId: user.id }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!Array.isArray(d?.meals)) return;
+        const supaRatings = {};
+        d.meals.forEach(m => { if (m.meal_name && m.rating) supaRatings[m.meal_name] = m.rating; });
+        if (Object.keys(supaRatings).length > 0) {
+          setRatings(prev => {
+            const merged = { ...prev, ...supaRatings };
+            try { localStorage.setItem('jiff-ratings', JSON.stringify(merged)); } catch {}
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
+  }, [user]);
 
   if (!user) return (
     <div style={{ minHeight:'100vh', background:C.cream, paddingBottom:80 }}>

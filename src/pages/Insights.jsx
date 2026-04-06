@@ -55,23 +55,33 @@ export default function Insights() {
 
   useEffect(() => {
     const loadData = async () => {
-      // Try localStorage first (fast)
+      // Supabase-primary: always fetch when logged in, localStorage as fallback
       let history = JSON.parse(localStorage.getItem('jiff-history') || '[]');
       let ratings  = JSON.parse(localStorage.getItem('jiff-ratings') || '{}');
-      const streak = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+      const streakLocal = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+      const streak = profile?.streak ? { count: profile.streak } : streakLocal;
 
-      // If localStorage is empty, fetch from Supabase API
-      if (history.length === 0 && user) {
+      if (user) {
         try {
-          const res = await fetch('/api/meal-history?userId=' + user.id);
+          const res = await fetch('/api/admin?action=meal-history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id }),
+          });
           const d = await res.json();
-          if (Array.isArray(d.history) && d.history.length > 0) {
-            history = d.history;
+          if (Array.isArray(d?.meals) && d.meals.length > 0) {
+            history = d.meals.map(m => ({
+              id: m.id,
+              generated_at: m.generated_at,
+              cuisine: m.cuisine,
+              meal_name: m.meal_name,
+              meals: m.meal_data || [],
+            }));
             const newRatings = {};
-            d.history.forEach(h => {
-              if (h.rating && h.id) newRatings[h.id] = h.rating;
+            d.meals.forEach(m => {
+              if (m.rating && m.meal_name) newRatings[m.meal_name] = m.rating;
             });
-            if (Object.keys(newRatings).length > 0) ratings = newRatings;
+            if (Object.keys(newRatings).length > 0) ratings = { ...ratings, ...newRatings };
           }
         } catch {}
       }

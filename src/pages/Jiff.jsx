@@ -20,7 +20,7 @@ import { extractCoreName, isAvailable, buildGroceryList } from '../lib/grocery.j
 import { buildShareText } from '../lib/sharing.js';
 import { mealKey, getDietaryLabel } from '../lib/mealKey.js';
 import { getUpcomingFestival } from '../lib/festival.js';
-import { QUICK_ADD_STAPLES } from '../lib/cuisine.js';
+import { QUICK_ADD_STAPLES, ALL_CUISINES } from '../lib/cuisine.js';
 import { MealCard }               from '../components/meal/MealCard.jsx';
 import { JourneyTiles }           from '../components/common/JourneyTiles.jsx';
 
@@ -520,7 +520,6 @@ export default function Jiff() {
   const [meals,        setMeals]        = useState([]);
   const [factIdx,      setFactIdx]      = useState(0);
   const [errorMsg,     setErrorMsg]     = useState('');
-  const [showFavs,     setShowFavs]     = useState(false);
   const [emailInput,   setEmailInput]   = useState('');
   const [emailSent,    setEmailSent]    = useState(false);
   const [pantryLoaded, setPantryLoaded] = useState(false);
@@ -542,6 +541,7 @@ export default function Jiff() {
   // Pre-fill diet + cuisine from saved profile preferences
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [streak,         setStreak]         = useState(0);
+  // POTENTIAL_DEAD_CODE: showSurprise state declared but never set — safe to remove
   const [showSurprise,   setShowSurprise]   = useState(false);
   const [familySelected, setFamilySelected] = useState([]);  // [] = everyone
   const [pantryNudge,    setPantryNudge]    = useState([]);   // items used in last generation
@@ -549,6 +549,7 @@ export default function Jiff() {
   const [journeyMode,    setJourneyMode]    = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Finding your perfect recipes... ⚡'); // starts false; set true after user loads
   const [ratings,        setRatings]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem('jiff-ratings')||'{}'); }catch{return {};} });
+  // SUPABASE_SYNC: ratings from meal_history loaded in useEffect below
   const season = getCurrentSeason();
   useEffect(() => {
     if (profile && !profileLoaded) {
@@ -586,7 +587,7 @@ export default function Jiff() {
   // ── Surprise me — one tap, profile-based, no fridge input ─────────
   const handleSurprise = async () => {
     if (!checkAccess('generation')) return;
-    setView('loading'); setFactIdx(0); setShowFavs(false);
+    setView('loading'); setFactIdx(0); ;
     try {
       const count = isPremium ? PAID_RECIPE_CAP : 1;
       const surpriseMealType = getDefaultMealType();
@@ -694,7 +695,7 @@ export default function Jiff() {
               ? 'seasonal dishes using ' + (context.season?.items?.slice(0,3).join(', ') || 'seasonal produce')
               : context.mealType || 'any';
 
-    setView('loading'); setFactIdx(0); setShowFavs(false); setJourneyMode(false);
+    setView('loading'); setFactIdx(0); ; setJourneyMode(false);
     setLoadingMessage('Checking what you can make... 🧊');
     try {
       const count = isPremium ? PAID_RECIPE_CAP : 1;
@@ -738,7 +739,7 @@ export default function Jiff() {
     // Mandate sign-in before any generation
     if (!user) { setGateDismissed(false); return; }
     if (!checkAccess('generation')) return;
-    setView('loading'); setFactIdx(0); setShowFavs(false);
+    setView('loading'); setFactIdx(0); ;
     try {
       const count = isPremium ? PAID_RECIPE_CAP : 1; // trial = 1 recipe
       const res = await fetch('/api/suggest', {
@@ -915,22 +916,51 @@ export default function Jiff() {
 
   // ── Streak tracking ──────────────────────────────────────────────
   useEffect(() => {
+    // Read streak from Supabase profile (primary) or localStorage (guest fallback)
     try {
-      const today = new Date().toDateString();
-      const data  = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
-      const last  = data.lastDate;
-      const yesterday = new Date(Date.now() - 86400000).toDateString();
-      if (last === today) {
-        setStreak(data.count || 1);
-      } else if (last === yesterday) {
-        setStreak(data.count || 1);
+      if (profile?.streak) {
+        setStreak(profile.streak);
       } else {
-        setStreak(0);
+        const today = new Date().toDateString();
+        const data  = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+        const last  = data.lastDate;
+        const yesterday = new Date(Date.now() - 86400000).toDateString();
+        if (last === today || last === yesterday) {
+          setStreak(data.count || 1);
+        } else {
+          setStreak(0);
+        }
       }
     } catch {}
-  }, []);
+  }, [profile]);
 
-  const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); setShowFavs(false); setPantryLoaded(true); };
+  // ── Sync ratings from Supabase meal_history ──────────────────────
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/admin?action=meal-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!Array.isArray(data?.meals)) return;
+        const supaRatings = {};
+        data.meals.forEach(m => {
+          if (m.meal_name && m.rating) supaRatings[m.meal_name] = m.rating;
+        });
+        if (Object.keys(supaRatings).length > 0) {
+          setRatings(prev => {
+            const merged = { ...prev, ...supaRatings };
+            try { localStorage.setItem('jiff-ratings', JSON.stringify(merged)); } catch {}
+            return merged;
+          });
+        }
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const reset = () => { setView('input'); setMeals([]); setFridgeItems([]); setPantryItems(pantry||[]); ; setPantryLoaded(true); };
 
   // Profile prefs for sidebar
   const profilePrefs = profile ? [
@@ -1132,20 +1162,7 @@ export default function Jiff() {
           </div>
         </header>
 
-        {/* ── Favourites panel ── */}
-        {showFavs && user && (
-          <div className="favs-panel">
-            <div className="favs-panel-header">
-              <div><div className="favs-panel-title"><IconHeart filled/>{t('favs_title')}</div><div className="favs-panel-sub">{favourites.length===0?'Nothing saved yet':`${favourites.length} saved recipe${favourites.length>1?'s':''}`}</div></div>
-              <button className="favs-close-btn" onClick={()=>setShowFavs(false)}>Close ×</button>
-            </div>
-            {favourites.length===0?(
-              <div className="favs-empty"><div className="favs-empty-icon">🤍</div><div className="favs-empty-title">{t('favs_empty_title')}</div><div className="favs-empty-sub">Tap ♥ on any recipe card to save it here.</div></div>
-            ):(
-              <div className="favs-grid">{(Array.isArray(favourites)?favourites:[]).map((meal,i)=><MealCard key={mealKey(meal)} meal={meal} index={i} isFavourite={isFav(meal)} onToggleFav={toggleFavourite} defaultServings={defaultServings} showFavTag animDelay={i*0.05} rating={ratings[mealKey(meal)]||0}/>)}</div>
-            )}
-          </div>
-        )}
+
 
         {/* ── Journey picker home screen ── */}
         {journeyMode && user && view === 'input' && (
@@ -1341,14 +1358,14 @@ export default function Jiff() {
                   {/* Diet */}
                   <div>
                     <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_diet')}</div>
-                    <select value={Array.isArray(foodType)?foodType[0]||'any':foodType||'any'}
-                      onChange={e=>setFoodType([e.target.value])}
+                    <select value={diet||'none'}
+                      onChange={e=>setDiet(e.target.value)}
                       style={{width:'100%',padding:'8px 6px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,fontSize:11,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none',cursor:'pointer'}}>
-                      <option value="any">Any</option>
-                      <option value="veg">Veg</option>
-                      <option value="non-veg">Non-veg</option>
+                      <option value="none">Any</option>
+                      <option value="vegetarian">Veg only</option>
                       <option value="vegan">Vegan</option>
                       <option value="jain">Jain</option>
+                      <option value="non-vegetarian">Non-veg</option>
                     </select>
                   </div>
                   {/* Servings */}

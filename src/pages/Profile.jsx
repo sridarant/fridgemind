@@ -622,6 +622,26 @@ export default function Profile() {
                 Signed in as <strong style={{ color:C.ink }}>{user.email}</strong>
               </div>
             )}
+            {/* ── Activity quick links ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
+              {[
+                { label:'📋 History',  emoji:'📋', path:'/history',  desc:'Your generated recipes' },
+                { label:'📈 Insights', emoji:'📈', path:'/insights', desc:'Cooking stats & trends' },
+              ].map(item => (
+                <button key={item.path} onClick={() => navigate(item.path)}
+                  style={{
+                    padding:'12px 10px', background:'white',
+                    border:'1px solid ' + C.border,
+                    borderRadius:12, cursor:'pointer',
+                    fontFamily:"'DM Sans',sans-serif",
+                    textAlign:'left',
+                  }}>
+                  <div style={{ fontSize:18, marginBottom:4 }}>{item.emoji}</div>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.ink }}>{item.label.split(' ')[1]}</div>
+                  <div style={{ fontSize:10, color:C.muted, fontWeight:300 }}>{item.desc}</div>
+                </button>
+              ))}
+            </div>
             <button onClick={signOut}
               style={{
                 width:'100%', padding:'12px',

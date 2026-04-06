@@ -162,7 +162,26 @@ for (const file of srcFiles) {
 }
 if (jsxCommentIssues === 0) ok(`Block comment check: ${jsxCommentClean} lines scanned, 0 issues`);
 
-// ── 6. Named import ↔ export cross-check ─────────────────────────
+
+// ── 6. JSX return div balance (catches orphaned closing tags) ────────────
+// Counts <div opens vs </div closes — excludes self-closing <div ... />
+console.log('\n── JSX div balance check ──');
+let divBalanceIssues = 0;
+for (const file of srcFiles) {
+  const src = fs.readFileSync(file, 'utf8');
+  if (!src.includes('return (') && !src.includes('return(')) continue;
+  // Remove self-closing divs first so they don't inflate open count
+  const stripped   = src.replace(/<div[^>]*\/>/g, '');
+  const opens      = (stripped.match(/<div[\s>]/g)  || []).length;
+  const closes     = (stripped.match(/<\/div>/g) || []).length;
+  const delta      = Math.abs(opens - closes);
+  if (delta > 5) {  // threshold >5 avoids false positives from fragment structures
+    err(`${path.relative(ROOT, file)} — div imbalance: ${opens} opens vs ${closes} closes (delta ${delta})`);
+    divBalanceIssues++;
+  }
+}
+if (divBalanceIssues === 0) ok(`Div balance check: all JSX files balanced`);
+// ── 7. Named import ↔ export cross-check ─────────────────────────
 console.log('\n── Named import/export verification ──');
 let exportChecked = 0, exportFailed = 0;
 for (const file of srcFiles) {
@@ -199,13 +218,13 @@ for (const file of srcFiles) {
 }
 if (exportFailed === 0) ok(`Exports: ${exportChecked} named imports verified`);
 
-// ── 7. API function count ─────────────────────────────────────────
+// ── 8. API function count ─────────────────────────────────────────
 console.log('\n── API function count (Vercel Hobby limit: 12) ──');
 const apiCount = apiFiles.length;
 if (apiCount > 12) err(`${apiCount}/12 — over limit`);
 else ok(`${apiCount}/12 (${12 - apiCount} slots free): ${apiFiles.map(f => path.basename(f)).join(', ')}`);
 
-// ── 8. vercel.json rewrite destinations exist ─────────────────────
+// ── 9. vercel.json rewrite destinations exist ─────────────────────
 console.log('\n── vercel.json rewrite integrity ──');
 const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 let rewriteOk = 0;
@@ -220,7 +239,7 @@ for (const r of (vj.rewrites || [])) {
 }
 ok(`${rewriteOk}/${(vj.rewrites || []).length} rewrites valid`);
 
-// ── 9. Key file existence ─────────────────────────────────────────
+// ── 10. Key file existence ─────────────────────────────────────────
 console.log('\n── Key file existence ──');
 const required = [
   'src/pages/Admin.jsx',

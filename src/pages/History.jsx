@@ -47,7 +47,11 @@ export default function History() {
 
     if (!user) { setLoading(false); return; }
     // Also fetch from server if available
-    fetch(`/api/meal-history?userId=${user.id}`)
+    fetch('/api/admin?action=meal-history', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    })
       .then(r => r.json())
       .then(d => {
         if (d.history?.length) {
@@ -64,7 +68,7 @@ export default function History() {
 
   const handleDelete = async (id) => {
     setDeleting(id);
-    await fetch('/api/meal-history', {
+    await fetch('/api/admin?action=meal-history', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, userId: user.id }),
