@@ -415,7 +415,7 @@ function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CA
   ];
   const fact = FACTS[factIdx % FACTS.length];
 
-  return (
+  return (<>
     <div style={{textAlign:'center',padding:'48px 24px',maxWidth:500,margin:'0 auto'}}>
       {/* CSS Fridge Animation */}
       <div style={{position:'relative',width:200,height:200,margin:'0 auto 28px',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -1674,5 +1674,5 @@ export default function Jiff() {
         )}
       </div>
     </>
-  );
+  );</>
 }
