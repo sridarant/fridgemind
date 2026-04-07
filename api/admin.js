@@ -33,6 +33,14 @@ export default async function handler(req, res) {
       const recentMeals = await safeJson(histR);
       const profiles    = await safeJson(profilesR);
       const cuisineRows = await safeJson(cuisineR);
+      // Build last-7-days trend by actual date (not day name)
+      const today = new Date();
+      const last7 = Array.from({length:7}, (_,i) => {
+        const d = new Date(today); d.setDate(today.getDate() - (6-i));
+        return { date: d.toISOString().slice(0,10), label: d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric'}) };
+      });
+      const dateMap = {};
+      recentMeals.forEach(m => { if (m?.generated_at) { const k = m.generated_at.slice(0,10); dateMap[k]=(dateMap[k]||0)+1; } });
       const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
       const dayMap = {};
       recentMeals.forEach(m => { if (m?.generated_at) { const k = dayLabels[new Date(m.generated_at).getDay()]; dayMap[k]=(dayMap[k]||0)+1; } });
@@ -51,7 +59,7 @@ export default async function handler(req, res) {
           .map(([code,count])=>({ name:nameMap[code]||code, code, flag:flagMap[code]||'🌍', users:count, pct:Math.round(count/total*100)||1 })),
         topCuisines: Object.entries(cuisineCount).sort((a,b)=>b[1]-a[1]).slice(0,7)
           .map(([name,count])=>({ name, count, pct:Math.round(count/(totalMeals||1)*100)||1 })),
-        weeklyTrend: dayLabels.map(d=>({ day:d, users:dayMap[d]||0 })),
+        weeklyTrend: last7.map(d=>({ day:d.label, meals:dateMap[d.date]||0 })),
       });
     } catch(e) { return res.status(500).json({ error: e.message }); }
   }

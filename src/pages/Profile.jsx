@@ -3,7 +3,7 @@
 // Stats banner: streak · cooked count · avg rating
 // Cuisine pool: full grouped taxonomy from cuisine.js
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation }     from 'react-router-dom';
 import { useAuth }                      from '../contexts/AuthContext';
 import { useLocale }                    from '../contexts/LocaleContext';
@@ -58,6 +58,66 @@ const SKILL = [
 ];
 
 // ── Stats banner ──────────────────────────────────────────────────
+function PantryEditor({ pantryItems, setPantryItems, C }) {
+  const [input, setInput] = React.useState('');
+  const add = () => {
+    const val = input.trim();
+    if (!val || pantryItems.includes(val)) return;
+    setPantryItems(prev => [...prev, val]);
+    setInput('');
+  };
+  return (
+    <div>
+      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && add()}
+          placeholder="e.g. oil, salt, cumin, garlic…"
+          style={{
+            flex:1, padding:'9px 12px',
+            border:'1px solid ' + C.borderMid, borderRadius:10,
+            fontSize:13, fontFamily:"'DM Sans',sans-serif", outline:'none',
+          }}
+        />
+        <button onClick={add}
+          style={{
+            padding:'9px 16px', background:C.jiff, color:'white',
+            border:'none', borderRadius:10, fontSize:13, cursor:'pointer',
+            fontFamily:"'DM Sans',sans-serif", fontWeight:500,
+          }}>
+          + Add
+        </button>
+      </div>
+      {pantryItems.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'24px 0', color:C.muted, fontSize:13 }}>
+          No pantry items yet — add your staples above
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+          {pantryItems.map(item => (
+            <div key={item} style={{
+              display:'flex', alignItems:'center', gap:4,
+              background:'rgba(29,158,117,0.07)',
+              border:'1px solid rgba(29,158,117,0.2)',
+              borderRadius:20, padding:'5px 10px 5px 12px',
+            }}>
+              <span style={{ fontSize:12, color:'#1D9E75', fontWeight:500 }}>{item}</span>
+              <button onClick={() => setPantryItems(p => p.filter(x => x !== item))}
+                style={{
+                  background:'none', border:'none', cursor:'pointer',
+                  color:'#1D9E75', fontSize:14, lineHeight:1, padding:'0 2px',
+                }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StatsBanner({ streak, cookedCount, avgRating }) {
   const stats = [
     { emoji:'🔥', value: streak || 0,      label:'day streak' },
@@ -266,6 +326,7 @@ export default function Profile() {
     { id:'taste',    label:'My Taste'  },
     { id:'family',   label:'Family'    },
     { id:'goals',    label:'Goals'     },
+    { id:'pantry',   label:'Pantry'    },
   ];
   const isSettingsView = activeTab === 'settings';
 
@@ -554,6 +615,20 @@ export default function Profile() {
           </div>
         )}
 
+        {/* ── PANTRY TAB ── */}
+        {activeTab === 'pantry' && (
+          <div>
+            <div style={{ fontSize:13, color:'#7C6A5E', fontWeight:300, marginBottom:16, lineHeight:1.6 }}>
+              Your pantry items are assumed available in every recipe. Add staples you always have — Jiff won't ask you to buy them.
+            </div>
+            <PantryEditor
+              pantryItems={pantryItems}
+              setPantryItems={setPantryItems}
+              C={C}
+            />
+          </div>
+        )}
+
         {/* ── SETTINGS TAB ── */}
         {activeTab === 'settings' && (
           <div>
@@ -570,8 +645,7 @@ export default function Profile() {
               ].map(l => {
                 const isActive = (lang || 'en') === l.code;
                 return (
-                  <button key={l.code}
-                    onClick={() => setLang(l.code)}
+                  <button key={l.code} onClick={() => setLang(l.code)}
                     style={{
                       padding:'8px 16px', minHeight:40,
                       border:'1.5px solid ' + (isActive ? C.jiff : C.borderMid),
@@ -590,8 +664,8 @@ export default function Profile() {
             <SectionLabel>Units</SectionLabel>
             <div style={{ display:'flex', gap:8, marginBottom:24 }}>
               {[
-                { id:'metric',   label:'Metric (g, ml, kg)'     },
-                { id:'imperial', label:'Imperial (oz, lb, fl oz)'},
+                { id:'metric',   label:'Metric (g, ml, kg)'      },
+                { id:'imperial', label:'Imperial (oz, lb, fl oz)' },
               ].map(u => (
                 <button key={u.id} onClick={() => setUnits(u.id)}
                   style={{ ...pill(units === u.id), flex:1, textAlign:'center', minHeight:44 }}>
@@ -601,70 +675,24 @@ export default function Profile() {
             </div>
 
             <SectionLabel>Country / Region</SectionLabel>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:28 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:8 }}>
               {[
-                { id:'IN', label:'India 🇮🇳'  },
-                { id:'GB', label:'UK 🇬🇧'     },
-                { id:'US', label:'US 🇺🇸'     },
-                { id:'AU', label:'Australia 🇦🇺'},
-                { id:'SG', label:'Singapore 🇸🇬'},
-                { id:'AE', label:'UAE 🇦🇪'    },
+                { id:'IN', label:'India 🇮🇳'       },
+                { id:'GB', label:'UK 🇬🇧'           },
+                { id:'US', label:'US 🇺🇸'           },
+                { id:'AU', label:'Australia 🇦🇺'    },
+                { id:'SG', label:'Singapore 🇸🇬'    },
+                { id:'AE', label:'UAE 🇦🇪'          },
               ].map(c => (
                 <button key={c.id}
                   onClick={() => updateProfile?.({ country: c.id })}
-                  style={{
-                    ...pill(profile?.country === c.id || (!profile?.country && c.id === 'IN')),
-                    minHeight:40,
-                  }}>
+                  style={{ ...pill(profile?.country === c.id || (!profile?.country && c.id === 'IN')), minHeight:40 }}>
                   {c.label}
                 </button>
               ))}
             </div>
-
-            {/* Account */}
-            <SectionLabel>Account</SectionLabel>
-            {user && (
-              <div style={{
-                padding:'14px 16px', background:'white',
-                border:'1px solid ' + (C.border), borderRadius:12, marginBottom:12,
-                fontSize:13, color:C.muted,
-              }}>
-                Signed in as <strong style={{ color:C.ink }}>{user.email}</strong>
-              </div>
-            )}
-            {/* ── Activity quick links ── */}
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
-              {[
-                { label:'📋 History',  emoji:'📋', path:'/history',  desc:'Your generated recipes' },
-                { label:'📈 Insights', emoji:'📈', path:'/insights', desc:'Cooking stats & trends' },
-              ].map(item => (
-                <button key={item.path} onClick={() => navigate(item.path)}
-                  style={{
-                    padding:'12px 10px', background:'white',
-                    border:'1px solid ' + C.border,
-                    borderRadius:12, cursor:'pointer',
-                    fontFamily:"'DM Sans',sans-serif",
-                    textAlign:'left',
-                  }}>
-                  <div style={{ fontSize:18, marginBottom:4 }}>{item.emoji}</div>
-                  <div style={{ fontSize:12, fontWeight:600, color:C.ink }}>{item.label.split(' ')[1]}</div>
-                  <div style={{ fontSize:10, color:C.muted, fontWeight:300 }}>{item.desc}</div>
-                </button>
-              ))}
-            </div>
-            <button onClick={signOut}
-              style={{
-                width:'100%', padding:'12px',
-                background:'rgba(229,62,62,0.06)',
-                border:'1px solid rgba(229,62,62,0.2)',
-                borderRadius:12, fontSize:13, color:C.red,
-                cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
-                fontWeight:500,
-              }}>
-              Sign out
-            </button>
           </div>
-        )}
+        )}        )}
       </div>
     </div>
   );

@@ -299,7 +299,7 @@ Age notes: ${selectedAge?.note}.`,
               <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:C.ink }}>
                 Ready to cook! 🧑‍🍳
               </div>
-              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>← Edit</button>
+              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↺ Cook something else</button>
             </div>
             {meals.map((meal, i) => <ChefRecipeCard key={i} meal={meal} />)}
             {meals.length === 0 && (

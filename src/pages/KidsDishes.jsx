@@ -164,7 +164,7 @@ Include fun meal names kids will enjoy.`,
               <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:700, color:C.ink }}>
                 Kid-approved recipes 👶
               </div>
-              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>← Edit</button>
+              <button onClick={() => setView('input')} style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>↺ Cook something else</button>
             </div>
             {meals.map((meal, i) => (
               <MealCard key={i} meal={meal} isFav={false} onToggleFav={()=>{}} rating={0} onRate={()=>{}} pantry={pantry||[]} />

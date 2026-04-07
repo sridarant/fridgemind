@@ -95,10 +95,9 @@ export default async function handler(req, res) {
     if (!validation.ok) return res.status(validation.status || 401).json({ error: validation.error });
 
     const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric', kidsMode=false, kidsPromptOverride=null, tasteProfile=null, familyMembers=[], moodContext=null, weatherContext=null, dish=null } = req.body;
-    if (!ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
     const maxCount = Math.min(count, validation.record?.tier === 'pro' ? 5 : 3);
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
-    // ── Kids mode prompt override ───────────────────────────────────
+    // ── Kids mode prompt override — checked BEFORE ingredients requirement ──
     if (kidsMode && kidsPromptOverride) {
       const apiKey = process.env.ANTHROPIC_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
@@ -246,6 +245,9 @@ JSON only — ${maxCount} objects:
       return res.status(500).json({ error: 'Kids recipe generation failed.' });
     }
   }
+
+  // Ingredients required for normal generation
+  if (!ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
 
   try {
     const {

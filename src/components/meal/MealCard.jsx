@@ -279,7 +279,7 @@ export function MealCard({
                 <div>
                   {(meal.method||meal.steps||[]).map((step, i) => (
                     <div key={i} style={{ marginBottom:12 }}>
-                      <StepWithTimer step={step} index={i} />
+                      <StepWithTimer text={typeof step === 'string' ? step : (step?.instruction || step?.text || String(step))} index={i} />
                       <button onClick={() => setFocusStep({ step, num:i+1 })}
                         style={{
                           marginTop:4, fontSize:10, color:C.muted,

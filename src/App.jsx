@@ -26,6 +26,7 @@ import ApiDocs       from './pages/ApiDocs';
 import Admin         from './pages/Admin';
 import Insights      from './pages/Insights';
 import LittleChefs   from './pages/LittleChefs';
+import PWAInstallPrompt from './components/common/PWAInstallPrompt';
 import KidsLunchbox  from './pages/KidsLunchbox';
 import KidsDishes    from './pages/KidsDishes';
 import SacredKitchen from './pages/SacredKitchen';

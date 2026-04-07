@@ -371,17 +371,33 @@ const styles = `
   .error-msg{font-size:13px;color:var(--muted);margin-bottom:22px;font-weight:300;}
 
   @media(max-width:700px){
-    .main-layout{grid-template-columns:1fr;padding:20px 16px 48px;}
-    .main-sidebar{order:-1;}
-    .meals-grid,.favs-grid{grid-template-columns:1fr;padding-left:16px;padding-right:16px;}
-    .results-wrap{padding:24px 16px 48px;}
+    /* Layout */
+    .main-layout{grid-template-columns:1fr;padding:16px 16px 80px;}
+    .meals-grid,.favs-grid{grid-template-columns:1fr;padding-left:0;padding-right:0;}
+    .results-wrap{padding:16px 16px 80px;}
+    /* Cards */
+    .card{padding:16px;}
     .nutr-grid{grid-template-columns:repeat(2,1fr);}
-    .share-actions{flex-direction:column;}
-    .favs-panel{padding:0 16px;}
-    .gate-plans{grid-template-columns:1fr;}
-    .header{padding:14px 16px;}
+    /* Header */
+    .header{padding:12px 16px;}
+    .header-right{gap:6px;}
+    /* Typography scale-down */
+    .results-title{font-size:18px;}
+    /* Misc */
     .scaler-orig{display:none;}
     .trial-badge{display:none;}
+    .gate-plans{grid-template-columns:1fr;}
+    .share-actions{flex-direction:column;}
+    /* Fridge input full-width */
+    .main-form{padding:0;}
+    .section-label{font-size:9px;}
+    /* Filter pills — horizontal scroll */
+    .filter-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;}
+    /* Meal card actions — stack on mobile */
+    .meal-actions-bar{flex-wrap:wrap;gap:6px;}
+    /* Auth gate */
+    .auth-card{padding:24px 20px;}
+    .auth-perks{gap:6px;}
   }
 `;
 
@@ -1039,7 +1055,7 @@ export default function Jiff() {
               <button className="gate-cta" disabled={gateLoading} onClick={handleGateUpgrade}>
                 {gateLoading?'⏳ Processing…':'⚡ Upgrade now'}
               </button>
-              {gateReason==='trial_expired'&&<button className="gate-skip" onClick={()=>navigate('/')}>← Back to home</button>}
+              {gateReason==='trial_expired'&&<button className="gate-skip" onClick={()=>navigate('/')}>← Home</button>}
               {!razorpayEnabled&&<div style={{fontSize:11,color:'var(--muted)',marginTop:8}}>Test mode — click to activate free premium</div>}
             </div>
           </div>
@@ -1183,7 +1199,7 @@ export default function Jiff() {
                   style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:14,
                     background:'none',border:'none',cursor:'pointer',fontSize:12,
                     color:'var(--muted)',fontFamily:"'DM Sans',sans-serif",padding:0}}>
-                  ← Back to home
+                  ← Home
                 </button>
               )}
               {/* Post-login profile completion banner */}
@@ -1451,98 +1467,11 @@ export default function Jiff() {
                   />
                 )}
 
-                {/* Surprise me — one tap, profile-based */}
-                {user && profile && (
-                  <div style={{marginTop:12,textAlign:'center'}}>
-                    <div style={{fontSize:11,color:'var(--muted)',marginBottom:6,fontWeight:300}}>
-                      or let Jiff decide for you
-                    </div>
-                    <button onClick={handleSurprise}
-                      style={{background:'none',border:'1.5px dashed rgba(255,69,0,0.4)',borderRadius:12,padding:'8px 20px',fontSize:13,color:'var(--jiff)',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",fontWeight:500,transition:'all 0.2s'}}
-                      onMouseEnter={e=>{e.target.style.background='rgba(255,69,0,0.06)';}}
-                      onMouseLeave={e=>{e.target.style.background='none';}}>
-                      ✨ Surprise me
-                    </button>
-                  </div>
-                )}
                   {trialActive && !isPremium && <p className="trial-note">🎁 Trial mode — you'll see 1 recipe preview. <button onClick={()=>navigate('/pricing')} style={{background:'none',border:'none',color:'#854F0B',cursor:'pointer',fontWeight:600,fontFamily:"'DM Sans',sans-serif",fontSize:'inherit',textDecoration:'underline'}}>Upgrade for {PAID_RECIPE_CAP} recipes →</button></p>}
                 </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="main-sidebar">
-              {/* Trial countdown */}
-              {trialActive && !isPremium && (
-                <div className="trial-card">
-                  <div className="trial-card-title">⏳ Free trial</div>
-                  <div className="trial-bar-track"><div className="trial-bar-fill" style={{width:((trialDaysLeft/TRIAL_DAYS)*100) + '%'}}/></div>
-                  <div className="trial-days">{trialDaysLeft} of {TRIAL_DAYS} days remaining</div>
-                  <button className="trial-upgrade-btn" onClick={()=>navigate('/pricing')}>⚡ Upgrade — unlock {PAID_RECIPE_CAP} recipes</button>
-                </div>
-              )}
-
-              {/* Your preferences card — includes language & units */}
-              <div className="sidebar-card">
-                <div className="sidebar-card-title">{t('your_prefs')}</div>
-                {profile && profilePrefs.map(p=>(
-                  <div key={p.key} className="sidebar-pref">
-                    <span className="sidebar-pref-key">{p.key}</span>
-                    <span className="sidebar-pref-val" style={{textTransform:'capitalize'}}>{p.val}</span>
-                  </div>
-                ))}
-                {/* Language — inline in preferences */}
-                <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:4,marginTop:4}}>
-                  <span className="sidebar-pref-key">{t('language_label')}</span>
-                  <select value={lang} onChange={e=>setLang(e.target.value)} style={{width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,padding:'5px 9px',fontSize:12,fontFamily:"'DM Sans',sans-serif",color:'var(--ink)',background:'white',cursor:'pointer'}}>
-                    {supportedLanguages.map(l=><option key={l.id} value={l.id}>{l.flag} {l.label}</option>)}
-                  </select>
-                </div>
-                {/* Units — inline in preferences */}
-                <div className="sidebar-pref" style={{flexDirection:'column',alignItems:'flex-start',gap:4,marginTop:4}}>
-                  <span className="sidebar-pref-key">{t('units_label')}</span>
-                  <div style={{display:'flex',width:'100%',border:'1.5px solid var(--border-mid)',borderRadius:8,overflow:'hidden'}}>
-                    {[{id:'metric',label:'Metric (g, ml, kg)'}].map(u=>(
-                      <button key={u.id} onClick={()=>setUnits(u.id)} style={{flex:1,padding:'5px',fontSize:12,fontFamily:"'DM Sans',sans-serif",border:'none',cursor:'pointer',background:units===u.id?'var(--ink)':'white',color:units===u.id?'white':'var(--muted)',fontWeight:units===u.id?500:400,transition:'all 0.15s'}}>
-                        {u.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {profile && <button className="sidebar-edit-btn" onClick={()=>navigate('/profile')}>{t('edit_prefs')}</button>}
-              </div>
-
-    {/* Cuisine card — grouped: Indian Regional + International */}
-              <div className="sidebar-card">
-                <div className="sidebar-card-title">{t('section_cuisine')}</div>
-                <button className={'cuisine-chip' + (cuisine==='any' ? ' active-any' : '')}
-                  onClick={()=>setCuisine('any')}
-                  style={{marginBottom:10,width:'100%',justifyContent:'center'}}>
-                  <span style={{fontSize:13}}>🌍</span><span style={{fontSize:12}}>{t('cuisine_any')}</span>
-                </button>
-                <div style={{fontSize:9,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:6}}>🇮🇳 Indian Regional</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:12}}>
-                  {INDIAN_CUISINES.map(o=>(
-                    <button key={o.id}
-                      className={'cuisine-chip ' + (cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':'')}
-                      onClick={()=>setCuisine(o.id)} style={{fontSize:11,padding:'4px 9px'}}>
-                      <span style={{fontSize:12}}>{o.flag}</span><span>{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <div style={{fontSize:9,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:6}}>🌐 International</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
-                  {GLOBAL_CUISINES.map(o=>(
-                    <button key={o.id}
-                      className={'cuisine-chip ' + (cuisine===o.id?'active':profile?.preferred_cuisines?.includes(o.id)?'pref-highlight':'')}
-                      onClick={()=>setCuisine(o.id)} style={{fontSize:11,padding:'4px 9px'}}>
-                      <span style={{fontSize:12}}>{o.flag}</span><span>{o.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
         )}
 
         {/* ── Loading ── */}

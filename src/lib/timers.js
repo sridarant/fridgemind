@@ -8,6 +8,7 @@
  *      "cook 1-2 hours" → 5400 (midpoint)
  */
 export function parseStepTime(text) {
+  if (!text || typeof text !== 'string') return null;
   const t = text.toLowerCase();
   if (/half\s+an?\s+hour/.test(t)) return 1800;
   let total = 0;
