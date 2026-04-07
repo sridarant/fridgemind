@@ -31,7 +31,6 @@
     ]
   },
   "devDependencies": {
-    "@playwright/test": "^1.44.0",
     "acorn": "^8.16.0"
   }
 }
