@@ -1422,22 +1422,21 @@ export default function Jiff() {
                 )}
 
                 <div className="cta-wrap">
-                          {/* Festival banner */}
-        {(()=>{const f=getUpcomingFestival(); return f ? (
-          <div style={{background:'rgba(255,69,0,0.06)',border:'1px solid rgba(255,69,0,0.18)',borderRadius:12,padding:'10px 14px',marginBottom:12,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}
-            onClick={()=>{
-              if(f.diet && f.diet!=='none') {/* pre-fill diet context */}
-              handleSubmit && handleSubmit();
-            }}>
-            <span style={{fontSize:22}}>{f.emoji}</span>
-            <div>
-              <div style={{fontSize:12,fontWeight:600,color:'var(--jiff)'}}>{f.name} special recipes</div>
-              <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>{f.note}</div>
-            </div>
-            <span style={{marginLeft:'auto',fontSize:11,color:'var(--jiff)',fontWeight:500}}>Generate →</span>
-          </div>
-        ) : null;})()}
-        <button className="cta-btn" onClick={!user ? ()=>{setGateDismissed(false);} : handleSubmit} disabled={!ingredients.length || !user}>
+                  {/* Festival banner */}
+                  {(()=>{const f=getUpcomingFestival(); return f ? (
+                    <div style={{background:'rgba(255,69,0,0.06)',border:'1px solid rgba(255,69,0,0.18)',borderRadius:12,padding:'10px 14px',marginBottom:12,display:'flex',alignItems:'center',gap:10,cursor:'pointer'}}
+                      onClick={()=>{
+                        handleSubmit && handleSubmit();
+                      }}>
+                      <span style={{fontSize:22}}>{f.emoji}</span>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:600,color:'var(--jiff)'}}>{f.name} special recipes</div>
+                        <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>{f.note}</div>
+                      </div>
+                      <span style={{marginLeft:'auto',fontSize:11,color:'var(--jiff)',fontWeight:500}}>Generate →</span>
+                    </div>
+                  ) : null;})()}
+                  <button className="cta-btn" onClick={!user ? ()=>{setGateDismissed(false);} : handleSubmit} disabled={!ingredients.length || !user}>
                     <span>⚡</span>
                     <span>Jiff it now!</span>
                   </button>
