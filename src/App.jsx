@@ -2,6 +2,7 @@
 // v22: Added /discover, /favs, /onboarding routes + BottomNav
 
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AuthProvider }    from './contexts/AuthContext';
 import { PremiumProvider } from './contexts/PremiumContext';
 import { LocaleProvider }  from './contexts/LocaleContext';
@@ -66,6 +67,7 @@ function AppShell() {
       {showNav && <BottomNav />}
       <CookieBanner />
       <FeedbackWidget />
+      <SpeedInsights />
     </>
   );
 }
