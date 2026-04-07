@@ -1281,56 +1281,84 @@ export default function Jiff() {
                 </div>
               )}
 
-                            <div className="card">
+                            <div style={{
+                background:'white',
+                borderRadius:20,
+                border:'1px solid rgba(28,10,0,0.08)',
+                overflow:'hidden',
+                boxShadow:'0 4px 20px rgba(28,10,0,0.06)',
+              }}>
 
-                {/* ── Fridge header + photo ── */}
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                {/* ── Mode header bar ── */}
+                <div style={{
+                  background: inputMode === 'leftover'
+                    ? 'linear-gradient(135deg,rgba(217,119,6,0.08),rgba(251,191,36,0.06))'
+                    : 'linear-gradient(135deg,rgba(29,158,117,0.07),rgba(255,69,0,0.04))',
+                  borderBottom:'1px solid rgba(28,10,0,0.06)',
+                  padding:'14px 18px 12px',
+                  display:'flex', alignItems:'center', justifyContent:'space-between',
+                }}>
                   <div>
-                    <div className="section-label" style={{marginBottom:2}}>
-                      {inputMode === 'leftover' ? 'What leftovers do you have?' : t('fridge_label')}
+                    <div style={{
+                      fontFamily:"'Fraunces',serif",
+                      fontSize:17, fontWeight:900, color:'var(--ink)', letterSpacing:'-0.3px',
+                    }}>
+                      {inputMode === 'leftover' ? '♻️ Leftover rescue' : "🧊 What's in your fridge?"}
                     </div>
-                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300}}>
-                      {inputMode === 'leftover' ? 'Add what you have — Jiff will rescue it.' : t('fridge_sub')}
+                    <div style={{fontSize:11,color:'var(--muted)',fontWeight:300,marginTop:2}}>
+                      {inputMode === 'leftover'
+                        ? "Tell Jiff what's left — it will turn it into something great"
+                        : "Add ingredients · Jiff finds what you can make"}
                     </div>
                   </div>
+                  {/* Camera — mobile only */}
                   <FridgePhotoUpload
-                    onIngredientsDetected={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
+                    onIngredients={detected => setFridgeItems(prev => [...new Set([...prev, ...detected])])}
                     existingIngredients={fridgeItems}
                   />
                 </div>
 
-                {/* ── Ingredient tag input with voice + translate ── */}
-                <IngredientInput
-                  ingredients={fridgeItems}
-                  onChange={setFridgeItems}
-                  pantryIngredients={[]}
-                  placeholder="cabbage, chicken, eggs…"
-                  lang={lang}
-                  // Translation handled internally via /api/suggest?action=translate
-                />
+                {/* ── Ingredient input ── */}
+                <div style={{padding:'14px 16px 0'}}>
+                  <IngredientInput
+                    ingredients={fridgeItems}
+                    onChange={setFridgeItems}
+                    pantryIngredients={[]}
+                    placeholder={inputMode === 'leftover'
+                      ? 'leftover rice, dal, rotis…'
+                      : 'spinach, chicken, eggs, tomatoes…'}
+                    lang={lang}
+                  />
+                </div>
 
-                {/* ── Quick-add chips ── */}
-                <div style={{marginTop:10,marginBottom:14}}>
-                  <div style={{fontSize:10,letterSpacing:'1px',textTransform:'uppercase',color:'var(--muted)',fontWeight:500,marginBottom:7}}>
-                    Quick add
+                {/* ── Quick-add chips — contextual per mode ── */}
+                <div style={{padding:'10px 16px 0'}}>
+                  <div style={{
+                    fontSize:9, letterSpacing:'1.5px', textTransform:'uppercase',
+                    color:'var(--muted)', fontWeight:600, marginBottom:7,
+                  }}>
+                    {inputMode === 'leftover' ? 'Common leftovers' : 'Quick add'}
                   </div>
                   <div style={{
-                    display:'flex', gap:6, overflowX:'auto',
-                    paddingBottom:4, scrollbarWidth:'none', msOverflowStyle:'none',
+                    display:'flex', gap:6, overflowX:'auto', paddingBottom:6,
+                    scrollbarWidth:'none', msOverflowStyle:'none',
                   }}>
-                    {(pantry?.length > 0
-                      ? pantry.filter(p => !fridgeItems.includes(p)).slice(0,8)
-                      : QUICK_ADD_STAPLES.filter(s => !fridgeItems.includes(s)).slice(0,8)
-                    ).map(item => (
+                    {(inputMode === 'leftover'
+                      ? ['Leftover rice','Leftover dal','Rotis','Cooked chicken',
+                         'Boiled potato','Leftover curry','Cooked pasta','Bread']
+                      : (pantry?.length > 0
+                          ? pantry.filter(p => !fridgeItems.includes(p)).slice(0,10)
+                          : QUICK_ADD_STAPLES.filter(s => !fridgeItems.includes(s)))
+                    ).filter(item => !fridgeItems.includes(item)).map(item => (
                       <button key={item}
                         onClick={() => setFridgeItems(prev => [...new Set([...prev, item])])}
                         style={{
-                          padding:'5px 12px', borderRadius:20, whiteSpace:'nowrap',
+                          padding:'6px 12px', borderRadius:20, whiteSpace:'nowrap',
                           border:'1.5px solid rgba(28,10,0,0.10)',
-                          background:'rgba(255,250,245,0.8)',
+                          background:'rgba(255,250,245,0.9)',
                           fontSize:11, color:'var(--muted)',
                           cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
-                          flexShrink:0, transition:'all 0.12s',
+                          flexShrink:0, transition:'border-color 0.1s,color 0.1s',
                         }}
                         onMouseEnter={e=>{e.currentTarget.style.borderColor='var(--jiff)';e.currentTarget.style.color='var(--jiff)';}}
                         onMouseLeave={e=>{e.currentTarget.style.borderColor='rgba(28,10,0,0.10)';e.currentTarget.style.color='var(--muted)';}}>
@@ -1340,33 +1368,53 @@ export default function Jiff() {
                   </div>
                 </div>
 
-                {/* ── Pantry strip — read-only, shows assumed staples ── */}
+                {/* ── Pantry strip ── */}
                 {pantry?.length > 0 && (
                   <div style={{
-                    padding:'8px 12px', marginBottom:14,
+                    margin:'10px 16px 0',
+                    padding:'8px 12px',
                     background:'rgba(29,158,117,0.04)',
                     border:'1px solid rgba(29,158,117,0.15)',
-                    borderRadius:10, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8,
+                    borderRadius:10,
+                    display:'flex', alignItems:'center', gap:8,
                   }}>
-                    <div style={{fontSize:11,color:'#1D9E75',fontWeight:300,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    <span style={{fontSize:13}}>🌿</span>
+                    <div style={{
+                      fontSize:11, color:'#1D9E75', fontWeight:300,
+                      flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                    }}>
                       <span style={{fontWeight:500}}>Pantry assumed: </span>
                       {pantry.slice(0,5).join(', ')}{pantry.length > 5 ? ' +' + (pantry.length-5) + ' more' : ''}
                     </div>
                     <button onClick={()=>navigate('/profile',{state:{tab:'pantry'}})}
-                      style={{fontSize:10,color:'#1D9E75',background:'none',border:'1px solid rgba(29,158,117,0.3)',borderRadius:6,padding:'3px 8px',cursor:'pointer',fontFamily:"'DM Sans',sans-serif",flexShrink:0}}>
+                      style={{
+                        fontSize:10, color:'#1D9E75', background:'none',
+                        border:'1px solid rgba(29,158,117,0.3)', borderRadius:6,
+                        padding:'3px 8px', cursor:'pointer',
+                        fontFamily:"'DM Sans',sans-serif", flexShrink:0,
+                      }}>
                       Edit
                     </button>
                   </div>
                 )}
 
-                {/* ── Simplified 3 filters ── */}
-                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+                {/* ── Filter row ── */}
+                <div style={{
+                  padding:'12px 16px',
+                  display:'grid', gridTemplateColumns:'1fr 1fr 1fr',
+                  gap:8,
+                }}>
                   {/* Diet */}
                   <div>
-                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_diet')}</div>
-                    <select value={diet||'none'}
-                      onChange={e=>setDiet(e.target.value)}
-                      style={{width:'100%',padding:'8px 6px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,fontSize:11,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none',cursor:'pointer'}}>
+                    <div style={{fontSize:8,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:700,marginBottom:5}}>Diet</div>
+                    <select value={diet||'none'} onChange={e=>setDiet(e.target.value)}
+                      style={{
+                        width:'100%', padding:'7px 6px',
+                        border:'1px solid rgba(28,10,0,0.10)', borderRadius:8,
+                        fontSize:11, fontFamily:"'DM Sans',sans-serif",
+                        background:'white', outline:'none', cursor:'pointer',
+                        color:'var(--ink)',
+                      }}>
                       <option value="none">Any</option>
                       <option value="vegetarian">Veg only</option>
                       <option value="vegan">Vegan</option>
@@ -1376,52 +1424,75 @@ export default function Jiff() {
                   </div>
                   {/* Servings */}
                   <div>
-                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_servings')}</div>
-                    <div style={{display:'flex',alignItems:'center',gap:4,padding:'6px 8px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,background:'white'}}>
+                    <div style={{fontSize:8,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:700,marginBottom:5}}>Serves</div>
+                    <div style={{
+                      display:'flex', alignItems:'center',
+                      border:'1px solid rgba(28,10,0,0.10)', borderRadius:8,
+                      background:'white', overflow:'hidden',
+                    }}>
                       <button onClick={()=>setDefaultServings(s=>Math.max(1,s-1))} disabled={defaultServings<=1}
-                        style={{background:'none',border:'none',fontSize:14,cursor:'pointer',color:'var(--muted)',padding:'0 2px',lineHeight:1}}>−</button>
-                      <span style={{flex:1,textAlign:'center',fontSize:13,fontWeight:600,color:'var(--ink)'}}>{defaultServings}</span>
+                        style={{
+                          flex:1, padding:'7px 0', border:'none',
+                          background:'none', fontSize:16, cursor:'pointer',
+                          color:'var(--muted)', lineHeight:1,
+                        }}>−</button>
+                      <span style={{
+                        flex:1, textAlign:'center', fontSize:13,
+                        fontWeight:700, color:'var(--ink)', lineHeight:1,
+                      }}>{defaultServings}</span>
                       <button onClick={()=>setDefaultServings(s=>Math.min(12,s+1))} disabled={defaultServings>=12}
-                        style={{background:'none',border:'none',fontSize:14,cursor:'pointer',color:'var(--muted)',padding:'0 2px',lineHeight:1}}>+</button>
+                        style={{
+                          flex:1, padding:'7px 0', border:'none',
+                          background:'none', fontSize:16, cursor:'pointer',
+                          color:'var(--muted)', lineHeight:1,
+                        }}>+</button>
                     </div>
                   </div>
                   {/* Time */}
                   <div>
-                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:5}}>{t('section_time')}</div>
+                    <div style={{fontSize:8,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:700,marginBottom:5}}>Time</div>
                     <select value={time} onChange={e=>setTime(e.target.value)}
-                      style={{width:'100%',padding:'8px 6px',border:'1px solid rgba(28,10,0,0.10)',borderRadius:8,fontSize:11,fontFamily:"'DM Sans',sans-serif",background:'white',outline:'none',cursor:'pointer'}}>
+                      style={{
+                        width:'100%', padding:'7px 6px',
+                        border:'1px solid rgba(28,10,0,0.10)', borderRadius:8,
+                        fontSize:11, fontFamily:"'DM Sans',sans-serif",
+                        background:'white', outline:'none', cursor:'pointer',
+                        color:'var(--ink)',
+                      }}>
                       <option value="20 min">20 min</option>
                       <option value="30 min">30 min</option>
                       <option value="45 min">45 min</option>
                       <option value="60 min">1 hour</option>
-                      <option value="any">Any time</option>
+                      <option value="any">Any</option>
                     </select>
                   </div>
                 </div>
 
-                {/* ── Per-session cuisine picker ── */}
+                {/* ── Cuisine chips — from saved profile ── */}
                 {profile?.preferred_cuisines?.length > 0 && (
-                  <div style={{marginBottom:16}}>
-                    <div style={{fontSize:9,letterSpacing:'1px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:600,marginBottom:7}}>
+                  <div style={{padding:'0 16px 14px'}}>
+                    <div style={{fontSize:8,letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--jiff)',fontWeight:700,marginBottom:7}}>
                       Cuisine
                     </div>
                     <div style={{
                       display:'flex', gap:6, overflowX:'auto',
-                      paddingBottom:4, scrollbarWidth:'none', msOverflowStyle:'none',
+                      paddingBottom:2, scrollbarWidth:'none', msOverflowStyle:'none',
                     }}>
                       {profile.preferred_cuisines.map(id => {
                         const label = ALL_CUISINES?.find(c=>c.id===id)?.label || id;
-                        const isActive = (cuisine === id) || (profile.preferred_cuisines.indexOf(id)===0 && cuisine==='any');
+                        const isActive = cuisine === id || (profile.preferred_cuisines.indexOf(id)===0 && cuisine==='any');
                         return (
-                          <button key={id}
-                            onClick={()=>setCuisine(isActive?'any':id)}
+                          <button key={id} onClick={()=>setCuisine(isActive?'any':id)}
                             style={{
-                              padding:'5px 12px', borderRadius:20, whiteSpace:'nowrap', flexShrink:0,
-                              border:'1.5px solid ' + (isActive ? 'var(--jiff)' : 'rgba(28,10,0,0.10)'),
+                              padding:'5px 12px', borderRadius:20,
+                              whiteSpace:'nowrap', flexShrink:0,
+                              border:'1.5px solid ' + (isActive?'var(--jiff)':'rgba(28,10,0,0.10)'),
                               background: isActive?'rgba(255,69,0,0.07)':'white',
                               color: isActive?'var(--jiff)':'var(--muted)',
-                              fontSize:11, cursor:'pointer', fontFamily:"'DM Sans',sans-serif",
-                              fontWeight: isActive?600:400, transition:'all 0.12s',
+                              fontSize:11, cursor:'pointer',
+                              fontFamily:"'DM Sans',sans-serif",
+                              fontWeight: isActive?600:400,
+                              transition:'all 0.12s',
                             }}>
                             {label}
                           </button>

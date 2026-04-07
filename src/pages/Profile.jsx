@@ -66,14 +66,17 @@ function PantryEditor({ pantryItems, setPantryItems, C }) {
     setPantryItems(prev => [...prev, val]);
     setInput('');
   };
+  const remove = (item) => setPantryItems(p => p.filter(x => x !== item));
+
   return (
     <div>
-      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+      {/* Add input */}
+      <div style={{ display:'flex', gap:8, marginBottom:16 }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && add()}
-          placeholder="e.g. oil, salt, cumin, garlic…"
+          placeholder="Add an item, e.g. coconut oil, saffron…"
           style={{
             flex:1, padding:'9px 12px',
             border:'1px solid ' + C.borderMid, borderRadius:10,
@@ -89,25 +92,41 @@ function PantryEditor({ pantryItems, setPantryItems, C }) {
           + Add
         </button>
       </div>
+
+      {/* Info note */}
+      <div style={{
+        fontSize:11, color:C.muted, fontWeight:300, marginBottom:14,
+        padding:'8px 12px', background:'rgba(29,158,117,0.04)',
+        border:'1px solid rgba(29,158,117,0.12)', borderRadius:8, lineHeight:1.5,
+      }}>
+        🌿 These are assumed available for every recipe — Jiff won't ask you to buy them. Tap × to remove anything you're out of.
+      </div>
+
+      {/* Items grid */}
       {pantryItems.length === 0 ? (
         <div style={{ textAlign:'center', padding:'24px 0', color:C.muted, fontSize:13 }}>
-          No pantry items yet — add your staples above
+          No pantry items — add staples above or go back to defaults
         </div>
       ) : (
         <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
           {pantryItems.map(item => (
             <div key={item} style={{
-              display:'flex', alignItems:'center', gap:4,
+              display:'flex', alignItems:'center', gap:3,
               background:'rgba(29,158,117,0.07)',
-              border:'1px solid rgba(29,158,117,0.2)',
-              borderRadius:20, padding:'5px 10px 5px 12px',
+              border:'1px solid rgba(29,158,117,0.18)',
+              borderRadius:20, padding:'5px 8px 5px 11px',
+              transition:'background 0.1s',
             }}>
               <span style={{ fontSize:12, color:'#1D9E75', fontWeight:500 }}>{item}</span>
-              <button onClick={() => setPantryItems(p => p.filter(x => x !== item))}
+              <button onClick={() => remove(item)}
                 style={{
                   background:'none', border:'none', cursor:'pointer',
-                  color:'#1D9E75', fontSize:14, lineHeight:1, padding:'0 2px',
-                }}>
+                  color:'rgba(29,158,117,0.6)', fontSize:14,
+                  lineHeight:1, padding:'0 2px', fontFamily:'monospace',
+                  transition:'color 0.1s',
+                }}
+                onMouseEnter={e => e.target.style.color='#E53E3E'}
+                onMouseLeave={e => e.target.style.color='rgba(29,158,117,0.6)'}>
                 ×
               </button>
             </div>
@@ -268,6 +287,17 @@ export default function Profile() {
   const [mealHistory,   setMealHistory]   = useState([]);
 
   // Pantry state
+  const INDIAN_PANTRY_DEFAULTS = [
+    'Oil','Ghee','Butter','Salt','Sugar','Jaggery',
+    'Cumin seeds','Mustard seeds','Coriander seeds','Cardamom','Cloves',
+    'Cinnamon','Bay leaves','Dried red chillies','Peppercorns','Fenugreek seeds',
+    'Turmeric','Red chilli powder','Coriander powder','Cumin powder',
+    'Garam masala','Amchur','Chaat masala','Asafoetida','Tamarind',
+    'Rice','Atta','Maida','Sooji','Poha',
+    'Toor dal','Moong dal','Chana dal','Masoor dal','Urad dal',
+    'Ginger garlic paste','Tomato puree',
+    'Cashews','Almonds','Raisins',
+  ];
   const [pantryItems, setPantryItems] = useState([]);
 
   // Stats
@@ -291,9 +321,14 @@ export default function Profile() {
     if (profile.calorie_target)         setCalorieTarget(String(profile.calorie_target));
   }, [profile]);
 
-  // Load pantry
+  // Load pantry — use Indian kitchen defaults if user has no saved pantry
   useEffect(() => {
-    if (Array.isArray(pantry) && pantry.length > 0) setPantryItems(pantry);
+    if (Array.isArray(pantry) && pantry.length > 0) {
+      setPantryItems(pantry);
+    } else if (pantry !== undefined && !pantryItems.length) {
+      // First time: pre-populate with Indian pantry defaults
+      setPantryItems(INDIAN_PANTRY_DEFAULTS);
+    }
   }, [pantry]);
 
   // Load meal history for goals tab
