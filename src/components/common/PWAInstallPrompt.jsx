@@ -88,7 +88,7 @@ export default function PWAInstallPrompt() {
           </div>
           <div style={{ fontSize: 12, color: C.muted, fontWeight: 300, lineHeight: 1.5 }}>
             {isIOS
-              ? "Tap the share button ↑ then "Add to Home Screen" for quick access"
+              ? 'Tap the share button ↑ then "Add to Home Screen" for quick access'
               : "Install the app for a faster, app-like experience"}
           </div>
         </div>

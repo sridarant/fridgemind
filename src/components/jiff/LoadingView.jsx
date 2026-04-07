@@ -1,12 +1,4 @@
 // src/components/jiff/LoadingView.jsx
-import { parseStepTime } from '../../lib/timers.js';
-
-const FACTS = [
-  'Raiding your fridge…','Cross-referencing 50,000+ recipes…',
-  'Matching cuisine and flavour profile…','Crunching nutrition numbers…',
-  'Preparing 5 great options for you…',
-];
-
 export default function LoadingView({ cuisine, mealType, ingredients, isPremium, PAID_RECIPE_CAP, factIdx, loadingMessage }) {
   const FACTS = [
     'Raiding your fridge…','Cross-referencing 50,000+ recipes…',
