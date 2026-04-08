@@ -49,7 +49,7 @@ function BarChart({ data, color }) {
 
 export default function Insights() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [data, setData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -65,8 +65,8 @@ export default function Insights() {
         try {
           const res = await fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' });
           const d = await res.json();
-          if (Array.isArray(d?.meals) && d.meals.length > 0) {
-            history = d.meals.map(m => ({
+          if (Array.isArray(d?.history) && d.history.length > 0) {
+            history = d.history.map(m => ({
               id: m.id,
               generated_at: m.generated_at,
               cuisine: m.cuisine,
@@ -74,7 +74,7 @@ export default function Insights() {
               meals: m.meal_data || [],
             }));
             const newRatings = {};
-            d.meals.forEach(m => {
+            d.history.forEach(m => {
               if (m.rating && m.meal_name) newRatings[m.meal_name] = m.rating;
             });
             if (Object.keys(newRatings).length > 0) ratings = { ...ratings, ...newRatings };

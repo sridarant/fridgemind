@@ -11,6 +11,7 @@ import OrderInSheet from './OrderInSheet.jsx';
 import SeasonalCard from './SeasonalCard.jsx';
 import WeatherBanner from './WeatherBanner.jsx';
 import GoalSheet    from './GoalSheet.jsx';
+import { getUpcomingFestival } from '../../lib/festival.js';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E',
@@ -124,11 +125,15 @@ export function JourneyTiles({
         <Tile emoji="🎯" label="I have a goal" sub="Plans & targets"
           color="#1D9E75" bg="rgba(29,158,117,0.07)" border="rgba(29,158,117,0.2)"
           onClick={() => setShowGoal(true)} />
-        {isIndia && (
+        {(() => { const f = getUpcomingFestival(); return f ? (
+          <Tile emoji={f.emoji} label={f.name + ' special'} sub={f.note}
+            color="#FF4500" bg="rgba(255,69,0,0.07)" border="rgba(255,69,0,0.2)"
+            onClick={() => onGenerateDirect?.({ type:'festival', cuisine: f.cuisine || 'indian', mealType:'dinner' })} />
+        ) : isIndia ? (
           <Tile emoji="🛵" label="Order in instead" sub="Swiggy · Zomato · Blinkit"
             color="#FC8019" bg="rgba(252,128,25,0.07)" border="rgba(252,128,25,0.2)"
             onClick={() => setShowOrder(true)} />
-        )}
+        ) : null; })()}
       </div>
 
       {/* COOKING FOR */}

@@ -11,11 +11,11 @@ const IconCopy  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColo
 const IconCheck = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>;
 const IconWA    = () => <svg viewBox="0 0 32 32" fill="currentColor" width="14" height="14"><path d="M16 0C7.164 0 0 7.163 0 16c0 2.824.737 5.469 2.026 7.773L0 32l8.467-2.001A15.938 15.938 0 0016 32c8.836 0 16-7.163 16-16S24.836 0 16 0zm8.278 22.61c-.344.967-1.993 1.841-2.741 1.957-.695.109-1.57.154-2.534-.16-.584-.193-1.334-.45-2.285-.882-4.02-1.744-6.65-5.786-6.85-6.054-.2-.267-1.63-2.17-1.63-4.14 0-1.968 1.033-2.94 1.398-3.34.363-.398.793-.498 1.058-.498.265 0 .53.003.762.014.245.012.574-.093.897.685.344.82 1.168 2.846 1.269 3.053.1.207.167.448.033.715-.134.267-.2.433-.398.667-.2.233-.42.52-.598.7-.2.2-.408.415-.175.815.233.4 1.036 1.71 2.224 2.77 1.527 1.363 2.814 1.784 3.214 1.984.4.2.633.167.867-.1.233-.267 1-.117 1.733-.467.733-.35.533-.267.533.15zm0 0"/></svg>;
 
-export function GroceryPanel({ meal, fridgeIngredients = [], onClose, country: countryProp }) {
+export function GroceryPanel({ ingredients: ingredientsProp = [], fridgeIngredients = [], onClose, country: countryProp, meal }) {
   const { country: ctxCountry, t } = useLocale();
   const country = countryProp || ctxCountry;
 
-  const { need, have } = buildGroceryList(meal.ingredients || [], fridgeIngredients);
+  const { need, have } = buildGroceryList(ingredientsProp.length ? ingredientsProp : (meal?.ingredients || []), fridgeIngredients);
   const [checked, setChecked] = useState({});
   const [copied,  setCopied]  = useState(false);
 
@@ -24,8 +24,8 @@ export function GroceryPanel({ meal, fridgeIngredients = [], onClose, country: c
   const handleCopy = async e => {
     e.stopPropagation();
     const text = need.length > 0
-      ? `🛒 Shopping list for ${meal.name}\n\n${need.map(i => `• ${i}`).join('\n')}\n\n_From Jiff_`
-      : `Nothing to buy for ${meal.name}!`;
+      ? `🛒 Shopping list for ${meal?.name || 'this recipe'}\n\n${need.map(i => `• ${i}`).join('\n')}\n\n_From Jiff_`
+      : `Nothing to buy for ${meal?.name || 'this recipe'}!`;
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -42,8 +42,8 @@ export function GroceryPanel({ meal, fridgeIngredients = [], onClose, country: c
 
   const waUrl = `https://wa.me/?text=${encodeURIComponent(
     need.length > 0
-      ? `🛒 *Shopping list for ${meal.name}*\n\n${need.map(i => `• ${i}`).join('\n')}\n\n_From Jiff_`
-      : `I have everything for ${meal.name}! 🎉`
+      ? `🛒 *Shopping list for ${meal?.name || 'this recipe'}*\n\n${need.map(i => `• ${i}`).join('\n')}\n\n_From Jiff_`
+      : `I have everything for ${meal?.name || 'this recipe'}! 🎉`
   )}`;
 
   const stripQty = ing => ing.replace(/^[\d½¼¾⅓⅔⅛]+\s*(?:g|kg|ml|l|tsp|tbsp|cup|cups)?\s*/i, '');

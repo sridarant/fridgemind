@@ -414,7 +414,7 @@ export default function Profile() {
             style={{ display:'flex', alignItems:'center', gap:6, marginBottom:20, background:'none',
               border:'none', cursor:'pointer', fontSize:13, color:C.muted,
               fontFamily:"'DM Sans',sans-serif", padding:0 }}>
-            ← Back to Profile
+            ← Home to Profile
           </button>
         ) : (
           <div style={{

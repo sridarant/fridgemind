@@ -5,7 +5,6 @@ import IngredientInput   from '../IngredientInput';
 import FridgePhotoUpload from '../FridgePhotoUpload';
 import FamilySelector    from '../FamilySelector';
 import { QUICK_ADD_STAPLES, ALL_CUISINES } from '../../lib/cuisine.js';
-import { getUpcomingFestival } from '../../lib/festival.js';
 
 export default function FridgeCard({
   inputMode, fridgeItems, setFridgeItems, pantry,
@@ -17,8 +16,6 @@ export default function FridgeCard({
   ingredients, handleSubmit, setGateDismissed,
   navigate, t,
 }) {
-  const festival = getUpcomingFestival();
-
   const quickAddItems = inputMode === 'leftover'
     ? ['Leftover rice', 'Leftover dal', 'Rotis', 'Cooked chicken', 'Boiled potato', 'Leftover curry', 'Cooked pasta', 'Bread']
     : (pantry?.length > 0
@@ -178,19 +175,6 @@ export default function FridgeCard({
 
       {/* CTA wrap */}
       <div className="cta-wrap">
-        {festival && (
-          <div
-            style={{ background: 'rgba(255,69,0,0.06)', border: '1px solid rgba(255,69,0,0.18)', borderRadius: 12, padding: '10px 14px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-            onClick={handleSubmit}
-          >
-            <span style={{ fontSize: 22 }}>{festival.emoji}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--jiff)' }}>{festival.name}{' special recipes'}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 300 }}>{festival.note}</div>
-            </div>
-            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--jiff)', fontWeight: 500 }}>{'Generate →'}</span>
-          </div>
-        )}
 
         <button
           className="cta-btn"

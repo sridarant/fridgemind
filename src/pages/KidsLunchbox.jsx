@@ -265,7 +265,7 @@ Respond ONLY with valid JSON:
               </div>
               <button onClick={() => setView('input')}
                 style={{ padding:'7px 12px', fontSize:12, background:'none', border:'1px solid ' + (C.border), borderRadius:8, color:C.muted, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-                ← Edit
+                ↺ Cook something else
               </button>
             </div>
             {DAYS.map(day => (

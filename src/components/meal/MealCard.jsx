@@ -10,6 +10,7 @@ import { scaleIngredient, scaleNutrition } from '../../lib/scaling.js';
 import { buildShareText }   from '../../lib/sharing.js';
 import { StepWithTimer }    from './StepTimer.jsx';
 import { GroceryPanel }     from './GroceryPanel.jsx';
+import { VideoButton }      from './VideoButton.jsx';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', muted:'#7C6A5E',
@@ -220,12 +221,13 @@ export function MealCard({
         {expanded && (
           <div style={{ borderTop:`1px solid ${C.border}` }}>
 
-            {/* Video */}
-            {meal.videoId && (
-              <div style={{ padding:'14px 16px 0' }}>
-                <EmbeddedVideo videoId={meal.videoId} title={meal.videoTitle} />
-              </div>
-            )}
+            {/* Video — fetches from YouTube API on demand */}
+            <div style={{ padding:'14px 16px 0' }}>
+              {meal.videoId
+                ? <EmbeddedVideo videoId={meal.videoId} title={meal.videoTitle} />
+                : <VideoButton recipeName={meal.name} cuisine={meal.cuisine || ''} lang="en" />
+              }
+            </div>
 
             {/* Tabs */}
             <div style={{ display:'flex', borderBottom:`1px solid ${C.border}` }}>
