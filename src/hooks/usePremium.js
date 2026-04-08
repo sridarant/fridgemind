@@ -1,15 +1,13 @@
-
 import { useState } from 'react';
 
-export default function usePremium() {
-  const [isPremium, setIsPremium] = useState(false);
+export default function usePremium(){
+  const [isPremium,setIsPremium]=useState(false);
 
-  const checkAccess = (feature) => {
-    if (isPremium) return true;
-
-    const lockedFeatures = ['weekly_plan', 'premium_recipes'];
-    return !lockedFeatures.includes(feature);
+  const canAccess=(feature)=>{
+    if(isPremium) return true;
+    const locked=['weekly_plan','kids_lunchbox'];
+    return !locked.includes(feature);
   };
 
-  return { isPremium, setIsPremium, checkAccess };
+  return {isPremium,setIsPremium,canAccess};
 }
