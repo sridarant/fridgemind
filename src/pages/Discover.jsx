@@ -1,21 +1,9 @@
-import usePremium from '../hooks/usePremium';
-import Paywall from '../components/Paywall';
 // src/pages/Discover.jsx
 // Discover tab — curated content using Option 2 (semi-static + API on tap).
 // Seasonal, festival, region: computed from lib/discover.js (no API on load).
 // Recipe generation only fires when user taps a specific dish.
 
-import {
-
-  const {canAccess} = usePremium();
-
-  const handlePremium = (feature, action)=>{
-    if(!canAccess(feature)){
-      return <Paywall onUpgrade={()=>alert('Upgrade flow')} />;
-    }
-    return action();
-  };
- useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { buildDiscoverData } from '../lib/discover.js';
