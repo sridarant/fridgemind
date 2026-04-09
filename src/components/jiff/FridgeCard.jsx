@@ -70,10 +70,10 @@ export default function FridgeCard({
     : 'Jiff it now!';
 
   return (
-    <div style={{ background:'white', borderRadius:24, border:'1.5px solid ' + cfg.border + ',' overflow:'hidden', boxShadow:'0 6px 28px rgba(28,10,0,0.08)' }}>
+    <div style={{ background:'white', borderRadius:24, border:'1.5px solid ' + cfg.border, overflow:'hidden', boxShadow:'0 6px 28px rgba(28,10,0,0.08)' }}>
 
       {/* Mode header */}
-      <div style={{ background:cfg.gradient, borderBottom:'1px solid ' + cfg.border + ',' padding:'18px 20px 14px', display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
+      <div style={{ background:cfg.gradient, borderBottom:'1px solid ' + cfg.border, padding:'18px 20px 14px', display:'flex', alignItems:'flex-start', justifyContent:'space-between' }}>
         <div>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
             <span style={{ fontSize:22 }}>{cfg.icon}</span>
