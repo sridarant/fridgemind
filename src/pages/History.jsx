@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchHistory } from '../services/historyService';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -47,13 +48,11 @@ export default function History() {
 
     if (!user) { setLoading(false); return; }
     // Also fetch from server if available
-    fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' })
-      .then(r => r.json())
-      .then(d => {
-        if (d.history?.length) {
-          // Merge: server records take priority, local fills in any gaps
-          const serverIds = new Set(d.history.map(h => h.id));
-          const merged = [...d.history, ...local.filter(h => !serverIds.has(h.id))];
+    fetchHistory(user.id)
+      .then(serverHistory => {
+        if (serverHistory.length) {
+          const serverIds = new Set(serverHistory.map(h => h.id));
+          const merged = [...serverHistory, ...local.filter(h => !serverIds.has(h.id))];
           merged.sort((a, b) => new Date(b.generated_at) - new Date(a.generated_at));
           setHistory(merged);
         }
@@ -64,11 +63,8 @@ export default function History() {
 
   const handleDelete = async (id) => {
     setDeleting(id);
-    await fetch('/api/admin?action=meal-history', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, userId: user.id }),
-    });
+    const { deleteHistoryEntry } = await import('../services/historyService');
+    await deleteHistoryEntry(id, user.id);
     setHistory(prev => prev.filter(h => h.id !== id));
     setDeleting(null);
   };

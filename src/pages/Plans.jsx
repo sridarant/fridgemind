@@ -7,6 +7,7 @@ import { getDietaryLabel } from '../lib/dietary';
 import { useNavigate } from 'react-router-dom';
 import { usePremium } from '../contexts/PremiumContext';
 import { useAuth }    from '../contexts/AuthContext';
+import { generatePlan } from '../services/plannerService';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -174,21 +175,16 @@ export default function Plans() {
     setCurrentGoal(planConfig);
     setErrorMsg('');
     try {
-      const res = await fetch('/api/planner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: pantry?.length ? pantry : ['rice', 'lentils', 'vegetables', 'eggs'],
-          diet: planConfig.id === 'vegetarian' ? 'vegetarian' : 'none',
-          cuisine: planConfig.cuisine,
-          mealTypes: MEAL_TYPES,
-          servings,
-          language: 'en',
-          units: 'metric',
-          tasteProfile: { goal: planConfig.goal },
-        }),
+      const data = await generatePlan({
+        ingredients: pantry?.length ? pantry : ['rice', 'lentils', 'vegetables', 'eggs'],
+        diet: planConfig.id === 'vegetarian' ? 'vegetarian' : 'none',
+        cuisine: planConfig.cuisine,
+        mealTypes: MEAL_TYPES,
+        servings,
+        language: 'en',
+        units: 'metric',
+        tasteProfile: { goal: planConfig.goal },
       });
-      const data = await res.json();
       if (data.plan?.length >= 7) { setPlan(data.plan); setExpandedDay(0); }
       else { setErrorMsg(data.error || 'Could not generate plan. Please try again.'); }
     } catch { setErrorMsg('Connection error. Please try again.'); }

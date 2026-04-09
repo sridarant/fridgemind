@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { useLocale }  from '../contexts/LocaleContext';
 import { usePremium } from '../contexts/PremiumContext';
+import { generateRecipes } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5',
@@ -96,12 +97,10 @@ Respond ONLY with valid JSON:
 }]}`;
 
     try {
-      const res = await fetch('/api/suggest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredients:[], diet: dietContext, count, language: lang, kidsMode: true, kidsPromptOverride: prompt }),
+      const data = await generateRecipes({
+        ingredients: [], diet: dietContext, count, language: lang,
+        kidsMode: true, kidsPromptOverride: prompt,
       });
-      const data = await res.json();
       const result = Array.isArray(data.meals) ? data.meals : Array.isArray(data) ? data : null;
       if (result?.length) setMeals(result);
       else setError('Could not generate recipes. Please try again.');
@@ -112,9 +111,9 @@ Respond ONLY with valid JSON:
   const fetchVideo = async (meal) => {
     if (videoData[meal.name]) return;
     try {
-      const res = await fetch(`/api/videos?recipe=${encodeURIComponent(meal.name)}&cuisine=Indian&lang=${lang}`);
-      const data = await res.json();
-      if (data.videos?.length) setVideoData(prev => ({ ...prev, [meal.name]: data.videos[0] }));
+      const { fetchRecipeVideo } = await import('../services/userService');
+      const video = await fetchRecipeVideo(meal.name, 'Indian', lang);
+      if (video && !video.unconfigured) setVideoData(prev => ({ ...prev, [meal.name]: video }));
     } catch {}
   };
 

@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }     from '../contexts/AuthContext';
+import { generateRecipes } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',
@@ -168,17 +169,12 @@ export default function LittleChefs() {
     const selectedAge   = AGE_GROUPS.find(a => a.id === age);
     const selectedSkill = SKILL_LEVELS.find(s => s.id === skill);
     try {
-      const res = await fetch('/api/suggest', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          ingredients: pantry || [],
-          diet:'veg', cuisine:'any',
-          time:'30 min', servings:2, count:3,
-          kidsMode:true,
-          kidsPromptOverride:`You are a fun cooking teacher for children. Generate exactly 3 simple recipes for a child aged ${selectedAge?.label||'7-10 yrs'}, skill level: ${selectedSkill?.label||'can help'}. Age notes: ${selectedAge?.note||''}. Mark heat/knife steps with [ASK AN ADULT]. Use short encouraging steps. Return ONLY this JSON, no other text: {"meals":[{"name":"Name","time":"15 min","servings":2,"description":"Short fun description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":200,"protein":"5g","carbs":"30g","fat":"8g"}}]}`,
-        }),
+      const data = await generateRecipes({
+        ingredients: pantry || ['rice', 'dal', 'vegetables'],
+        diet:'veg', cuisine:'any', time:'30 min',
+        servings:2, count:3, kidsMode:true,
+        kidsPromptOverride:`You are a fun cooking teacher for children. Generate exactly 3 simple recipes for a child aged ${selectedAge?.label||'7-10 yrs'}, skill level: ${selectedSkill?.label||'can help'}. Age notes: ${selectedAge?.note||''}. Mark heat/knife steps with [ASK AN ADULT]. Use short encouraging steps. Return ONLY this JSON, no other text: {"meals":[{"name":"Name","time":"15 min","servings":2,"description":"Short fun description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":200,"protein":"5g","carbs":"30g","fat":"8g"}}]}`,
       });
-      const data = await res.json();
       setMeals(Array.isArray(data.meals) ? data.meals : []);
       setView('results');
     } catch {

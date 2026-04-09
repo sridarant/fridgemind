@@ -8,6 +8,7 @@ import { useNavigate }         from 'react-router-dom';
 import { useAuth }             from '../contexts/AuthContext';
 import { MealCard }            from '../components/meal/MealCard.jsx';
 import { getCuisineLabel }     from '../lib/cuisine.js';
+import { fetchHistory } from '../services/historyService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',
@@ -103,21 +104,11 @@ export default function Favs() {
       setRatings(stored);
     } catch {}
     if (!user) return;
-    fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' })
-      .then(r => r.json())
-      .then(d => {
-        if (!Array.isArray(d?.history)) return;
-        const supaRatings = {};
-        d.history.forEach(m => { if (m.meal_name && m.rating) supaRatings[m.meal_name] = m.rating; });
-        if (Object.keys(supaRatings).length > 0) {
-          setRatings(prev => {
-            const merged = { ...prev, ...supaRatings };
-            try { localStorage.setItem('jiff-ratings', JSON.stringify(merged)); } catch {}
-            return merged;
-          });
-        }
-      })
-      .catch(() => {});
+    fetchHistory(user.id).then(history => {
+        const r = {};
+        history.forEach(m => { if (m.meal_name && m.rating) r[m.meal_name] = m.rating; });
+        if (Object.keys(r).length) setRatings(prev => ({ ...prev, ...r }));
+      }).catch(() => {});
   }, [user]);
 
   if (!user) return (

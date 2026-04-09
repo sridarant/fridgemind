@@ -1,6 +1,7 @@
 // src/pages/Stats.jsx — Public stats: users, countries, trends (item q)
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchStats } from '../services/userService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5', muted:'#7C6A5E', border:'rgba(28,10,0,0.10)', shadow:'0 4px 24px rgba(28,10,0,0.07)' };
 
@@ -73,7 +74,7 @@ export default function Stats() {
 
   useEffect(() => {
     // Try to fetch real stats from Supabase via API
-    fetch('/api/stats')
+    fetchStats()
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.totalUsers) { setStats(data); setIsLive(true); }

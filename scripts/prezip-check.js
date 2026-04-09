@@ -261,6 +261,23 @@ for (const f of required) {
 }
 if (missing === 0) ok(`All ${required.length} required files present`);
 
+
+// ── 11. Dangling comma in string concatenation ────────────────────
+// Catches patterns like: + ',' propertyName: (comma swallowed into string)
+console.log('\n── Dangling comma in string concat ──');
+let danglingCommaIssues = 0;
+for (const file of srcFiles) {
+  const src = fs.readFileSync(file, 'utf8');
+  const lines = src.split('\n');
+  lines.forEach((l, i) => {
+    if (/\+ ','\s+\w+:/.test(l)) {
+      err(`${path.relative(ROOT, file)}:${i+1} — dangling comma in string concat: ${l.trim().slice(0,80)}`);
+      danglingCommaIssues++;
+    }
+  });
+}
+if (danglingCommaIssues === 0) ok('Dangling comma check: clean');
+
 // ── Summary ───────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 if (errors > 0) {

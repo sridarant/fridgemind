@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { buildDiscoverData } from '../lib/discover.js';
 import { getCurrentSeason } from '../lib/festival.js';
 import SeasonalCard from '../components/common/SeasonalCard.jsx';
+import { fetchHistory } from '../services/historyService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', muted:'#7C6A5E',
@@ -57,16 +58,10 @@ export default function Discover() {
   useEffect(() => {
     // Load meal history from Supabase for personalisation
     if (user) {
-      fetch(`/api/admin?action=meal-history&userId=${user.id}`)
-        .then(r => r.json())
-        .then(d => {
-          const history = Array.isArray(d.history) ? d.history : [];
+      fetchHistory(user.id)
+        .then(history => {
           setMealHistory(history);
-          setData(buildDiscoverData({
-            mealHistory: history,
-            profile:     profile || {},
-            country:     'IN',
-          }));
+          setData(buildDiscoverData({ mealHistory: history, profile: profile || {}, country: 'IN' }));
         })
         .catch(() => {
           setData(buildDiscoverData({ mealHistory: [], profile: profile || {}, country: 'IN' }));

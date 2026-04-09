@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { fetchHistory } from '../services/historyService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5',
@@ -63,21 +64,15 @@ export default function Insights() {
 
       if (user) {
         try {
-          const res = await fetch('/api/admin?action=meal-history&userId=' + user.id, { method:'GET' });
-          const d = await res.json();
-          if (Array.isArray(d?.history) && d.history.length > 0) {
-            history = d.history.map(m => ({
-              id: m.id,
-              generated_at: m.generated_at,
-              cuisine: m.cuisine,
-              meal_name: m.meal_name,
-              meals: m.meal_data || [],
+          const serverHistory = await fetchHistory(user.id);
+          if (serverHistory.length) {
+            history = serverHistory.map(m => ({
+              id: m.id, generated_at: m.generated_at,
+              cuisine: m.cuisine, meal_name: m.meal_name, meals: m.meal_data || [],
             }));
             const newRatings = {};
-            d.history.forEach(m => {
-              if (m.rating && m.meal_name) newRatings[m.meal_name] = m.rating;
-            });
-            if (Object.keys(newRatings).length > 0) ratings = { ...ratings, ...newRatings };
+            serverHistory.forEach(m => { if (m.rating && m.meal_name) newRatings[m.meal_name] = m.rating; });
+            if (Object.keys(newRatings).length) ratings = { ...ratings, ...newRatings };
           }
         } catch {}
       }

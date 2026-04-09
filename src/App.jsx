@@ -1,87 +1,97 @@
-// src/App.jsx — Route shell with bottom navigation
-// v22: Added /discover, /favs, /onboarding routes + BottomNav
+// src/App.jsx — Route shell with lazy-loaded pages
+// Phase 2: All page routes are code-split for faster initial load.
 
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider }    from './contexts/AuthContext';
 import { PremiumProvider } from './contexts/PremiumContext';
 import { LocaleProvider }  from './contexts/LocaleContext';
-import CookieBanner    from './components/CookieBanner';
-import FeedbackWidget  from './components/FeedbackWidget';
-import BottomNav       from './components/common/BottomNav';
-import ErrorBoundary   from './components/ErrorBoundary';
+import CookieBanner      from './components/CookieBanner';
+import FeedbackWidget    from './components/FeedbackWidget';
+import BottomNav         from './components/common/BottomNav';
+import ErrorBoundary     from './components/ErrorBoundary';
+import PWAInstallPrompt  from './components/common/PWAInstallPrompt';
 
-import Landing       from './pages/Landing';
-import Jiff          from './pages/Jiff';
-import Discover      from './pages/Discover';
-import Favs          from './pages/Favs';
-import Onboarding    from './pages/Onboarding';
-import Planner       from './pages/Planner';
-import Profile       from './pages/Profile';
-import Pricing       from './pages/Pricing';
-import History       from './pages/History';
-import Plans         from './pages/Plans';
-import Privacy       from './pages/Privacy';
-import Stats         from './pages/Stats';
-import ApiDocs       from './pages/ApiDocs';
-import Admin         from './pages/Admin';
-import Insights      from './pages/Insights';
-import LittleChefs   from './pages/LittleChefs';
-import PWAInstallPrompt from './components/common/PWAInstallPrompt';
-import KidsLunchbox  from './pages/KidsLunchbox';
-import KidsDishes    from './pages/KidsDishes';
-import SacredKitchen from './pages/SacredKitchen';
+// ── Lazy-loaded pages ─────────────────────────────────────────────
+// Critical path: Landing + Jiff load eagerly; everything else is lazy.
+import Landing  from './pages/Landing';
+import Jiff     from './pages/Jiff';
 
-// Pages that show the bottom nav
-const NAV_PATHS = ['/app', '/discover', '/favs', '/profile'];
+const Discover    = lazy(() => import('./pages/Discover'));
+const Favs        = lazy(() => import('./pages/Favs'));
+const Onboarding  = lazy(() => import('./pages/Onboarding'));
+const Planner     = lazy(() => import('./pages/Planner'));
+const Profile     = lazy(() => import('./pages/Profile'));
+const Pricing     = lazy(() => import('./pages/Pricing'));
+const History     = lazy(() => import('./pages/History'));
+const Plans       = lazy(() => import('./pages/Plans'));
+const Privacy     = lazy(() => import('./pages/Privacy'));
+const Stats       = lazy(() => import('./pages/Stats'));
+const ApiDocs     = lazy(() => import('./pages/ApiDocs'));
+const Admin       = lazy(() => import('./pages/Admin'));
+const Insights    = lazy(() => import('./pages/Insights'));
+const LittleChefs = lazy(() => import('./pages/LittleChefs'));
+const KidsLunchbox= lazy(() => import('./pages/KidsLunchbox'));
+const KidsDishes  = lazy(() => import('./pages/KidsDishes'));
+const SacredKitchen = lazy(() => import('./pages/SacredKitchen'));
 
+// ── Loading fallback ──────────────────────────────────────────────
+const PageLoader = () => (
+  <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
+    minHeight:'100vh', background:'#FFFAF5', fontFamily:"'DM Sans',sans-serif",
+    fontSize:13, color:'#7C6A5E' }}>
+    {'Loading...'}
+  </div>
+);
+
+// ── Bottom nav visibility ─────────────────────────────────────────
 function AppShell() {
-  const { pathname } = useLocation();
-  const showNav = NAV_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'));
+  const loc = useLocation();
+  const showNav = ['/app','/discover','/favs','/profile'].some(p => loc.pathname.startsWith(p));
 
   return (
-    <>
-      <Routes>
-        <Route path="/"            element={<Landing />}       />
-        <Route path="/app"         element={<Jiff />}          />
-        <Route path="/discover"    element={<Discover />}      />
-        <Route path="/onboarding"  element={<Onboarding />}    />
-        <Route path="/planner"     element={<Planner />}       />
-        <Route path="/profile"     element={<Profile />}       />
-        <Route path="/pricing"     element={<Pricing />}       />
-        <Route path="/history"     element={<History />}       />
-        <Route path="/plans"       element={<Plans />}         />
-        <Route path="/privacy"     element={<Privacy />}       />
-        <Route path="/stats"       element={<Stats />}         />
-        <Route path="/api-docs"    element={<ApiDocs />}       />
-        <Route path="/admin"       element={<Admin />}         />
-        <Route path="/insights"    element={<Insights />}      />
-        <Route path="/little-chefs"          element={<LittleChefs />}   />
-        <Route path="/little-chefs/lunchbox"  element={<KidsLunchbox />}  />
-        <Route path="/little-chefs/dishes"    element={<KidsDishes />}    />
-        <Route path="/sacred"      element={<SacredKitchen />} />
-        {/* /favs — renders Jiff with favourites panel open */}
-        <Route path="/favs"        element={<Favs />} />
-      </Routes>
-
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/"                    element={<Landing />} />
+          <Route path="/app"                 element={<Jiff />} />
+          <Route path="/discover"            element={<Discover />} />
+          <Route path="/favs"                element={<Favs />} />
+          <Route path="/onboarding"          element={<Onboarding />} />
+          <Route path="/planner"             element={<Planner />} />
+          <Route path="/profile"             element={<Profile />} />
+          <Route path="/pricing"             element={<Pricing />} />
+          <Route path="/history"             element={<History />} />
+          <Route path="/plans"               element={<Plans />} />
+          <Route path="/privacy"             element={<Privacy />} />
+          <Route path="/stats"               element={<Stats />} />
+          <Route path="/api-docs"            element={<ApiDocs />} />
+          <Route path="/admin"               element={<Admin />} />
+          <Route path="/insights"            element={<Insights />} />
+          <Route path="/little-chefs"        element={<LittleChefs />} />
+          <Route path="/little-chefs/lunchbox" element={<KidsLunchbox />} />
+          <Route path="/little-chefs/dishes"   element={<KidsDishes />} />
+          <Route path="/sacred"              element={<SacredKitchen />} />
+        </Routes>
+      </Suspense>
       {showNav && <BottomNav />}
       <CookieBanner />
       <FeedbackWidget />
-    </>
+      <PWAInstallPrompt />
+    </ErrorBoundary>
   );
 }
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <LocaleProvider>
-        <AuthProvider>
-          <PremiumProvider>
-            <BrowserRouter>
-              <AppShell />
-            </BrowserRouter>
-          </PremiumProvider>
-        </AuthProvider>
-      </LocaleProvider>
-    </ErrorBoundary>
+    <BrowserRouter>
+      <AuthProvider>
+        <PremiumProvider>
+          <LocaleProvider>
+            <AppShell />
+          </LocaleProvider>
+        </PremiumProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

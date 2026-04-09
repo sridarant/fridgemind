@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }     from '../contexts/AuthContext';
 import { MealCard }    from '../components/meal/MealCard.jsx';
+import { generateRecipes } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',
@@ -38,18 +39,14 @@ export default function KidsDishes() {
     const selectedAge = AGES.find(a => a.id === age);
     const selectedOcc = OCCASIONS.find(o => o.id === occasion);
     try {
-      const res = await fetch('/api/suggest', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
+      const data = await generateRecipes({
           ingredients: pantry || [],
           diet:'veg',
           cuisine:'kid-friendly',
           time:'30 min', servings:2, count:4,
           kidsMode:true,
-          kidsPromptOverride:`Generate exactly 4 kid-friendly recipes for ${selectedAge?.label||'7-10'} children. Occasion: ${selectedOcc?.label||'any'}. Rules: safe temps, appropriate textures, nutritious, fun names kids love. Return ONLY this JSON: {"meals":[{"name":"Fun Name","time":"20 min","servings":2,"description":"Yummy description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":250,"protein":"8g","carbs":"35g","fat":"10g"}}]}`,
-        }),
-      });
-      const data = await res.json();
+          kidsPromptOverride:`Generate exactly 4 kid-friendly recipes for ${selectedAge?.label||'7-10'} children. Occasion: ${selectedOcc?.label||'any'}. Rules: safe temps, appropriate textures, nutritious, fun names kids love. Return ONLY this JSON: {"meals":[{"name":"Fun Name","time":"20 min","servings":2,"description":"Yummy description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":250,"protein":"8g","carbs":"35g","fat":"10g"}}]}`,);
+      
       setMeals(Array.isArray(data.meals) ? data.meals : []);
       setView('results');
     } catch {

@@ -5,6 +5,7 @@ import { MealSlot, GrocerySection, CuisineRatioSelector } from '../components/pl
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth }   from '../contexts/AuthContext';
+import { generatePlan } from '../services/plannerService';
 
 
 // ── Components + helpers → src/components/planner/PlannerComponents.jsx ──
@@ -157,27 +158,20 @@ export default function Planner() {
     if (selectedTypes.length === 0) return;
     setView('loading'); setErrorMsg(''); setPlan(null);
     try {
-      const res = await fetch('/api/planner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: pantry || [],
-          mealTypes: selectedTypes,
-          servings,
-          cuisine: cuisines.join(', '),
-          cuisineRatio,
-          diet: Array.isArray(profile?.food_type) ? profile.food_type[0] : (profile?.food_type || 'none'),
-          preferences: {
-            spice_level: profile?.spice_level,
-            allergies: profile?.allergies,
-            skill_level: profile?.skill_level,
-            preferred_cuisines: cuisines,
-            diet_requirements: profile?.diet_requirements,
-          },
-        }),
+      const data = await generatePlan({
+        ingredients: pantry || [],
+        mealTypes: selectedTypes,
+        servings,
+        cuisine: cuisines.join(', '),
+        diet: Array.isArray(profile?.food_type) ? profile.food_type[0] : (profile?.food_type || 'none'),
+        tasteProfile: {
+          spice_level: profile?.spice_level,
+          allergies: profile?.allergies,
+          skill_level: profile?.skill_level,
+          preferred_cuisines: cuisines,
+        },
       });
-      const data = await res.json();
-      if (res.ok && data.plan) { setPlan(data.plan); setView('results'); }
+      if (data.plan) { setPlan(data.plan); setView('results'); }
       else { setErrorMsg(data.error || 'Could not generate plan. Please try again.'); setView('error'); }
     } catch { setErrorMsg('Connection error. Please try again.'); setView('error'); }
   };

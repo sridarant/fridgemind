@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }     from '../contexts/AuthContext';
+import { generateRecipes } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',
@@ -113,15 +114,11 @@ Respond ONLY with valid JSON:
   "Friday":    {"emoji":"🍱","main":{"name":"...","note":"..."},"snack":{"name":"...","note":"..."},"drink":{"name":"...","note":"..."}}
 }`;
 
-      const res = await fetch('/api/suggest', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          ingredients:[], diet:'veg', cuisine:'kid-friendly',
-          time:'30 min', servings:1, count:1,
-          kidsMode:true, kidsPromptOverride: prompt,
-        }),
+      const data = await generateRecipes({
+        ingredients:[], diet:'veg', cuisine:'kid-friendly',
+        time:'30 min', servings:1, count:1,
+        kidsMode:true, kidsPromptOverride: prompt,
       });
-      const data = await res.json();
       // Try to parse the plan from the response
       let parsed = null;
       if (data.meals?.[0]?.rawPlan) {
