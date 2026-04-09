@@ -12,8 +12,8 @@ function Card({ title, children }) {
   );
 }
 
-const TYPE_COLORS = { bug: '#E53E3E', suggestion: '#D97706', general: C.jiff, crash: '#9B2C2C' };
-const TYPE_EMOJI  = { bug: '🐛', suggestion: '💡', general: '💬', crash: '💥' };
+const TYPE_COLORS = { crash: '#9B2C2C', bug: '#E53E3E', suggestion: '#D97706', general: C.jiff };
+const TYPE_EMOJI  = { crash: '💥', bug: '🐛', suggestion: '💡', general: '💬' };
 
 export default function FeedbackTab() {
   const [items,   setItems]   = useState([]);
@@ -27,8 +27,8 @@ export default function FeedbackTab() {
       .catch(() => setLoading(false));
   }, []);
 
-  const types   = ['all', 'bug', 'suggestion', 'general'];
-  const nonCrash = items.filter(f => f.type !== 'crash');
+  const types   = ['all', 'crash', 'bug', 'suggestion', 'general'];
+  const nonCrash = items; // crashes now included, properly categorised
   const filtered = filter === 'all' ? nonCrash : nonCrash.filter(f => f.type === filter);
   const counts   = types.reduce((acc, t) => { acc[t] = t === 'all' ? nonCrash.length : nonCrash.filter(f => f.type === t).length; return acc; }, {});
 
@@ -36,7 +36,7 @@ export default function FeedbackTab() {
 
   return (
     <div style={{ padding:'0 4px' }}>
-      <Card title={'User Feedback — ' + nonCrash.length + ' entries'}>
+      <Card title={'System & User Feedback — ' + nonCrash.length + ' entries'}>
         {/* Filter chips */}
         <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:16 }}>
           {types.map(t => (

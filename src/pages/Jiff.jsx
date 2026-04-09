@@ -155,19 +155,39 @@ const styles = `
   .favs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;padding-bottom:36px;}
   .share-actions{display:flex;gap:7px;flex-wrap:wrap;}
   @media(max-width:700px){
-    .main-layout{padding:16px 16px 80px;}
+    /* Layout */
+    .main-layout{padding:12px 14px 80px;}
     .meals-grid,.favs-grid{grid-template-columns:1fr;}
-    .results-wrap{padding:16px 16px 80px;}
+    .results-wrap{padding:12px 14px 80px;}
+    /* Header — compact on mobile */
+    .header{padding:10px 14px;}
+    .header-right{gap:5px;}
+    .hdr-btn{padding:5px 9px;font-size:11px;}
+    /* Typography */
+    .results-title{font-size:17px;}
+    .meal-name{font-size:16px;}
+    /* Cards */
     .nutr-grid{grid-template-columns:repeat(2,1fr);}
-    .header{padding:12px 16px;}
-    .results-title{font-size:18px;}
+    .auth-card{padding:22px 18px;}
+    /* Prevent horizontal overflow */
+    .filter-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+    .meal-meta{flex-wrap:wrap;gap:6px;}
+    /* Gates */
+    .gate-plans{grid-template-columns:1fr;}
+    .gate-card{padding:28px 20px;}
+    /* Actions */
+    .share-actions{flex-direction:column;}
+    .cta-btn{width:100%;justify-content:center;}
+    /* Hide desktop-only elements */
     .scaler-orig{display:none;}
     .trial-badge{display:none;}
-    .gate-plans{grid-template-columns:1fr;}
-    .share-actions{flex-direction:column;}
-    .filter-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;}
-    .auth-card{padding:24px 20px;}
-    .cta-btn{width:100%;}
+    .desktop-only{display:none!important;}
+    /* Grocery panel — full width */
+    .grocery-panel{margin:0 0 14px;}
+    /* Steps — larger tap targets */
+    .steps-list li{padding:9px 0 9px 28px;}
+    /* Auth */
+    .auth-perks{gap:6px;}
   }
 `;
 
@@ -362,10 +382,10 @@ export default function Jiff() {
       const count = isPremium ? PAID_RECIPE_CAP : 1;
       const res = await fetch('/api/suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ingredients: tileIngredients, time, diet, cuisine: context.cuisine || cuisine, mealType: context.mealType || mealType, count, country, lang }) });
       const data = await res.json();
-      if (data.error) { setErrorMsg(data.error); setView('input'); return; }
+      if (data.error) { setErrorMsg(data.error); setView('input'); setJourneyMode(true); return; }
       const resultMeals = Array.isArray(data.meals) ? data.meals : data.meals?.meals || [];
       setMeals(resultMeals); updateStreak(); saveToHistory(resultMeals); setView('results');
-    } catch { setErrorMsg('Something went wrong. Please try again.'); setView('input'); }
+    } catch { setErrorMsg('Something went wrong. Please try again.'); setView('input'); setJourneyMode(true); }
   };
 
   const handleSurprise = async () => {
@@ -546,6 +566,12 @@ export default function Jiff() {
           markAllRead={markAllRead} signOut={signOut}
           navigate={navigate} t={t}
         />
+        {journeyMode && user && view === 'input' && errorMsg && (
+          <div style={{ margin:'8px 16px', padding:'10px 14px', background:'rgba(229,62,62,0.08)', border:'1px solid rgba(229,62,62,0.25)', borderRadius:10, fontSize:13, color:'#C53030', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            {errorMsg}
+            <button onClick={() => setErrorMsg('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#C53030', fontSize:16, lineHeight:1 }}>{'×'}</button>
+          </div>
+        )}
         {journeyMode && user && view === 'input' && (
           <JourneyTiles
             profile={profile} season={season} streak={streak}

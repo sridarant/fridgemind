@@ -70,20 +70,17 @@ export function VideoButton({ recipeName, cuisine = '', lang = 'en', compact = f
     </div>
   );
 
-  // YOUTUBE_API_KEY not set in Vercel — show admin instruction
+  // YOUTUBE_API_KEY not configured — direct YouTube search link
   if (state === 'unconfigured') return (
-    <div style={{display:'flex', alignItems:'center', gap:8, padding:'6px 0', flexWrap:'wrap'}}>
-      <a href={ytFallback} target="_blank" rel="noopener noreferrer" style={{
-        display:'inline-flex', alignItems:'center', gap:4,
-        padding:'4px 10px', borderRadius:8,
-        border:'1px solid rgba(204,0,0,0.2)', background:'rgba(204,0,0,0.05)',
-        color:'#CC0000', fontSize:11, fontWeight:500, textDecoration:'none',
-        fontFamily:"'DM Sans',sans-serif",
-      }}>
-        🔴 Search on YouTube →
-      </a>
-      <span style={{fontSize:10, color:'#9E9E9E', fontStyle:'italic'}}>Add YOUTUBE_API_KEY to Vercel to enable inline videos</span>
-    </div>
+    <a href={ytFallback} target="_blank" rel="noopener noreferrer" style={{
+      display:'inline-flex', alignItems:'center', gap:6,
+      padding:'6px 12px', borderRadius:8,
+      border:'1px solid rgba(204,0,0,0.2)', background:'rgba(204,0,0,0.05)',
+      color:'#CC0000', fontSize:12, fontWeight:500, textDecoration:'none',
+      fontFamily:"'DM Sans',sans-serif",
+    }}>
+      {'\ud83d\udcfa Watch recipe video'}
+    </a>
   );
 
   // No results — YouTube search fallback

@@ -220,7 +220,7 @@ export default function Plans() {
             👶 Kids Meals
           </button>
           <button onClick={() => navigate('/app')} style={{ fontSize: 12, color: C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.15)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-            ← Home
+            ↺ Cook something else
           </button>
         </div>
       </header>

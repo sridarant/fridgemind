@@ -38,7 +38,11 @@ a { color: inherit; text-decoration: none; }
 
 /* On mobile, pad page content above bottom nav */
 @media (max-width: 767px) {
-  body { padding-bottom: 64px; }
+  body { padding-bottom: 68px; overflow-x: hidden; }
+  /* Journey tiles — 2 columns on small screens */
+  .journey-grid-3 { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Profile page tighter padding */
+  div[style*="maxWidth:680"] { padding-left: 14px !important; padding-right: 14px !important; }
 }
 
 /* ── v22: Card tabs ──────────────────────────────────────────────── */

@@ -175,13 +175,7 @@ export default function LittleChefs() {
           diet:'veg', cuisine:'any',
           time:'30 min', servings:2, count:3,
           kidsMode:true,
-          kidsPromptOverride:`Generate 3 recipes for a child to cook, aged ${selectedAge?.label}. Skill: ${selectedSkill?.label} (${selectedSkill?.desc}).
-IMPORTANT: Write each step in simple language a child can follow. Steps must include:
-- Safety warnings marked [ASK AN ADULT] for anything involving heat, sharp knives, or ovens
-- Encouraging language like "Great job!", "You're doing great!"
-- Specific quantities ("pour 1 cup" not just "pour")
-- Fun descriptions of what they'll see/smell/taste
-Age notes: ${selectedAge?.note}.`,
+          kidsPromptOverride:`You are a fun cooking teacher for children. Generate exactly 3 simple recipes for a child aged ${selectedAge?.label||'7-10 yrs'}, skill level: ${selectedSkill?.label||'can help'}. Age notes: ${selectedAge?.note||''}. Mark heat/knife steps with [ASK AN ADULT]. Use short encouraging steps. Return ONLY this JSON, no other text: {"meals":[{"name":"Name","time":"15 min","servings":2,"description":"Short fun description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":200,"protein":"5g","carbs":"30g","fat":"8g"}}]}`,
         }),
       });
       const data = await res.json();

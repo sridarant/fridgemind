@@ -38,7 +38,7 @@ export default function Onboarding() {
   const [saving,   setSaving]   = useState(false);
 
   // Screen 1 state
-  const [diet, setDiet] = useState('');
+  const [diet, setDiet] = useState([]); // multi-select array
 
   // Screen 2 state
   const [cookingFor, setCookingFor] = useState('');
@@ -63,7 +63,7 @@ export default function Onboarding() {
     setSaving(true);
     try {
       const profileData = {
-        food_type:          diet || 'non-veg',
+        food_type:          diet.length > 0 ? diet : ['non-veg'],
         cooking_for:        cookingFor || 'just_me',
         has_kids:           hasKids,
         kids_ages:          kidsAges,
@@ -105,19 +105,19 @@ export default function Onboarding() {
         {screen === 1 && (
           <>
             <div style={{ fontFamily:"'Fraunces',serif", fontSize:26, fontWeight:900, color:C.ink, marginBottom:6 }}>
-              What best describes your diet?
+              What best describes your diet? (select all that apply)
             </div>
             <div style={{ fontSize:13, color:C.muted, marginBottom:28 }}>
               This shapes every recipe Jiff suggests for you.
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
               {DIETS.map(d => (
-                <button key={d.id} onClick={() => setDiet(d.id)}
+                <button key={d.id} onClick={() => setDiet(prev => prev.includes(d.id) ? prev.filter(x=>x!==d.id) : [...prev, d.id])}
                   style={{
                     padding:    '14px 12px',
-                    border:     `2px solid ${diet === d.id ? C.jiff : C.border}`,
+                    border:     `2px solid ${diet.includes(d.id) ? C.jiff : C.border}`,
                     borderRadius: 14,
-                    background: diet === d.id ? 'rgba(255,69,0,0.06)' : 'white',
+                    background: diet.includes(d.id) ? 'rgba(255,69,0,0.06)' : 'white',
                     cursor:     'pointer',
                     textAlign:  'left',
                     fontFamily: "'DM Sans', sans-serif",

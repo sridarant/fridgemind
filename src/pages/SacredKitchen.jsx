@@ -130,7 +130,7 @@ Respond ONLY with valid JSON:
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button onClick={() => navigate('/little-chefs')} style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid '+C.border, background:'white', fontSize:12, cursor:'pointer', color:C.muted }}>👶 Kids Meals</button>
-          <button onClick={() => navigate('/app')} style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid '+C.border, background:'white', fontSize:12, cursor:'pointer', color:C.muted }}>← Home</button>
+          <button onClick={() => navigate('/app')} style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid '+C.border, background:'white', fontSize:12, cursor:'pointer', color:C.muted }}>↺ Cook something else</button>
         </div>
       </div>
 

@@ -82,8 +82,8 @@ export default function Admin() {
     { id:'overview',  label:'Overview' },
     { id:'users',     label:'Users' },
     { id:'waitlist',  label:'Waitlist' },
-    { id:'feedback',  label:'User Feedback' },
-    { id:'crashes',   label:'Crashes' },
+    { id:'feedback',  label:'Feedback' },
+    
     { id:'releases',  label:'Releases' },
     { id:'cicd',      label:'CI/CD' },
     { id:'tests',     label:'Tests' },
@@ -305,8 +305,8 @@ export default function Admin() {
             { group:'Users & Feedback', items:[
               { id:'users',     icon:'👥', label:'Users' },
               { id:'waitlist',  icon:'📋', label:'Waitlist' },
-              { id:'feedback',  icon:'💬', label:'User Feedback' },
-              { id:'crashes',   icon:'💥', label:'Crashes' },
+              { id:'feedback',  icon:'💬', label:'System & Feedback' },
+              
             ]},
             { group:'Releases & Build', items:[
               { id:'releases',  icon:'🚀', label:'Releases' },
@@ -381,7 +381,7 @@ export default function Admin() {
           {activeTab==='users' && <Tab_USERS {...tabProps}/>}
           {activeTab==='waitlist' && <Tab_WAITLIST {...tabProps}/>}
           {activeTab==='feedback' && <Tab_FEEDBACK {...tabProps}/>}
-          {activeTab==='crashes' && <Tab_CRASHES {...tabProps}/>}
+          
           {activeTab==='releases' && <Tab_RELEASES {...tabProps}/>}
           {activeTab==='cicd' && <Tab_CICD {...tabProps}/>}
           {activeTab==='tests' && <Tab_TESTS {...tabProps}/>}

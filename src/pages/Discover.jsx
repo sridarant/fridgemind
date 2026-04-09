@@ -100,6 +100,10 @@ export default function Discover() {
           <div style={{ fontFamily:"'Fraunces',serif", fontSize:24, fontWeight:900, color:C.ink }}>
             Discover
           </div>
+          <button onClick={() => navigate('/app')}
+            style={{ fontSize:12, color:C.muted, background:'none', border:'1px solid rgba(28,10,0,0.12)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>
+            ↺ Cook something else
+          </button>
         </div>
       </div>
 

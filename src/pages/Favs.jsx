@@ -133,7 +133,7 @@ export default function Favs() {
             fontSize:13, color:C.muted, fontFamily:"'DM Sans',sans-serif",
             padding:'4px 0', display:'flex', alignItems:'center', gap:4,
           }}>
-          ← Home
+          ↺ Cook something else
         </button>
       </div>
       <SignInPrompt />
@@ -183,7 +183,7 @@ export default function Favs() {
                 fontSize:13, color:C.muted, fontFamily:"'DM Sans',sans-serif",
                 padding:'4px 0', display:'flex', alignItems:'center', gap:4,
               }}>
-              ← Home
+              ↺ Cook something else
             </button>
           </div>
           {/* Sort */}

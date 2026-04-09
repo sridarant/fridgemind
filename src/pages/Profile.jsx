@@ -325,11 +325,12 @@ export default function Profile() {
   useEffect(() => {
     if (Array.isArray(pantry) && pantry.length > 0) {
       setPantryItems(pantry);
-    } else if (pantry !== undefined && !pantryItems.length) {
-      // First time: pre-populate with Indian pantry defaults
+    } else if (pantry !== null) {
+      // pantry loaded from Supabase but empty → apply Indian defaults
       setPantryItems(INDIAN_PANTRY_DEFAULTS);
     }
-  }, [pantry]);
+    // pantry===null means still loading — don't set anything yet
+  }, [pantry]); // eslint-disable-line
 
   // Load meal history for goals tab
   useEffect(() => {
@@ -404,8 +405,8 @@ export default function Profile() {
       </header>
 
       <div style={{ padding:'20px 20px 0', maxWidth:680, margin:'0 auto' }}>
-        {/* Stats banner */}
-        {user && <StatsBanner streak={streak} cookedCount={cookedCount} avgRating={avgRating} />}
+        {/* Stats banner — hidden in settings view */}
+        {user && !isSettingsView && <StatsBanner streak={streak} cookedCount={cookedCount} avgRating={avgRating} />}
 
         {/* Tab bar — horizontal scroll on mobile */}
         {/* Settings view: no tab bar, back button instead */}
