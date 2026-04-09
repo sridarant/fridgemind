@@ -1,5 +1,6 @@
 // src/pages/admin/tabs/waitlist.jsx
 import { useState, useEffect } from 'react';
+import { fetchWaitlist } from '../../../services/adminService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E', border:'rgba(28,10,0,0.08)', green:'#1D9E75' };
 
@@ -17,7 +18,7 @@ export default function WaitlistTab() {
   const [loading,  setLoading]  = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?action=waitlist', { method:'GET' })
+    fetchWaitlist()
       .then(r => r.json())
       .then(d => { setWaitlist(Array.isArray(d?.waitlist) ? d.waitlist : []); setLoading(false); })
       .catch(() => setLoading(false));

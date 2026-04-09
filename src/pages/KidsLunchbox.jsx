@@ -124,11 +124,6 @@ Respond ONLY with valid JSON:
       if (data.meals?.[0]?.rawPlan) {
         parsed = data.meals[0].rawPlan;
       } else {
-        // Call Claude directly for structured output
-        const r2 = await fetch('/api/comms?action=translate', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ text: prompt + '\n\nReturn ONLY the JSON, no other text.' }),
-        });
         // Fallback: build a static demo plan
         parsed = {
           Monday:    { emoji:'🍱', main:{name:'Cheese paratha triangles',note:'Easy to eat'}, snack:{name:'Banana',note:''}, drink:{name:'Milk',note:''} },

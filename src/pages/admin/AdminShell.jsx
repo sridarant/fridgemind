@@ -6,6 +6,27 @@
 // src/pages/Admin.jsx — Admin dashboard v17
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Tab_OVERVIEW from './tabs/overview.jsx';
+import Tab_USERS from './tabs/users.jsx';
+import Tab_WAITLIST from './tabs/waitlist.jsx';
+import Tab_FEEDBACK from './tabs/feedback.jsx';
+import Tab_CRASHES from './tabs/crashes.jsx';
+import Tab_RELEASES from './tabs/releases.jsx';
+import Tab_CICD from './tabs/cicd.jsx';
+import Tab_TESTS from './tabs/tests.jsx';
+import Tab_STATUS from './tabs/status.jsx';
+import Tab_TOOLS from './tabs/tools.jsx';
+import Tab_API from './tabs/api.jsx';
+import Tab_TECHSTACK from './tabs/techstack.jsx';
+import Tab_SECURITY from './tabs/security.jsx';
+import Tab_RLS from './tabs/rls.jsx';
+import Tab_CONFIG from './tabs/config.jsx';
+import Tab_COMMS from './tabs/comms.jsx';
+import Tab_TECHDOC from './tabs/techdoc.jsx';
+import Tab_ANALYTICS from './tabs/analytics.jsx';
+import Tab_TOKENS from './tabs/tokens.jsx';
+import Tab_PROMPTS from './tabs/prompts.jsx';
+import Tab_UIKIT from './tabs/uikit.jsx';
 
 // ── Status badge for services ────────────────────────────────────
 function StatusBadge({ id, supabaseEnabled }) {
@@ -42,27 +63,6 @@ function Card({ title, children, accent, action }) {
   );
 }
 
-import Tab_OVERVIEW from './tabs/overview.jsx';
-import Tab_USERS from './tabs/users.jsx';
-import Tab_WAITLIST from './tabs/waitlist.jsx';
-import Tab_FEEDBACK from './tabs/feedback.jsx';
-import Tab_CRASHES from './tabs/crashes.jsx';
-import Tab_RELEASES from './tabs/releases.jsx';
-import Tab_CICD from './tabs/cicd.jsx';
-import Tab_TESTS from './tabs/tests.jsx';
-import Tab_STATUS from './tabs/status.jsx';
-import Tab_TOOLS from './tabs/tools.jsx';
-import Tab_API from './tabs/api.jsx';
-import Tab_TECHSTACK from './tabs/techstack.jsx';
-import Tab_SECURITY from './tabs/security.jsx';
-import Tab_RLS from './tabs/rls.jsx';
-import Tab_CONFIG from './tabs/config.jsx';
-import Tab_COMMS from './tabs/comms.jsx';
-import Tab_TECHDOC from './tabs/techdoc.jsx';
-import Tab_ANALYTICS from './tabs/analytics.jsx';
-import Tab_TOKENS from './tabs/tokens.jsx';
-import Tab_PROMPTS from './tabs/prompts.jsx';
-import Tab_UIKIT from './tabs/uikit.jsx';
 
 export default function Admin() {
   const navigate   = useNavigate();
@@ -242,11 +242,11 @@ export default function Admin() {
         <div style={{ fontFamily:"'Fraunces',serif", fontSize:28, fontWeight:900, color:C.ink, marginBottom:4 }}>⚡ Jiff Admin</div>
         <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginBottom:24 }}>Enter the admin key to continue</div>
         <input value={pass} onChange={e=>setPass(e.target.value)}
-          onKeyDown={e=>{ if(e.key==='Enter') pass===ADMIN_KEY?(sessionStorage.setItem('jiff-admin-auth','1'),setAuthed(true)):showToast('Wrong key'); }}
+          onKeyDown={e=>{ if(e.key==='Enter'){if(pass===ADMIN_KEY){sessionStorage.setItem('jiff-admin-auth','1');setAuthed(true);}else{showToast('Wrong key');}} }}
           placeholder="Admin key" type="password"
           style={{ width:'100%', padding:'10px 14px', border:'1.5px solid '+C.borderMid, borderRadius:10, fontSize:13, fontFamily:"'DM Sans',sans-serif", boxSizing:'border-box', marginBottom:12, outline:'none' }}
           autoFocus />
-        <button onClick={()=>pass===ADMIN_KEY?(sessionStorage.setItem('jiff-admin-auth','1'),setAuthed(true)):showToast('Wrong key')}
+        <button onClick={()=>{if(pass===ADMIN_KEY){sessionStorage.setItem('jiff-admin-auth','1');setAuthed(true);}else{showToast('Wrong key');}}}
           style={{ width:'100%', background:C.jiff, color:'white', border:'none', borderRadius:10, padding:'11px', fontSize:13, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
           Sign in
         </button>

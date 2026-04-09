@@ -1,3 +1,4 @@
+import { submitFeedback } from '../services/userService';
 // src/components/FeedbackWidget.jsx
 // Replaced floating chat bubble with a subtle fixed feedback tab on the right edge.
 // Less obtrusive, same functionality. Modal preserved intact.
@@ -33,20 +34,12 @@ export default function FeedbackWidget() {
     if (!message.trim() && rating === 0) return;
     setState('sending');
     try {
-      const res = await fetch('/api/comms?action=feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId:   user?.id || null,
-          email:    user?.email || null,
-          rating, category,
-          message:  message.trim(),
-          page:     typeof window !== 'undefined' ? window.location.pathname : '/',
-          ua:       navigator.userAgent,
-          ts:       Date.now(),
-        }),
+      await submitFeedback({
+        message: message.trim(),
+        type: category,
+        email: user?.email || '',
       });
-      if (res.ok) {
+      {
         setState('done');
         setTimeout(() => {
           setOpen(false); setState('idle');

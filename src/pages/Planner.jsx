@@ -17,6 +17,8 @@ const MEAL_TYPE_OPTIONS = [
   { id:'dinner',    label:'Dinner',    emoji:'🌙', color:'#8B5CF6' },
   { id:'snack',     label:'Snack',     emoji:'🍎', color:'#10B981' },
 ];
+const DAYS       = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap');

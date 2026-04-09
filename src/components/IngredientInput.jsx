@@ -1,3 +1,4 @@
+import { translateIngredients } from '../services/recipeService';
 // src/components/IngredientInput.jsx
 // Autocomplete + voice input + 🌐 ingredient translator (regional → English)
 
@@ -176,13 +177,8 @@ export default function IngredientInput({ ingredients, onChange, pantryIngredien
     setTranslating(true);
     setTranslateResult(null);
     try {
-      const res = await fetch('/api/suggest?action=translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ term, lang }),
-      });
-      const data = await res.json();
-      setTranslateResult(data);
+      const data = await translateIngredients([term], lang).catch(() => null);
+      setTranslateResult(data?.[0] ? { found: true, english: data[0] } : { found: false });
       // If found, populate the input with English name for easy adding
       if (data.found && data.english) {
         // Don't auto-set inputVal — let user click "+ Add" button explicitly

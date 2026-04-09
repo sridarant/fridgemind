@@ -45,7 +45,8 @@ export default function KidsDishes() {
           cuisine:'kid-friendly',
           time:'30 min', servings:2, count:4,
           kidsMode:true,
-          kidsPromptOverride:`Generate exactly 4 kid-friendly recipes for ${selectedAge?.label||'7-10'} children. Occasion: ${selectedOcc?.label||'any'}. Rules: safe temps, appropriate textures, nutritious, fun names kids love. Return ONLY this JSON: {"meals":[{"name":"Fun Name","time":"20 min","servings":2,"description":"Yummy description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":250,"protein":"8g","carbs":"35g","fat":"10g"}}]}`,);
+          kidsPromptOverride:`Generate exactly 4 kid-friendly recipes for ${selectedAge?.label||'7-10'} children. Occasion: ${selectedOcc?.label||'any'}. Rules: safe temps, appropriate textures, nutritious, fun names kids love. Return ONLY this JSON: {"meals":[{"name":"Fun Name","time":"20 min","servings":2,"description":"Yummy description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":250,"protein":"8g","carbs":"35g","fat":"10g"}}]}`,
+      });
       
       setMeals(Array.isArray(data.meals) ? data.meals : []);
       setView('results');

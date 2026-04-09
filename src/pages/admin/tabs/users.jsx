@@ -1,5 +1,6 @@
 // src/pages/admin/tabs/users.jsx
 import { useState, useEffect } from 'react';
+import { fetchUsers } from '../../../services/adminService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E', border:'rgba(28,10,0,0.08)', green:'#1D9E75', gold:'#D97706' };
 
@@ -18,7 +19,7 @@ export default function UsersTab() {
   const [search,   setSearch]  = useState('');
 
   useEffect(() => {
-    fetch('/api/admin?action=users', { method:'GET' })
+    fetchUsers()
       .then(r => r.json())
       .then(d => { setUsers(Array.isArray(d?.users) ? d.users : []); setLoading(false); })
       .catch(() => setLoading(false));

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchHistory } from '../services/historyService';
+import { fetchHistory, deleteHistoryEntry } from '../services/historyService';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -63,7 +63,6 @@ export default function History() {
 
   const handleDelete = async (id) => {
     setDeleting(id);
-    const { deleteHistoryEntry } = await import('../services/historyService');
     await deleteHistoryEntry(id, user.id);
     setHistory(prev => prev.filter(h => h.id !== id));
     setDeleting(null);

@@ -1,3 +1,4 @@
+import { fetchRecipeVideo } from '../../services/userService';
 // src/components/meal/VideoButton.jsx
 // Inline recipe video — fetches via /api/videos, plays in iframe.
 // States: idle | loading | found | notfound | unconfigured
@@ -12,20 +13,11 @@ export function VideoButton({ recipeName, cuisine = '', lang = 'en', compact = f
     if (state !== 'idle') return;
     setState('loading');
     try {
-      const res  = await fetch(`/api/videos?recipe=${encodeURIComponent(recipeName)}&cuisine=${encodeURIComponent(cuisine)}&lang=${lang}`);
-      const data = await res.json();
-
-      // Distinguish: API key missing vs no results
-      if (data.error === 'YouTube API not configured') {
-        setState('unconfigured');
-        return;
-      }
-      if (data.videos?.length) {
-        setVideoData(data.videos[0]);
-        setState('found');
-      } else {
-        setState('notfound');
-      }
+      const video = await fetchRecipeVideo(recipeName, cuisine, lang);
+      if (!video) { setState('notfound'); return; }
+      if (video.unconfigured) { setState('unconfigured'); return; }
+      setVideoData(video);
+      setState('found');
     } catch {
       setState('notfound');
     }

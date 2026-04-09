@@ -1,5 +1,6 @@
 // src/pages/admin/tabs/crashes.jsx
 import { useState, useEffect } from 'react';
+import { fetchFeedback } from '../../../services/adminService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E', border:'rgba(28,10,0,0.08)', red:'#E53E3E', gold:'#D97706' };
 
@@ -17,7 +18,7 @@ export default function CrashesTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?action=feedback', { method:'GET' })
+    fetchFeedback()
       .then(r => r.json())
       .then(d => { setCrashes(Array.isArray(d?.feedback) ? d.feedback.filter(f => f.type === 'crash') : []); setLoading(false); })
       .catch(() => setLoading(false));

@@ -1,3 +1,4 @@
+import { fetchRecipeVideo } from '../services/userService';
 // src/pages/SacredKitchen.jsx — Sacred Kitchen: temple, prasadam & sacred recipes
 // Inclusive of all traditions: Hindu temples, Golden Temple langar, dargah, church, etc.
 
@@ -111,7 +112,6 @@ Respond ONLY with valid JSON:
   const fetchVideo = async (meal) => {
     if (videoData[meal.name]) return;
     try {
-      const { fetchRecipeVideo } = await import('../services/userService');
       const video = await fetchRecipeVideo(meal.name, 'Indian', lang);
       if (video && !video.unconfigured) setVideoData(prev => ({ ...prev, [meal.name]: video }));
     } catch {}

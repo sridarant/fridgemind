@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { VideoButton } from '../meal/VideoButton.jsx';
 
 const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAYS       = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
 const MEAL_TYPE_OPTIONS = [
   { id:'breakfast', label:'Breakfast', emoji:'🌅', color:'#FF9800', bg:'#FFF3E0', dark:'#E65100' },

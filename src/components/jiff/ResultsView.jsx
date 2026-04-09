@@ -3,6 +3,7 @@
 
 import { MealCard } from '../meal/MealCard.jsx';
 import { mealKey }  from '../../lib/mealKey.js';
+import { updateRating } from '../../services/historyService';
 
 const MEAL_TYPE_OPTIONS = [
   { id: 'any', label: 'Any meal', emoji: '🍽️' },
@@ -24,11 +25,7 @@ export default function ResultsView({
     const key = mealKey(meal);
     setRatings(prev => ({ ...prev, [key]: stars }));
     if (user) {
-      fetch('/api/admin?action=meal-history', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, mealName: meal.name, rating: stars }),
-      }).catch(() => {});
+      updateRating({ userId: user.id, mealName: meal.name, rating: stars });
     }
   };
 

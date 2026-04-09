@@ -1,3 +1,4 @@
+import { fetchReleases, triggerDeploy } from '../../../services/adminService';
 // src/pages/admin/tabs/releases.jsx
 // Reads from Supabase releases table (written by api/deploy-hook.js on every deploy)
 
@@ -10,7 +11,7 @@ export default function Tab_RELEASES({ C, Card, releases, setReleases }) {
   const loadFromSupabase = async () => {
     setBusy(true);
     try {
-      const r = await fetch('/api/admin?action=releases');
+      const r = { ok: true, json: async () => await fetchReleases() };
       const d = await r.json();
       if (Array.isArray(d.releases)) {
         setReleases(d.releases);

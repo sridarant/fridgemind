@@ -1,5 +1,6 @@
 // src/pages/admin/tabs/api.jsx
 import { useState, useEffect } from 'react';
+import { fetchAdminStats } from '../../../services/adminService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E', border:'rgba(28,10,0,0.08)', green:'#1D9E75', red:'#E53E3E' };
 
@@ -28,7 +29,7 @@ export default function ApiTab() {
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin?action=stats', { method:'GET' })
+    fetchAdminStats()
       .then(r => r.json())
       .then(d => { setEnvStatus(d.envStatus || null); setLoading(false); })
       .catch(() => setLoading(false));

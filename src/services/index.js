@@ -4,3 +4,4 @@ export * from './recipeService';
 export * from './historyService';
 export * from './userService';
 export * from './plannerService';
+export * from './adminService';

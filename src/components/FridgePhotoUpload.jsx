@@ -1,3 +1,4 @@
+import { detectIngredientsFromPhoto } from '../services/recipeService';
 // src/components/FridgePhotoUpload.jsx
 // Camera + file upload for ingredient detection
 // Camera button: opens native camera on mobile, shows tooltip on desktop
@@ -47,15 +48,9 @@ export default function FridgePhotoUpload({ onIngredients }) {
         r.readAsDataURL(f);
       })));
 
-      const response = await fetch('/api/detect-ingredients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: base64Images }),
-      });
-
-      const data = await response.json();
-      if (data.ingredients?.length) {
-        onIngredients(data.ingredients);
+      const detected = await detectIngredientsFromPhoto(base64Images[0], existingIngredients || []);
+      if (detected.length) {
+        onIngredients(detected);
         setState('done');
       } else {
         setState('error');

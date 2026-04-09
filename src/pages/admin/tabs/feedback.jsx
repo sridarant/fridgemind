@@ -1,5 +1,6 @@
 // src/pages/admin/tabs/feedback.jsx
 import { useState, useEffect } from 'react';
+import { fetchFeedback } from '../../../services/adminService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', muted:'#7C6A5E', border:'rgba(28,10,0,0.08)', green:'#1D9E75', gold:'#D97706' };
 
@@ -21,7 +22,7 @@ export default function FeedbackTab() {
   const [filter,  setFilter]  = useState('all');
 
   useEffect(() => {
-    fetch('/api/admin?action=feedback', { method:'GET' })
+    fetchFeedback()
       .then(r => r.json())
       .then(d => { setItems(Array.isArray(d?.feedback) ? d.feedback : []); setLoading(false); })
       .catch(() => setLoading(false));

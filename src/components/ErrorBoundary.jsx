@@ -12,18 +12,10 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
     try {
-      fetch('/api/comms?action=feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: 'crash',
-          rating: 1,
-          message: `CRASH: ${error?.message}\nStack: ${errorInfo?.componentStack?.slice(0,400)}`,
-          page: window.location.pathname,
-          ua: navigator.userAgent.slice(0, 150),
-          ts: Date.now(),
-        }),
-      }).catch(() => {});
+      submitFeedback({
+        type: 'crash',
+        message: 'CRASH: ' + (error?.message||'unknown') + '\nStack: ' + (errorInfo?.componentStack||'').slice(0,400),
+      });
     } catch {}
   }
 

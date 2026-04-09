@@ -1,3 +1,4 @@
+import { saveSetting } from '../../../services/adminService';
 // src/pages/admin/tabs/analytics.jsx — Admin tab component
 // Props received from AdminShell: C, Card, ADMIN_KEY, adminKey, stats, users,
 //   waitlist, feedback, releases, loading, premiumStatus, lookerUrl,
