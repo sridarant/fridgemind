@@ -182,7 +182,7 @@ export default function FridgeCard({
               const isActive = cuisine===id || (profile.preferred_cuisines.indexOf(id)===0 && cuisine==='any');
               return (
                 <button key={id} onClick={()=>setCuisine(isActive?'any':id)}
-                  style={{ padding:'6px 13px', borderRadius:20, whiteSpace:'nowrap', flexShrink:0, border:'1.5px solid ' + (isActive?cfg.accent:'rgba(28,10,0,0.10)') + ',' background:isActive?cfg.accent+'15':'white', color:isActive?cfg.accent:'#7C6A5E', fontSize:12, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:isActive?600:400, transition:'all 0.12s' }}>
+                  style={{ padding:'6px 13px', borderRadius:20, whiteSpace:'nowrap', flexShrink:0, border:'1.5px solid ' + (isActive?cfg.accent:'rgba(28,10,0,0.10)'), background:isActive?cfg.accent+'15':'white', color:isActive?cfg.accent:'#7C6A5E', fontSize:12, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:isActive?600:400, transition:'all 0.12s' }}>
                   {label}
                 </button>
               );
