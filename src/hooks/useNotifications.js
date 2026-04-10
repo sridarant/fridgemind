@@ -64,5 +64,5 @@ export function useNotifications({ user, supabaseEnabled, streak }) {
     if (user?.id) markNotificationsRead(user.id);
   }, [notifications, user]);
 
-  return { notifications, unreadCount, markAllRead };
+  return { notifications, unreadCount, markAllRead, setNotifications, setUnreadCount };
 }

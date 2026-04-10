@@ -77,7 +77,7 @@ export default function Jiff() {
   // ── Business logic via hooks ───────────────────────────────────
   const {
     meals, view, errorMsg, loadingMessage, factIdx, pantryNudge, ratings, tileContext,
-    setView, setErrorMsg, setFactIdx, setPantryNudge, setRatings,
+    setView, setErrorMsg, setFactIdx, setPantryNudge, setRatings, setTileContext,
     handleSubmit, handleGenerateDirect, handleSurprise, handleRate,
     syncRatings, reset: resetRecipes,
   } = useRecipes({

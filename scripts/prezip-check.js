@@ -278,6 +278,34 @@ for (const file of srcFiles) {
 }
 if (danglingCommaIssues === 0) ok('Dangling comma check: clean');
 
+
+// ── 12. Hook return completeness ──────────────────────────────────
+// Verifies every hook's return {} contains all setters/handlers defined inside it.
+// Catches the recurring "defined in hook, used by caller, not in return" bug.
+console.log('\n── Hook return completeness ──');
+const hookDir = path.join(ROOT, 'src/hooks');
+let hookIssues = 0;
+if (fs.existsSync(hookDir)) {
+  fs.readdirSync(hookDir).filter(f => f.endsWith('.js')).forEach(file => {
+    const src = fs.readFileSync(path.join(hookDir, file), 'utf8');
+    // Find the return block
+    const returnMatch = src.match(/return \{([^}]+)\}/s);
+    if (!returnMatch) return;
+    const returned = new Set(returnMatch[1].split(',').map(s => s.trim().split(':')[0].trim()).filter(Boolean));
+    // Find state setters declared in the hook
+    const setters = [...src.matchAll(/const \[(\w+),\s*(\w+)\]/g)].map(m => m[2]);
+    // Find useCallback functions
+    const callbacks = [...src.matchAll(/const (\w+)\s*=\s*useCallback/g)].map(m => m[1]);
+    const allDefined = [...setters, ...callbacks];
+    const missing = allDefined.filter(name => !returned.has(name) && name !== 'setState');
+    if (missing.length > 0) {
+      err(file + ': defined but not in return: ' + missing.join(', '));
+      hookIssues++;
+    }
+  });
+}
+if (hookIssues === 0) ok('Hook return completeness: all hooks export what they define');
+
 // ── Summary ───────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 if (errors > 0) {

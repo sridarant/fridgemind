@@ -232,7 +232,8 @@ export function useRecipes({
   return {
     meals, view, errorMsg, loadingMessage, factIdx, pantryNudge, ratings, tileContext,
     setView, setMeals, setErrorMsg, setFactIdx, setPantryNudge, setRatings,
-    handleSubmit, handleGenerateDirect, handleSurprise, handleRate,
+    setTileContext, setLoadingMessage,
+    handleSubmit, handleGenerateDirect, handleSurprise, handleRate, handleStreak,
     syncRatings, reset,
   };
 }
