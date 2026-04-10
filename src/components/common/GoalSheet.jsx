@@ -25,7 +25,7 @@ export default function GoalSheet({ onSelect, onClose }) {
 
       {/* Sheet */}
       <div style={{
-        position:'fixed', bottom:0, left:0, right:0,
+        position:'fixed', bottom:0, left:0, right:0, willChange:'transform',
         zIndex:9001, background:'white',
         borderRadius:'20px 20px 0 0',
         padding:'20px 20px 40px',

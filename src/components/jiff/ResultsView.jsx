@@ -19,6 +19,7 @@ export default function ResultsView({
   ratings, setRatings, isFav, toggleFavourite, country,
   pantryNudge, setPantryNudge,
   CUISINE_OPTIONS, tileContext,
+  stapleSuggestion, onDismissStapleSuggestion, onAddStaple,
   handleSurprise, onRate, reset, navigate, t,
 }) {
   // onRate is passed from parent (Jiff.jsx) which handles Supabase sync
@@ -33,6 +34,23 @@ export default function ResultsView({
   return (
     <div className="results-wrap">
       {/* Pantry restock nudge */}
+      {/* Pantry learning nudge — suggest promoting repeat items to weekly staples */}
+      {stapleSuggestion?.items?.length > 0 && !stapleSuggestion.shown && (
+        <div style={{ background:'rgba(29,158,117,0.06)', border:'1px solid rgba(29,158,117,0.2)', borderRadius:12, padding:'10px 14px', marginBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+          <span style={{ fontSize:12, color:'#1D9E75', fontWeight:400, flex:1 }}>
+            {'🌿 You often add '}{stapleSuggestion.items.join(' and ')}{' — save it to your weekly staples?'}
+          </span>
+          <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+            <button onClick={() => onAddStaple?.(stapleSuggestion.items)} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, background:'#1D9E75', color:'white', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>
+              {'+ Add'}
+            </button>
+            <button onClick={() => onDismissStapleSuggestion?.()} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, background:'none', color:'#7C6A5E', border:'1px solid rgba(28,10,0,0.1)', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+              {'Dismiss'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {pantryNudge.length > 0 && (
         <div style={{ background: 'rgba(92,107,192,0.08)', border: '1px solid rgba(92,107,192,0.2)', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13, color: '#3949AB', fontWeight: 300 }}>

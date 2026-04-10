@@ -45,5 +45,12 @@
   <body>
     <noscript>You need to enable JavaScript to run Jiff.</noscript>
     <div id="root"></div>
+    <style>
+      /* iOS safe area — prevents content hiding under home indicator */
+      body { padding-bottom: env(safe-area-inset-bottom, 0px); }
+      /* Ensure -webkit-fill-available works on iOS Safari */
+      html { height: -webkit-fill-available; }
+      body { min-height: 100vh; min-height: -webkit-fill-available; }
+    </style>
   </body>
 </html>

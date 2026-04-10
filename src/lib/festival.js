@@ -78,6 +78,44 @@ const REGIONS = [
   { id:'north_eastern', name:'North Eastern', state:'Assam & beyond', emoji:'\ud83c\udf43', description:'Bamboo shoot, fermented, minimal spice', dishes:['Masor tenga','Pork with bamboo shoot','Alu pitika'] },
 ];
 
+
+// ── Sports calendar — IPL, India cricket, major events ──────────────
+const SPORTS_EVENTS = [
+  // IPL (approx March 22 – May 26 every year)
+  { name:'IPL',          emoji:'🏏', m1:3, d1:22, m2:5, d2:26,
+    label:'Match day snacks', note:'Quick bites for the big game',
+    cuisine:'indian', mealType:'snack', type:'sports' },
+  // India vs Pakistan (June – typically Champions Trophy / World Cup window)
+  { name:'Ind vs Pak',   emoji:'🏏', m1:6, d1:1,  m2:6, d2:30,
+    label:'Game day special', note:'Classic match-day finger food',
+    cuisine:'indian', mealType:'snack', type:'sports' },
+  // FIFA World Cup (Nov–Dec every 4 years — hardcoded for 2026)
+  { name:'FIFA World Cup', emoji:'⚽', m1:11, d1:8, m2:12, d2:19,
+    label:'World Cup snacks', note:'Global game, Indian snacks',
+    cuisine:'any', mealType:'snack', type:'sports' },
+  // Pro Kabaddi (typically July–October)
+  { name:'Pro Kabaddi',  emoji:'🤼', m1:7, d1:1,  m2:10, d2:31,
+    label:'Kabaddi night special', note:'Energising food for the match',
+    cuisine:'indian', mealType:'dinner', type:'sports' },
+];
+
+/**
+ * Returns the active sports event if today falls in its window, else null.
+ * @returns {object|null}
+ */
+export function getActiveSportsEvent() {
+  const now   = new Date();
+  const month = now.getMonth() + 1;
+  const day   = now.getDate();
+  for (const ev of SPORTS_EVENTS) {
+    const inRange = ev.m1 === ev.m2
+      ? month === ev.m1 && day >= ev.d1 && day <= ev.d2
+      : (month === ev.m1 && day >= ev.d1) || (month > ev.m1 && month < ev.m2) || (month === ev.m2 && day <= ev.d2);
+    if (inRange) return ev;
+  }
+  return null;
+}
+
 export function getUpcomingFestival() {
   const now   = new Date();
   const month = now.getMonth() + 1;
@@ -114,4 +152,21 @@ export function getUpcomingFestivals(daysAhead = 30) {
     });
   }
   return results;
+}
+
+/**
+ * Returns a contextual tile for the current day of week.
+ * Mon=prep, Fri=hosting, Sat=adventurous, Sun=leftovers. Others: null.
+ * @returns {object|null}
+ */
+export function getDayOfWeekContext() {
+  const day = new Date().getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const h   = new Date().getHours();
+  const DOW = {
+    0: { label:'Sunday slow cook',   emoji:'♻️', note:'Perfect day for leftover rescue or slow cooking', type:'leftover', mealType:'dinner' },
+    1: { label:'Fresh week start',   emoji:'📅', note:'Plan meals for the week ahead',                  type:'planner',  mealType:'any'    },
+    5: h >= 16 ? { label:'Friday treat',   emoji:'🎉', note:'Host someone or treat yourself tonight',  type:'hosting',  mealType:'dinner' } : null,
+    6: { label:'Weekend special',    emoji:'🌍', note:'Try something new — you have time',              type:'adventure',mealType:'any'    },
+  };
+  return DOW[day] || null;
 }

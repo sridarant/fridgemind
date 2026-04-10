@@ -132,7 +132,7 @@ JSON only — ${maxCount} objects:
       const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] }),
       });
       const data = await aiRes.json();
       if (!aiRes.ok) return res.status(aiRes.status).json({ error: data.error?.message || 'AI error' });
@@ -178,7 +178,7 @@ JSON only — ${maxCount} objects:
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
         body: JSON.stringify({
-          model: 'claude-opus-4-5', max_tokens: 500,
+          model: 'claude-sonnet-4-6', max_tokens: 500,
           messages: [{ role:'user', content: [
             { type:'image', source:{ type:'base64', media_type: mediaType, data: imageBase64 } },
             { type:'text', text: `Determine if this image shows food, ingredients, a fridge, pantry, or kitchen. If not, respond: {"error":"not_food"}\n\nIf food-related, list all food ingredients visible.\nRules: common simple names only; max 20 items; skip non-food items.\nRespond ONLY with valid JSON: {"error":"not_food"} or ["ingredient1","ingredient2"]` }
@@ -364,7 +364,7 @@ Rules: use given ingredients as base; mark pantry staples with *; keep steps con
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] }),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] }),
     });
 
     const data = await response.json();
@@ -382,7 +382,7 @@ Rules: use given ingredients as base; mark pantry staples with *; keep steps con
     const usage = data.usage || {};
     logTokenUsage({
       endpoint: 'suggest',
-      model: 'claude-opus-4-5',
+      model: 'claude-sonnet-4-6',
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,
       sbUrl: process.env.REACT_APP_SUPABASE_URL,

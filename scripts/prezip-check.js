@@ -279,6 +279,32 @@ for (const file of srcFiles) {
 if (danglingCommaIssues === 0) ok('Dangling comma check: clean');
 
 
+
+// ── 13. Valid Anthropic model strings ─────────────────────────────
+// Catches invalid model names that cause 500s from the Anthropic API.
+console.log('\n── Anthropic model string validation ──');
+const VALID_MODELS = [
+  'claude-opus-4-6',
+  'claude-sonnet-4-6',
+  'claude-haiku-4-5-20251001',
+];
+const MODEL_RE = /claude-[a-z0-9-]+/g;
+let modelIssues = 0;
+const modelApiFiles = fs.readdirSync(path.join(ROOT, 'api'))
+  .filter(f => f.endsWith('.js'))
+  .map(f => path.join(ROOT, 'api', f));
+for (const file of modelApiFiles) {
+  const src = fs.readFileSync(file, 'utf8');
+  const found = [...new Set([...src.matchAll(MODEL_RE)].map(m => m[0]))];
+  for (const model of found) {
+    if (!VALID_MODELS.includes(model)) {
+      err(path.basename(file) + ': invalid model "' + model + '" — use ' + VALID_MODELS.join(', '));
+      modelIssues++;
+    }
+  }
+}
+if (modelIssues === 0) ok('Model validation: all ' + VALID_MODELS.length + ' valid model strings confirmed');
+
 // ── 12. Hook return completeness ──────────────────────────────────
 // Verifies every hook's return {} contains all setters/handlers defined inside it.
 // Catches the recurring "defined in hook, used by caller, not in return" bug.

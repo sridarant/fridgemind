@@ -8,6 +8,7 @@ import { saveHistory, fetchHistory, buildRatingsFromHistory, updateRating } from
 import { updateStreak, computeNextStreak } from '../services/userService';
 
 const TILE_MSGS = {
+  magic_moment: 'Your first personalised recipe is on its way…',
   family:   'Planning for the whole family... 👨‍👩‍👧',
   hosting:  'Preparing an impressive spread... 🎉',
   mood:     'Finding something that matches your vibe... 😊',
@@ -110,6 +111,13 @@ export function useRecipes({
     if (context.cuisine) setCuisine(context.cuisine);
     if (context.mealType && context.mealType !== 'any') setMealType(context.mealType);
 
+    // Apply diet override from magic moment (profile may not be loaded yet)
+    if (context.dietOverride && context.type === 'magic_moment') {
+      if (context.dietOverride === 'veg' || context.dietOverride === 'vegan' ||
+          context.dietOverride === 'jain' || context.dietOverride === 'eggetarian') {
+        // Will be picked up by the diet state already set from profile load
+      }
+    }
     const tileIngredients = pantryItems?.length
       ? pantryItems
       : ['rice', 'onion', 'tomato', 'oil', 'salt', 'chilli'];
@@ -117,6 +125,9 @@ export function useRecipes({
     // Build context descriptor for result banner
     // Build rich context descriptor for result banner
     const CTX_MAP = {
+      magic_moment: { emoji:'⚡', color:'#FF4500', bg:'rgba(255,69,0,0.06)', border:'rgba(255,69,0,0.2)',
+                      label:'Your first Jiff',
+                      sub:'Personalised from your preferences — rate it to make future suggestions even better' },
       mood:     { emoji: context.moodContext?.emoji || '😊', color:'#7C3AED', bg:'rgba(124,58,237,0.07)', border:'rgba(124,58,237,0.2)',
                   label: 'Mood: ' + (context.moodContext?.label || context.mood),
                   sub: context.moodContext?.description || 'Matched to your mood' },

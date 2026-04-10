@@ -25,14 +25,14 @@ export default function BottomNav() {
   return (
     <nav style={{
       position:   'fixed', bottom:0, left:0, right:0,
-      height:     60,
+      height:     'calc(60px + env(safe-area-inset-bottom, 0px))',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       background: 'white',
       borderTop:  '1px solid rgba(28,10,0,0.08)',
       display:    'grid',
       gridTemplateColumns: 'repeat(4, 1fr)',
       zIndex:     8000,
       fontFamily: "'DM Sans', sans-serif",
-      // Hidden on desktop via CSS class
     }} className="bottom-nav">
       {TABS.map(tab => {
         const active = activeId === tab.id;

@@ -71,6 +71,8 @@ export default function Jiff() {
   const [showUserMenu,    setShowUserMenu]    = useState(false);
   const [showNotifPanel,  setShowNotifPanel]  = useState(false);
   const [streak,          setStreak]          = useState(0);
+  const [mealHistory,     setMealHistory]     = useState([]);
+  const [stapleSuggestion,setStapleSuggestion]= useState(null);
 
   const ingredients = [...new Set([...fridgeItems, ...pantryItems])];
 
@@ -135,6 +137,10 @@ export default function Jiff() {
   }, [profile]);
 
   useEffect(() => { if (user) syncRatings(user.id); }, [user]); // eslint-disable-line
+  useEffect(() => {
+    if (!user) return;
+    fetchHistory(user.id).then(h => { if (h.length) setMealHistory(h); }).catch(() => {});
+  }, [user]); // eslint-disable-line
 
   // ── Handlers ───────────────────────────────────────────────────
   const handleEmailSignIn = async () => {
@@ -204,6 +210,14 @@ export default function Jiff() {
           isFav={isFav} toggleFavourite={toggleFavourite} country={country}
           pantryNudge={pantryNudge} setPantryNudge={setPantryNudge}
           CUISINE_OPTIONS={CUISINE_OPTIONS} tileContext={tileContext}
+          stapleSuggestion={stapleSuggestion}
+          onDismissStapleSuggestion={() => setStapleSuggestion(null)}
+          onAddStaple={async (items) => {
+            // Add items to profile weekly_staples + savePantry
+            const newStaples = [...(profile?.weekly_staples || []), ...items.map(i => i.toLowerCase())];
+            await updateProfile?.({ weekly_staples: newStaples });
+            setStapleSuggestion(null);
+          }}
           handleSurprise={() => handleSurprise(season)}
           onRate={(meal, stars) => handleRate(meal, stars, user?.id, mealKey)}
           reset={reset} navigate={navigate} t={t}
@@ -273,7 +287,15 @@ export default function Jiff() {
           isPremium={isPremium} trialActive={trialActive} PAID_RECIPE_CAP={PAID_RECIPE_CAP}
           familySelected={familySelected} setFamilySelected={setFamilySelected}
           ingredients={ingredients}
-          handleSubmit={() => handleSubmit(ingredients, () => setGateDismissed(false))}
+          handleSubmit={() => {
+            // Track fridge items for pantry learning
+            if (fridgeItems.length) {
+              trackStapleUsage(fridgeItems);
+              const suggestions = getStapleSuggestions(profile?.weekly_staples || []);
+              if (suggestions.length) setStapleSuggestion({ items: suggestions, shown: false });
+            }
+            handleSubmit(ingredients, () => setGateDismissed(false));
+          }}
           setGateDismissed={setGateDismissed}
           navigate={navigate} t={t}
         />
@@ -323,9 +345,12 @@ export default function Jiff() {
         {journeyMode && user && view === 'input' && (
           <JourneyTiles
             profile={profile} season={season} streak={streak}
+            country={profile?.country || 'IN'}
+            ratings={ratings} mealHistory={mealHistory}
             onSelectFridge={() => { setJourneyMode(false); setInputMode('fridge'); }}
             onGenerateDirect={handleGenerateDirect}
             onLeftoverRescue={handleLeftoverRescue}
+            onWeatherGenerate={(ctx) => handleGenerateDirect({ weather:ctx?.weather, type:'weather', mealType:'any' })}
           />
         )}
 
