@@ -1,9 +1,9 @@
-import { detectIngredientsFromPhoto } from '../services/recipeService';
 // src/components/FridgePhotoUpload.jsx
 // Camera + file upload for ingredient detection
 // Camera button: opens native camera on mobile, shows tooltip on desktop
 
 import { useState, useRef, useEffect } from 'react';
+import { detectIngredientsFromPhoto } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5',
@@ -18,7 +18,7 @@ function isMobileDevice() {
   ) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent));
 }
 
-export default function FridgePhotoUpload({ onIngredients }) {
+export default function FridgePhotoUpload({ onIngredients, existingIngredients = [] }) {
   const fileRef   = useRef(null);
   const cameraRef = useRef(null);
   const [state,    setState]    = useState('idle');   // idle | loading | done | error

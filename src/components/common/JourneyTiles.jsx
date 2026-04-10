@@ -110,6 +110,28 @@ export function JourneyTiles({
       {/* Weather banner — always shown */}
       <WeatherBanner onTap={onWeatherGenerate} />
 
+      {/* Time-based smart suggestion strip */}
+      {(() => {
+        const h = new Date().getHours();
+        const timeCtx = h >= 5 && h < 11 ? { label:"What's for breakfast?", emoji:'🌅', mealType:'breakfast', color:'#D97706', bg:'rgba(217,119,6,0.07)', border:'rgba(217,119,6,0.2)' }
+          : h >= 11 && h < 15 ? { label:"Time for lunch", emoji:'☀️', mealType:'lunch', color:'#2563EB', bg:'rgba(37,99,235,0.07)', border:'rgba(37,99,235,0.2)' }
+          : h >= 15 && h < 18 ? { label:"Afternoon snack time", emoji:'🍎', mealType:'snack', color:'#16A34A', bg:'rgba(22,163,74,0.07)', border:'rgba(22,163,74,0.2)' }
+          : h >= 18 && h < 22 ? { label:"What's for dinner tonight?", emoji:'🌙', mealType:'dinner', color:'#7C3AED', bg:'rgba(124,58,237,0.07)', border:'rgba(124,58,237,0.2)' }
+          : null;
+        if (!timeCtx) return null;
+        return (
+          <button onClick={() => onGenerateDirect?.({ mealType: timeCtx.mealType, type: timeCtx.mealType })}
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderRadius:14, marginBottom:12, background: timeCtx.bg, border:'1px solid ' + timeCtx.border, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", textAlign:'left', transition:'all 0.15s' }}>
+            <span style={{ fontSize:24, flexShrink:0 }}>{timeCtx.emoji}</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:14, fontWeight:600, color: timeCtx.color }}>{timeCtx.label}</div>
+              <div style={{ fontSize:11, color:'#7C6A5E', fontWeight:300, marginTop:1 }}>Tap to generate ideas now</div>
+            </div>
+            <span style={{ fontSize:16, color: timeCtx.color, flexShrink:0 }}>{'→'}</span>
+          </button>
+        );
+      })()}
+
       {/* RIGHT NOW — 2-row grid: Fridge Mood Seasonal / Goal OrderIn */}
       <GroupLabel>Right now</GroupLabel>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:10 }}>

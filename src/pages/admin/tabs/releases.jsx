@@ -11,8 +11,7 @@ export default function Tab_RELEASES({ C, Card, releases, setReleases }) {
   const loadFromSupabase = async () => {
     setBusy(true);
     try {
-      const r = { ok: true, json: async () => await fetchReleases() };
-      const d = await r.json();
+      const d = await fetchReleases();
       if (Array.isArray(d.releases)) {
         setReleases(d.releases);
         setMsg('Loaded ' + d.releases.length + ' release(s) from Supabase');

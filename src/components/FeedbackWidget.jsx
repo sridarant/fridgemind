@@ -30,22 +30,22 @@ export default function FeedbackWidget() {
   const [message,  setMessage]  = useState('');
   const [state,    setState]    = useState('idle');
 
+  const reset = () => {
+    setOpen(false); setState('idle');
+    setRating(0); setMessage(''); setCategory('other');
+  };
+
   const handleSubmit = async () => {
     if (!message.trim() && rating === 0) return;
     setState('sending');
     try {
       await submitFeedback({
-        message: message.trim(),
+        message: message.trim() || ('Rating: ' + rating + '/5'),
         type: category,
         email: user?.email || '',
       });
-      {
-        setState('done');
-        setTimeout(() => {
-          setOpen(false); setState('idle');
-          setRating(0); setMessage(''); setCategory('other');
-        }, 2500);
-      } else { setState('error'); }
+      setState('done');
+      setTimeout(reset, 2500);
     } catch { setState('error'); }
   };
 

@@ -76,7 +76,7 @@ export default function Jiff() {
 
   // ── Business logic via hooks ───────────────────────────────────
   const {
-    meals, view, errorMsg, loadingMessage, factIdx, pantryNudge, ratings,
+    meals, view, errorMsg, loadingMessage, factIdx, pantryNudge, ratings, tileContext,
     setView, setErrorMsg, setFactIdx, setPantryNudge, setRatings,
     handleSubmit, handleGenerateDirect, handleSurprise, handleRate,
     syncRatings, reset: resetRecipes,
@@ -152,12 +152,17 @@ export default function Jiff() {
 
   const handleLeftoverRescue = () => {
     setJourneyMode(false); setInputMode('leftover');
-    setFridgeItems(['leftover rice', 'leftover curry']); setView('input');
+    setFridgeItems(['leftover rice', 'leftover curry']);
+    setTileContext({ emoji:'♻️', color:'#D97706', bg:'rgba(217,119,6,0.08)',
+      border:'rgba(217,119,6,0.25)', label:'Leftover rescue',
+      sub:"Turning what you have into something great" });
+    setView('input');
   };
 
   const reset = () => {
     resetRecipes(); setFridgeItems([]); setPantryItems(pantry || []);
     setPantryLoaded(true); setInputMode('direct'); setJourneyMode(!!user);
+    setTileContext(null);
   };
 
   const showSignInGate = !authLoading && !user && !gateDismissed;
@@ -198,7 +203,7 @@ export default function Jiff() {
           ratings={ratings} setRatings={setRatings}
           isFav={isFav} toggleFavourite={toggleFavourite} country={country}
           pantryNudge={pantryNudge} setPantryNudge={setPantryNudge}
-          CUISINE_OPTIONS={CUISINE_OPTIONS}
+          CUISINE_OPTIONS={CUISINE_OPTIONS} tileContext={tileContext}
           handleSurprise={() => handleSurprise(season)}
           onRate={(meal, stars) => handleRate(meal, stars, user?.id, mealKey)}
           reset={reset} navigate={navigate} t={t}

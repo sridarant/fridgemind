@@ -35,6 +35,7 @@ export function useRecipes({
   const [errorMsg,       setErrorMsg]       = useState('');
   const [loadingMessage, setLoadingMessage] = useState('Finding your perfect recipes...');
   const [factIdx,        setFactIdx]        = useState(0);
+  const [tileContext,    setTileContext]    = useState(null); // { type, label, emoji, color, bg }
   const [pantryNudge,    setPantryNudge]    = useState([]);
   const [ratings,        setRatings]        = useState(() => {
     try { return JSON.parse(localStorage.getItem('jiff-ratings') || '{}'); } catch { return {}; }
@@ -113,6 +114,32 @@ export function useRecipes({
       ? pantryItems
       : ['rice', 'onion', 'tomato', 'oil', 'salt', 'chilli'];
 
+    // Build context descriptor for result banner
+    // Build rich context descriptor for result banner
+    const CTX_MAP = {
+      mood:     { emoji: context.moodContext?.emoji || '😊', color:'#7C3AED', bg:'rgba(124,58,237,0.07)', border:'rgba(124,58,237,0.2)',
+                  label: 'Mood: ' + (context.moodContext?.label || context.mood),
+                  sub: context.moodContext?.description || 'Matched to your mood' },
+      goal:     { emoji: context.goalContext?.emoji || '🎯', color:'#1D9E75', bg:'rgba(29,158,117,0.07)', border:'rgba(29,158,117,0.2)',
+                  label: 'Goal: ' + (context.goalContext?.label || context.goal),
+                  sub: context.goalContext?.description || 'Recipes that work for your goal' },
+      family:   { emoji:'👨‍👩‍👧', color:'#2563EB', bg:'rgba(37,99,235,0.07)', border:'rgba(37,99,235,0.2)',
+                  label:'Family meal', sub:'Suitable for all ages and dietary needs' },
+      hosting:  { emoji:'🎉', color:'#D97706', bg:'rgba(217,119,6,0.07)', border:'rgba(217,119,6,0.2)',
+                  label:'Hosting guests', sub:'Impressive dishes for 8–12 people, can be prepped ahead' },
+      seasonal: { emoji:'🌿', color:'#16A34A', bg:'rgba(22,163,74,0.07)', border:'rgba(22,163,74,0.2)',
+                  label:'In season now', sub:'Using the freshest produce available this month' },
+      festival: { emoji:'🪔', color:'#DC2626', bg:'rgba(220,38,38,0.07)', border:'rgba(220,38,38,0.2)',
+                  label:'Festival special', sub:'Traditional recipes for the occasion' },
+      leftover: { emoji:'♻️', color:'#D97706', bg:'rgba(217,119,6,0.08)', border:'rgba(217,119,6,0.25)',
+                  label:'Leftover rescue', sub:'Turning what you have into something great' },
+    };
+    const ctxType = context.mood ? 'mood' : context.goal ? 'goal'
+      : context.hosting ? 'hosting' : context.family ? 'family'
+      : context.seasonal ? 'seasonal'
+      : context.type === 'festival' ? 'festival'
+      : context.type === 'leftover' ? 'leftover' : null;
+    setTileContext(ctxType ? CTX_MAP[ctxType] : null);
     setView('loading'); setFactIdx(0); setJourneyMode(false);
     try {
       const count = isPremium ? PAID_RECIPE_CAP : 1;
@@ -203,7 +230,7 @@ export function useRecipes({
   }, []);
 
   return {
-    meals, view, errorMsg, loadingMessage, factIdx, pantryNudge, ratings,
+    meals, view, errorMsg, loadingMessage, factIdx, pantryNudge, ratings, tileContext,
     setView, setMeals, setErrorMsg, setFactIdx, setPantryNudge, setRatings,
     handleSubmit, handleGenerateDirect, handleSurprise, handleRate,
     syncRatings, reset,

@@ -11,23 +11,16 @@ export default function Tab_TOOLS({ C, Card, ADMIN_KEY, premiumStatus, setPremiu
   const handleResetTrial = async () => {
     if (!resetEmail.includes('@')) { setResetResult('Enter a valid email'); return; }
     try {
-      const r = await fetch('/api/admin?action=reset-trial', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset-trial', email: resetEmail, adminKey: ADMIN_KEY }),
-      });
-      const d = await r.json();
-      setResetResult(r.ok ? `✓ Trial reset for ${resetEmail}` : `✗ ${d.error || 'Error'}`);
-    } catch { setResetResult('✗ Network error'); }
+      await resetTrial(resetEmail);
+      setResetResult('✓ Trial reset for ' + resetEmail);
+    } catch (e) { setResetResult('✗ ' + (e.message || 'Network error')); }
   };
 
   const handleBroadcast = async () => {
     if (!broadcastMsg.trim()) return;
     try {
-      const r = await fetch('/api/admin?action=broadcast', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: broadcastMsg, adminKey: ADMIN_KEY }),
-      });
-      if (r.ok) setBroadcastSent(true);
+      await broadcastMessage(broadcastMsg);
+      setBroadcastSent(true);
     } catch {}
   };
 

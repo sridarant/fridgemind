@@ -18,16 +18,15 @@ export default function ResultsView({
   ingredients, profile, user, isPremium, trialActive, PAID_RECIPE_CAP,
   ratings, setRatings, isFav, toggleFavourite, country,
   pantryNudge, setPantryNudge,
-  CUISINE_OPTIONS,
-  handleSurprise, reset, navigate, t,
+  CUISINE_OPTIONS, tileContext,
+  handleSurprise, onRate, reset, navigate, t,
 }) {
-  const handleRate = (meal, stars) => {
+  // onRate is passed from parent (Jiff.jsx) which handles Supabase sync
+  const handleRate = onRate || ((meal, stars) => {
     const key = mealKey(meal);
     setRatings(prev => ({ ...prev, [key]: stars }));
-    if (user) {
-      updateRating({ userId: user.id, mealName: meal.name, rating: stars });
-    }
-  };
+    if (user) updateRating({ userId: user.id, mealName: meal.name, rating: stars });
+  });
 
   const topRated = Object.entries(ratings).filter(([, r]) => r >= 4).map(([k]) => k);
 
@@ -44,8 +43,30 @@ export default function ResultsView({
         </div>
       )}
 
+      {/* Context banner — themed per tile type */}
+      {tileContext && (
+        <div style={{
+          display:'flex', alignItems:'center', gap:12,
+          padding:'14px 16px', borderRadius:14, marginBottom:20,
+          background: tileContext.bg || 'rgba(255,69,0,0.06)',
+          border:'1px solid ' + (tileContext.border || 'rgba(255,69,0,0.18)'),
+        }}>
+          <span style={{ fontSize:28, flexShrink:0 }}>{tileContext.emoji}</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:14, fontWeight:700, color: tileContext.color || '#CC3700', marginBottom:2 }}>
+              {tileContext.label}
+            </div>
+            <div style={{ fontSize:12, color:'#7C6A5E', fontWeight:300, lineHeight:1.5 }}>
+              {tileContext.sub || 'Recipes personalised for this context'}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="results-header">
-        <div className="results-title">{'Jiffed. ⚡ Here\'s your menu.'}</div>
+        <div className="results-title">
+          {tileContext?.label?.includes('Leftover') ? '♻️ Rescued! Here\'s what to make.' : 'Jiffed. ⚡ Here\'s your menu.'}
+        </div>
         <div className="results-sub">
           {'Tap ♥ to save · expand for full recipe + timers · adjust servings inside'}
           {profile && (
