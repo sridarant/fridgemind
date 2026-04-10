@@ -305,6 +305,66 @@ for (const file of modelApiFiles) {
 }
 if (modelIssues === 0) ok('Model validation: all ' + VALID_MODELS.length + ' valid model strings confirmed');
 
+
+// ── 14. Used-but-not-imported service functions ─────────────────────
+// Catches the recurring "function called in component but never imported" bug.
+// Scans pages + components for calls to known service exports and verifies
+// each one appears in an import statement in that same file.
+console.log('\n── Used-but-not-imported service functions ──');
+
+const SERVICE_EXPORTS = {
+  historyService:  ['fetchHistory','saveHistory','deleteHistoryEntry','updateRating','buildRatingsFromHistory','trackStapleUsage','getStapleSuggestions','dismissStapleSuggestion'],
+  recipeService:   ['generateRecipes','translateIngredients','detectIngredientsFromPhoto'],
+  userService:     ['updateStreak','submitFeedback','fetchBroadcasts','markNotificationsRead','fetchRecipeVideo','fetchStats'],
+  plannerService:  ['generatePlan'],
+  adminService:    ['fetchAdminStats','fetchUsers','fetchWaitlist','fetchFeedback','fetchReleases','fetchTokenStats','saveSetting','resetTrial','broadcastMessage','triggerDeploy'],
+};
+
+const ALL_SERVICE_FNS = Object.values(SERVICE_EXPORTS).flat();
+const SCAN_DIRS = ['src/pages', 'src/components'];
+let undef_issues = 0;
+
+for (const dir of SCAN_DIRS) {
+  if (!fs.existsSync(path.join(ROOT, dir))) continue;
+  const files = [];
+  const walk = (d) => {
+    for (const f of fs.readdirSync(d)) {
+      const full = path.join(d, f);
+      if (fs.statSync(full).isDirectory()) { walk(full); continue; }
+      if (f.endsWith('.jsx') || f.endsWith('.js')) files.push(full);
+    }
+  };
+  walk(path.join(ROOT, dir));
+
+  for (const file of files) {
+    const src = fs.readFileSync(file, 'utf8');
+    // Collect imported names from this file
+    const importedNames = new Set();
+    for (const m of src.matchAll(/import\s*\{([^}]+)\}/g)) {
+      for (const name of m[1].split(',')) {
+        const clean = name.trim().split(' as ')[0].trim();
+        if (clean) importedNames.add(clean);
+      }
+    }
+    // Also collect destructured from hooks: const { a, b } = useX()
+    for (const m of src.matchAll(/const\s*\{([^}]+)\}\s*=\s*use\w+\(/g)) {
+      for (const name of m[1].split(',')) {
+        const clean = name.trim().split(':')[0].trim();
+        if (clean) importedNames.add(clean);
+      }
+    }
+    // Check if any service function is CALLED but not imported
+    for (const fn of ALL_SERVICE_FNS) {
+      const called = src.includes(fn + '(') || src.includes(fn + '?.');
+      if (called && !importedNames.has(fn)) {
+        err(path.basename(file) + ': calls ' + fn + '() but never imports it');
+        undef_issues++;
+      }
+    }
+  }
+}
+if (undef_issues === 0) ok('Used-but-not-imported: all service calls are imported');
+
 // ── 12. Hook return completeness ──────────────────────────────────
 // Verifies every hook's return {} contains all setters/handlers defined inside it.
 // Catches the recurring "defined in hook, used by caller, not in return" bug.

@@ -30,6 +30,7 @@ const Stats       = lazy(() => import('./pages/Stats'));
 const ApiDocs     = lazy(() => import('./pages/ApiDocs'));
 const Admin       = lazy(() => import('./pages/Admin'));
 const Insights    = lazy(() => import('./pages/Insights'));
+const PlanHub     = lazy(() => import('./pages/PlanHub'));
 const LittleChefs = lazy(() => import('./pages/LittleChefs'));
 const KidsLunchbox= lazy(() => import('./pages/KidsLunchbox'));
 const KidsDishes  = lazy(() => import('./pages/KidsDishes'));
@@ -68,6 +69,7 @@ function AppShell() {
           <Route path="/api-docs"            element={<ApiDocs />} />
           <Route path="/admin"               element={<Admin />} />
           <Route path="/insights"            element={<Insights />} />
+          <Route path="/plan"                element={<PlanHub />} />
           <Route path="/little-chefs"        element={<LittleChefs />} />
           <Route path="/little-chefs/lunchbox" element={<KidsLunchbox />} />
           <Route path="/little-chefs/dishes"   element={<KidsDishes />} />

@@ -6,20 +6,24 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const TABS = [
-  { id:'home',      path:'/app',      emoji:'🏠', label:'Home'      },
-  { id:'discover',  path:'/discover', emoji:'🌟', label:'Discover'  },
-  { id:'favs',      path:'/favs',     emoji:'❤️', label:'Favourites'},
-  { id:'profile',   path:'/profile',  emoji:'👤', label:'Profile'   },
+  { id:'home',    path:'/app',      emoji:'🏠', label:'Home'    },
+  { id:'saved',   path:'/favs',     emoji:'🔖', label:'Saved'   },
+  { id:'plan',    path:'/plan',     emoji:'📅', label:'Plan'    },
+  { id:'profile', path:'/profile',  emoji:'👤', label:'Me'      },
 ];
 
 export default function BottomNav() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const activeId = pathname === '/app'      ? 'home'
-                 : pathname === '/discover' ? 'discover'
-                 : pathname === '/favs'     ? 'favs'
-                 : pathname.startsWith('/profile') ? 'profile'
+  const activeId = pathname === '/app'                     ? 'home'
+                 : pathname === '/favs'                    ? 'saved'
+                 : pathname === '/plan' ||
+                   pathname === '/planner' ||
+                   pathname === '/plans' ||
+                   pathname.startsWith('/little-chefs') ||
+                   pathname === '/sacred'                  ? 'plan'
+                 : pathname.startsWith('/profile')         ? 'profile'
                  : null;
 
   return (

@@ -14,6 +14,7 @@ import OrderInSheet            from './OrderInSheet.jsx';
 import GoalSheet               from './GoalSheet.jsx';
 import { getUpcomingFestival, getActiveSportsEvent, getDayOfWeekContext, getCurrentSeason } from '../../lib/festival.js';
 import { getUserContext }      from '../../lib/weather.js';
+import RetentionNudges         from './RetentionNudges.jsx';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -225,6 +226,8 @@ function getPersonalisedPicks({ profile, ratings, festival, sports, weather }) {
 export function JourneyTiles({
   profile, season, streak, country,
   ratings, mealHistory,
+  didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
+  onConfirmCooked, onDismissNudge,
   onSelectFridge, onGenerateDirect, onLeftoverRescue, onWeatherGenerate,
 }) {
   const navigate = useNavigate();
@@ -301,6 +304,16 @@ export function JourneyTiles({
             {'🔥 '}{streak}{'-day streak!'}
           </div>
         )}
+
+        <RetentionNudges
+          welcomeBack={welcomeBack}
+          weeklyDigest={weeklyDigest}
+          milestone={milestone}
+          didYouCookNudge={didYouCookNudge}
+          challenge={challenge}
+          onConfirmCooked={onConfirmCooked}
+          onDismissNudge={onDismissNudge}
+        />
 
         {/* 7-day cooking calendar */}
         <CookingCalendar mealHistory={mealHistory} />

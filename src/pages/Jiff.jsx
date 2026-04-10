@@ -7,6 +7,7 @@ import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale, getCurrentSeason } from '../contexts/LocaleContext';
 import { useRecipes }       from '../hooks/useRecipes';
+import { useRetention }    from '../hooks/useRetention';
 import { useNotifications } from '../hooks/useNotifications';
 import SmartGreeting    from '../components/SmartGreeting';
 import { JourneyTiles } from '../components/common/JourneyTiles.jsx';
@@ -17,6 +18,7 @@ import LoadingView      from '../components/jiff/LoadingView';
 import ResultsView      from '../components/jiff/ResultsView';
 import styles           from '../styles/jiffStyles';
 import { mealKey }      from '../lib/mealKey.js';
+import { fetchHistory, trackStapleUsage, getStapleSuggestions } from '../services/historyService';
 
 const FACTS = [
   'Raiding your fridge\u2026','Cross-referencing 50,000+ recipes\u2026',
@@ -29,7 +31,7 @@ export default function Jiff() {
   const genCtxNav = location.state?.generateContext || null;
 
   const {
-    user, profile, pantry, toggleFavourite, isFav,
+    user, profile, pantry, updateProfile, toggleFavourite, isFav,
     signInWithGoogle, signInWithEmail, signOut, supabaseEnabled, authLoading,
   } = useAuth();
 
@@ -94,6 +96,11 @@ export default function Jiff() {
     user, supabaseEnabled, streak,
   });
 
+  const {
+    didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
+    recordGeneration, confirmCooked, dismissNudge, recordRating,
+  } = useRetention({ mealHistory, ratings, user });
+
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
     if (!pantryLoaded && pantry?.length) { setPantryItems(pantry); setPantryLoaded(true); }
@@ -137,6 +144,13 @@ export default function Jiff() {
   }, [profile]);
 
   useEffect(() => { if (user) syncRatings(user.id); }, [user]); // eslint-disable-line
+
+  // Record generation for 'did you cook this' nudge
+  useEffect(() => {
+    if (view === 'results' && meals.length && user) {
+      recordGeneration(meals[0]?.name || 'your meal');
+    }
+  }, [view]); // eslint-disable-line
   useEffect(() => {
     if (!user) return;
     fetchHistory(user.id).then(h => { if (h.length) setMealHistory(h); }).catch(() => {});
@@ -219,7 +233,7 @@ export default function Jiff() {
             setStapleSuggestion(null);
           }}
           handleSurprise={() => handleSurprise(season)}
-          onRate={(meal, stars) => handleRate(meal, stars, user?.id, mealKey)}
+          onRate={(meal, stars) => { handleRate(meal, stars, user?.id, mealKey); recordRating(); }}
           reset={reset} navigate={navigate} t={t}
         />
       </>
@@ -347,6 +361,13 @@ export default function Jiff() {
             profile={profile} season={season} streak={streak}
             country={profile?.country || 'IN'}
             ratings={ratings} mealHistory={mealHistory}
+            didYouCookNudge={didYouCookNudge}
+            weeklyDigest={weeklyDigest}
+            welcomeBack={welcomeBack}
+            challenge={challenge}
+            milestone={milestone}
+            onConfirmCooked={confirmCooked}
+            onDismissNudge={dismissNudge}
             onSelectFridge={() => { setJourneyMode(false); setInputMode('fridge'); }}
             onGenerateDirect={handleGenerateDirect}
             onLeftoverRescue={handleLeftoverRescue}
