@@ -5,6 +5,7 @@ import { fetchRecipeVideo } from '../services/userService';
 import { useState, useEffect } from 'react';
 import { VideoButton } from '../components/meal/VideoButton.jsx';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth }    from '../contexts/AuthContext';
 import { useLocale }  from '../contexts/LocaleContext';
 import { usePremium } from '../contexts/PremiumContext';
@@ -121,17 +122,7 @@ Respond ONLY with valid JSON:
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
-      {/* Header */}
-      <div style={{ padding:'14px 28px', borderBottom:'1px solid '+C.border, background:'white', display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10, boxShadow:'0 2px 8px rgba(28,10,0,0.04)' }}>
-        <div>
-          <div style={{ fontFamily:"'Fraunces',serif", fontSize:22, fontWeight:900, color:C.ink }}>✨ Sacred Kitchen</div>
-          <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>Authentic recipes from sacred traditions worldwide</div>
-        </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <button onClick={() => navigate('/little-chefs')} style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid '+C.border, background:'white', fontSize:12, cursor:'pointer', color:C.muted }}>👶 Kids Meals</button>
-          <button onClick={() => navigate('/app')} style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid '+C.border, background:'white', fontSize:12, cursor:'pointer', color:C.muted }}>↺ Cook something else</button>
-        </div>
-      </div>
+      <PageHeader title="✨ Sacred Kitchen" backTo='/plan' backLabel='← Plan' />
 
       <div style={{ maxWidth:700, margin:'0 auto', padding:'28px 20px' }}>
 

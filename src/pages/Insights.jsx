@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchHistory } from '../services/historyService';
 
@@ -155,32 +156,21 @@ export default function Insights() {
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
-      {/* Header */}
-      <div style={{ padding:'14px 28px', borderBottom:'1px solid '+C.border, background:'white',
-        display:'flex', alignItems:'center', justifyContent:'space-between',
-        position:'sticky', top:0, zIndex:10 }}>
-        <div style={{ fontFamily:"'Fraunces',serif", fontSize:20, fontWeight:900, color:C.ink }}>
-          📊 Meal Insights
-        </div>
-        <div style={{ display:'flex', gap:8 }}>
-          {tabs.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              style={{ padding:'6px 14px', borderRadius:20, fontSize:11, cursor:'pointer',
-                border:'1.5px solid '+(activeTab===t.id ? C.jiff : C.border),
-                background: activeTab===t.id ? C.jiff : 'white',
-                color: activeTab===t.id ? 'white' : C.muted,
-                fontFamily:"'DM Sans',sans-serif", fontWeight:activeTab===t.id ? 500 : 400 }}>
-              {t.label}
-            </button>
-          ))}
-          <button onClick={() => navigate('/app')}
-            style={{ padding:'6px 14px', borderRadius:20, fontSize:11, cursor:'pointer',
-              border:'1.5px solid '+C.border, background:'white', color:C.muted,
-              fontFamily:"'DM Sans',sans-serif" }}>
-            ← Home
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Insights" action={
+          <div style={{ display:'flex', gap:6 }}>
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                style={{ padding:'6px 14px', borderRadius:20, fontSize:11, cursor:'pointer',
+                  border:'1.5px solid '+(activeTab===t.id ? '#FF4500' : 'rgba(28,10,0,0.08)'),
+                  background: activeTab===t.id ? '#FF4500' : 'white',
+                  color: activeTab===t.id ? 'white' : '#7C6A5E',
+                  fontFamily:"'DM Sans',sans-serif", fontWeight:activeTab===t.id ? 600 : 400,
+                }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        } />
 
       <div style={{ maxWidth:960, margin:'0 auto', padding:'28px 24px' }}>
         {!data ? (

@@ -105,16 +105,20 @@ export function trackStapleUsage(items) {
  * @param {string[]} currentStaples - user's saved weekly_staples IDs
  * @returns {string[]} item names to suggest
  */
-export function getStapleSuggestions(currentStaples = []) {
+export function getStapleSuggestions(pantryItems = []) {
   try {
     const raw = localStorage.getItem(STAPLE_TRACK_KEY) || '{}';
     const usage = JSON.parse(raw);
-    const EXCLUDED_KEYWORDS = ['oil','ghee','salt','sugar','rice','dal','atta','spice','cumin','turmeric'];
+    // Build set of already-in-pantry items (normalised lowercase)
+    const inPantry = new Set(pantryItems.map(s => s.toLowerCase().trim()));
+    const EXCLUDED = ['oil','ghee','salt','sugar','rice','dal','atta','spice','cumin','turmeric',
+                      'mustard','cardamom','cinnamon','cloves','pepper','fenugreek','asafoetida'];
     return Object.entries(usage)
       .filter(([key, data]) =>
         data.count >= PROMOTE_THRESHOLD &&
-        !currentStaples.includes(key) &&
-        !EXCLUDED_KEYWORDS.some(ex => key.includes(ex))
+        !data.suggested &&
+        !inPantry.has(key) &&
+        !EXCLUDED.some(ex => key.includes(ex))
       )
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 2)

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MealSlot, GrocerySection, CuisineRatioSelector } from '../components/planner/PlannerComponents.jsx';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth }   from '../contexts/AuthContext';
 import { generatePlan } from '../services/plannerService';
@@ -97,15 +98,7 @@ export default function Planner() {
     <>
       <style>{styles}</style>
       <div className="page">
-        <header className="header">
-          <div className="logo" onClick={()=>navigate('/')}>
-            <span style={{fontSize:22}}>⚡</span>
-            <span className="logo-name"><span style={{color:'#FF4500'}}>J</span>iff</span>
-          </div>
-          <div className="nav-links">
-            <button className="nav-link" onClick={()=>navigate('/app')}>← Home</button>
-          </div>
-        </header>
+        <PageHeader title="Week Planner" backTo='/plan' backLabel='← Plan' />
 
         {/* No profile — redirect prompt */}
         {!hasProfile && (

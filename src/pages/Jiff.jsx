@@ -112,6 +112,9 @@ export default function Jiff() {
       if (ft === 'vegan') setDiet('vegan');
       else if (ft === 'veg' || ft === 'eggetarian' || ft === 'jain') setDiet('vegetarian');
       if (profile.preferred_cuisines?.length) setCuisine(profile.preferred_cuisines[0]);
+      // Family-aware default servings
+      if (profile.family_size > 4) setDefaultServings(6);
+      else if (profile.family_size > 2) setDefaultServings(4);
       setProfileLoaded(true);
     }
   }, [profile, profileLoaded]);
@@ -305,7 +308,7 @@ export default function Jiff() {
             // Track fridge items for pantry learning
             if (fridgeItems.length) {
               trackStapleUsage(fridgeItems);
-              const suggestions = getStapleSuggestions(profile?.weekly_staples || []);
+              const suggestions = getStapleSuggestions(pantryItems);
               if (suggestions.length) setStapleSuggestion({ items: suggestions, shown: false });
             }
             handleSubmit(ingredients, () => setGateDismissed(false));

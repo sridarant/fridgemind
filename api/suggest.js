@@ -247,7 +247,7 @@ JSON only — ${maxCount} objects:
   }
 
   // Ingredients required for normal generation
-  if (!ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
+  if (!req.body?.ingredients?.length) return res.status(400).json({ error: 'ingredients array is required.' });
 
   try {
     const {

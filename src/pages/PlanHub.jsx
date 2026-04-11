@@ -3,6 +3,7 @@
 // Consolidates: Planner, Kids lunchbox, Little Chefs, Sacred Kitchen, Plans.
 
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth }     from '../contexts/AuthContext';
 
 const C = {
@@ -79,13 +80,9 @@ export default function PlanHub() {
 
   return (
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif", paddingBottom:100 }}>
-      <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-
-      <div style={{ padding:'24px 20px 0', maxWidth:560, margin:'0 auto' }}>
-        <h1 style={{ fontFamily:"'Fraunces',serif", fontSize:26, fontWeight:900, color:C.ink, margin:'0 0 4px' }}>
-          {'Plan & organise'}
-        </h1>
-        <p style={{ fontSize:13, color:C.muted, fontWeight:300, marginBottom:24, lineHeight:1.5 }}>
+      <PageHeader title="Plan" />
+      <div style={{ padding:'16px 20px 0', maxWidth:560, margin:'0 auto' }}>
+        <p style={{ fontSize:13, color:C.muted, fontWeight:300, marginBottom:20, lineHeight:1.5 }}>
           {'Week plans, lunchboxes, special diets, and sacred recipes — all in one place.'}
         </p>
 

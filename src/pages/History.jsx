@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchHistory, deleteHistoryEntry } from '../services/historyService';
 
@@ -127,15 +128,7 @@ export default function History() {
     <div style={s.page}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
-      <header style={s.header}>
-        <div style={s.logo} onClick={() => navigate('/app')}>
-          <span style={{fontSize:22}}>⚡</span>
-          <span style={s.logoName}><span style={{color:C.jiff}}>J</span>iff</span>
-        </div>
-        <div style={{display:'flex', gap:8}}>
-          <button style={s.backBtn} onClick={() => navigate('/app')}>← Home</button>
-        </div>
-      </header>
+<PageHeader title="Cooking history" />
 
       <div style={s.wrap}>
         <div style={s.title}>🕐 Meal history</div>

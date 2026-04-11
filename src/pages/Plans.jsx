@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { VideoButton } from '../components/meal/VideoButton.jsx';
 import { getDietaryLabel } from '../lib/dietary';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { usePremium } from '../contexts/PremiumContext';
 import { useAuth }    from '../contexts/AuthContext';
 import { generatePlan } from '../services/plannerService';
@@ -200,26 +201,7 @@ export default function Plans() {
     <div style={{ minHeight: '100vh', background: C.cream, fontFamily: "'DM Sans', sans-serif", color: C.ink }}>
       <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-
-      <header style={hdr}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => navigate('/app')}>
-          <span style={{ fontSize: 22 }}>⚡</span>
-          <span style={{ fontFamily: "'Fraunces', serif", fontSize: 22, fontWeight: 900, color: C.ink, letterSpacing: '-0.5px' }}>
-            <span style={{ color: C.jiff }}>J</span>iff
-          </span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => navigate('/planner')} style={{ fontSize: 12, color: C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.15)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", display:'flex', alignItems:'center', gap:4 }}>
-            📅 Week Plan
-          </button>
-          <button onClick={() => navigate('/little-chefs')} style={{ fontSize: 12, color: C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.15)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", display:'flex', alignItems:'center', gap:4 }}>
-            👶 Kids Meals
-          </button>
-          <button onClick={() => navigate('/app')} style={{ fontSize: 12, color: C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.15)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-            ↺ Cook something else
-          </button>
-        </div>
-      </header>
+      <PageHeader title="Goal Plans" backTo='/plan' backLabel='← Plan' />
 
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px 80px' }}>
         {/* Hero */}

@@ -20,21 +20,6 @@ export default function JiffHeader({
       <JiffLogo size="md" spinning={view === 'loading'} onClick={() => navigate('/')} />
 
       <div className="header-right">
-        <button
-          className="hdr-btn desktop-only"
-          onClick={() => navigate('/discover')}
-          style={{ fontFamily: "'DM Sans',sans-serif" }}
-        >
-          {'🌟 Discover'}
-        </button>
-        <button
-          className="hdr-btn desktop-only"
-          onClick={() => { if (!user) { alert('Sign in to view your favourites.'); return; } navigate('/favs'); }}
-          style={{ fontFamily: "'DM Sans',sans-serif" }}
-        >
-          {'❤️ Favourites'}
-        </button>
-
         {trialActive && <div className="trial-badge">{'⏳ Trial: '}{trialDaysLeft}{'d left'}</div>}
         {user && !isPremium && (
           <button className="hdr-btn premium" onClick={() => navigate('/pricing')}>

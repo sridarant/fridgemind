@@ -82,19 +82,56 @@ const STAPLE_GROUPS = [
   },
 ];
 
-const TOP_CUISINES = [
-  { id:'south_indian',  label:'South Indian',  emoji:'🥥' },
-  { id:'north_indian',  label:'North Indian',  emoji:'🍛' },
-  { id:'bengali',       label:'Bengali',       emoji:'🐟' },
-  { id:'punjabi',       label:'Punjabi',       emoji:'🫙' },
-  { id:'maharashtrian', label:'Maharashtrian', emoji:'🫓' },
-  { id:'gujarati',      label:'Gujarati',      emoji:'🌿' },
-  { id:'hyderabadi',    label:'Hyderabadi',    emoji:'🍖' },
-  { id:'chettinad',     label:'Chettinad',     emoji:'🌶️' },
-  { id:'street_food',   label:'Street food',   emoji:'🥙' },
-  { id:'chinese',       label:'Indo-Chinese',  emoji:'🥢' },
-  { id:'continental',   label:'Continental',   emoji:'🥗' },
-  { id:'mediterranean', label:'Mediterranean', emoji:'🫒' },
+// Grouped cuisine picker — IDs match cuisine.js exactly
+const CUISINE_PICKER_GROUPS = [
+  {
+    label: 'South India',
+    items: [
+      { id:'tamil_nadu',    label:'Tamil Nadu'    },
+      { id:'kerala',        label:'Kerala'        },
+      { id:'karnataka',     label:'Karnataka'     },
+      { id:'andhra',        label:'Andhra'        },
+      { id:'hyderabadi',    label:'Hyderabadi'    },
+      { id:'chettinad',     label:'Chettinad'     },
+    ],
+  },
+  {
+    label: 'North India',
+    items: [
+      { id:'punjabi',       label:'Punjabi'       },
+      { id:'awadhi',        label:'Awadhi'        },
+      { id:'rajasthani',    label:'Rajasthani'    },
+      { id:'kashmiri',      label:'Kashmiri'      },
+    ],
+  },
+  {
+    label: 'East & West',
+    items: [
+      { id:'bengali',       label:'Bengali'       },
+      { id:'gujarati',      label:'Gujarati'      },
+      { id:'maharashtrian', label:'Maharashtrian' },
+      { id:'goan',          label:'Goan'          },
+      { id:'odia',          label:'Odia'          },
+    ],
+  },
+  {
+    label: 'Street food',
+    items: [
+      { id:'chaat',         label:'Chaat'         },
+      { id:'mumbai_street', label:'Mumbai street' },
+      { id:'delhi_street',  label:'Delhi street'  },
+    ],
+  },
+  {
+    label: 'Global',
+    items: [
+      { id:'chinese',       label:'Chinese'       },
+      { id:'continental',   label:'Continental'   },
+      { id:'mediterranean', label:'Mediterranean' },
+      { id:'middle_eastern',label:'Middle Eastern'},
+      { id:'italian',       label:'Italian'       },
+    ],
+  },
 ];
 
 const GOAL_OPTIONS = [
@@ -178,7 +215,6 @@ export default function Onboarding() {
         kids_ages:          kidsAges,
         preferred_cuisines: cuisines,
         active_goal:        skip ? '' : (goal || ''),
-        weekly_staples:     staples,
         onboarding_done:    true,
       });
       await savePantry?.(fullPantry);
@@ -325,17 +361,23 @@ export default function Onboarding() {
                 : <div style={{ fontSize:11, color:C.muted, marginBottom:14 }}>{'Pick up to 3, or skip'}</div>
             }
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
-              {TOP_CUISINES.map(c => {
-                const active   = cuisines.includes(c.id);
-                const disabled = !active && cuisines.length >= 3;
-                return (
-                  <button key={c.id} onClick={() => toggleCuisine(c.id)}
-                    style={{ ...card(active), padding:'12px 8px', textAlign:'center', opacity:disabled?0.4:1, cursor:disabled?'not-allowed':'pointer' }}>
-                    <div style={{ fontSize:20, marginBottom:5 }}>{c.emoji}</div>
-                    <div style={{ fontSize:11, fontWeight:active?600:400, color:active?C.jiff:C.ink, lineHeight:1.3 }}>{c.label}</div>
-                  </button>
-                );
-              })}
+              {CUISINE_PICKER_GROUPS.map(group => (
+                <div key={group.label} style={{ marginBottom:16 }}>
+                  <div style={{ fontSize:10, letterSpacing:'1.5px', textTransform:'uppercase', color:C.muted, fontWeight:600, marginBottom:8 }}>{group.label}</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                    {group.items.map(c => {
+                      const active   = cuisines.includes(c.id);
+                      const disabled = !active && cuisines.length >= 3;
+                      return (
+                        <button key={c.id} onClick={() => toggleCuisine(c.id)}
+                          style={{ padding:'8px 14px', border:'1.5px solid '+(active?C.jiff:C.borderMid), borderRadius:20, background:active?'rgba(255,69,0,0.07)':'white', color:active?C.jiff:C.muted, fontSize:12, cursor:disabled?'not-allowed':'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:active?600:400, opacity:disabled?0.4:1, transition:'all 0.12s' }}>
+                          {active ? '✓ ' : ''}{c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

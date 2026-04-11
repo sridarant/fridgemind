@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate }         from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth }             from '../contexts/AuthContext';
 import { MealCard }            from '../components/meal/MealCard.jsx';
 import { getCuisineLabel }     from '../lib/cuisine.js';
@@ -160,23 +161,13 @@ export default function Favs() {
       minHeight:'100vh', background:C.cream,
       fontFamily:"'DM Sans',sans-serif", paddingBottom:80,
     }}>
-      {/* Header */}
-      <div style={{
-        position:'sticky', top:0, zIndex:10,
-        background:'white', borderBottom:`1px solid ${C.border}`,
-        padding:'12px 20px',
-      }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <button onClick={() => navigate('/app')}
-              style={{
-                background:'none', border:'none', cursor:'pointer',
-                fontSize:13, color:C.muted, fontFamily:"'DM Sans',sans-serif",
-                padding:'4px 0', display:'flex', alignItems:'center', gap:4,
-              }}>
-              ↺ Cook something else
-            </button>
-          </div>
+      <PageHeader title="Saved recipes" action={
+          <select value={sort} onChange={e => setSort(e.target.value)}
+            style={{ fontSize:12, border:'1px solid rgba(28,10,0,0.08)', borderRadius:8, padding:'5px 10px', background:'white', color:'#1C0A00', fontFamily:"'DM Sans',sans-serif", cursor:'pointer', outline:'none' }}>
+            <option value="rating">Sort: Rating</option>
+            <option value="cuisine">Sort: Cuisine</option>
+          </select>
+        } />
           {/* Sort */}
           <select value={sort} onChange={e => setSort(e.target.value)}
             style={{

@@ -17,7 +17,7 @@ function DismissBtn({ onClick }) {
 
 export default function RetentionNudges({
   welcomeBack, weeklyDigest, milestone, didYouCookNudge, challenge,
-  onConfirmCooked, onDismissNudge,
+  onConfirmCooked, onDismissNudge, lastFavCuisine,
 }) {
   return (
     <>
@@ -26,7 +26,9 @@ export default function RetentionNudges({
         <div style={{ marginTop:12, padding:'10px 14px', borderRadius:12, background:'rgba(37,99,235,0.06)', border:'1px solid rgba(37,99,235,0.2)', display:'flex', alignItems:'center', gap:10 }}>
           <span style={{ fontSize:20, flexShrink:0 }}>{'👋'}</span>
           <div style={{ flex:1, fontSize:12, color:'#1E40AF', lineHeight:1.5 }}>
-            {'Welcome back! '}{welcomeBack.daysAway}{' days away — a lot to catch up on.'}
+            {lastFavCuisine
+              ? ('Welcome back! Ready to cook more ' + lastFavCuisine.replace(/_/g,' ') + '?')
+              : ('Welcome back! ' + welcomeBack.daysAway + ' days away — a lot to catch up on.')}
           </div>
           <DismissBtn onClick={() => onDismissNudge?.('welcome-back')} />
         </div>

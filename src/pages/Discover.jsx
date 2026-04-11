@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
 import { buildDiscoverData } from '../lib/discover.js';
 import { getCurrentSeason } from '../lib/festival.js';
@@ -89,18 +90,7 @@ export default function Discover() {
   return (
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif", paddingBottom:80 }}>
 
-      {/* Header */}
-      <div style={{ padding:'20px 20px 0', position:'sticky', top:0, background:C.cream, zIndex:10 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-          <div style={{ fontFamily:"'Fraunces',serif", fontSize:24, fontWeight:900, color:C.ink }}>
-            Discover
-          </div>
-          <button onClick={() => navigate('/app')}
-            style={{ fontSize:12, color:C.muted, background:'none', border:'1px solid rgba(28,10,0,0.12)', borderRadius:20, padding:'5px 14px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>
-            ↺ Cook something else
-          </button>
-        </div>
-      </div>
+      <PageHeader title="Discover" />
 
       <div style={{ padding:'0 20px', maxWidth:720, margin:'0 auto' }}>
 

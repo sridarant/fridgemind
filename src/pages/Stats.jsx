@@ -1,6 +1,7 @@
 // src/pages/Stats.jsx — Public stats: users, countries, trends (item q)
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { fetchStats } from '../services/userService';
 
 const C = { jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5', muted:'#7C6A5E', border:'rgba(28,10,0,0.10)', shadow:'0 4px 24px rgba(28,10,0,0.07)' };
@@ -87,13 +88,7 @@ export default function Stats() {
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans', sans-serif", color:C.ink }}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
-      <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 28px', borderBottom:'1px solid '+C.border, position:'sticky', top:0, zIndex:10, background:'rgba(255,250,245,0.95)', backdropFilter:'blur(12px)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }} onClick={() => navigate('/')}>
-          <span style={{ fontSize:22 }}>⚡</span>
-          <span style={{ fontFamily:"'Fraunces', serif", fontSize:22, fontWeight:900, color:C.ink }}><span style={{ color:C.jiff }}>J</span>iff</span>
-        </div>
-        <button onClick={() => navigate('/app')} style={{ fontSize:13, color:C.muted, background:'none', border:'1.5px solid rgba(28,10,0,0.18)', borderRadius:8, padding:'6px 14px', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>← Home</button>
-      </header>
+      <PageHeader title="Stats" />
 
       <div style={{ maxWidth:900, margin:'0 auto', padding:'40px 24px 80px' }}>
         <div style={{ marginBottom:32 }}>

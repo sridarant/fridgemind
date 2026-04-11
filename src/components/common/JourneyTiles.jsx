@@ -128,7 +128,7 @@ function CookingCalendar({ mealHistory = [] }) {
 }
 
 // ── Priority engine — Zone 2 featured tile ──────────────────────────
-function getFeaturedTile({ festival, sports, weather, dayCtx, profile }) {
+function getFeaturedTile({ festival, sports, weather, dayCtx, profile, isReturning, lastFavCuisine }) {
   const h   = new Date().getHours();
   const dow = new Date().getDay();
 
@@ -190,7 +190,20 @@ function getFeaturedTile({ festival, sports, weather, dayCtx, profile }) {
     };
   }
 
-  // 5. Default — fridge (always the fallback)
+  // 5. Re-engagement — returning after 3+ days with known taste
+  if (isReturning && lastFavCuisine) {
+    const cuisineLabel = lastFavCuisine.replace(/_/g,' ')
+      .replace(/\w/g, c => c.toUpperCase());
+    return {
+      emoji:'🍽️', badge:'WELCOME BACK',
+      label:'Pick up where you left off',
+      sub:'More ' + cuisineLabel + ' — your favourite cuisine',
+      color:'#1D4ED8', bg:'rgba(29,78,216,0.06)', border:'rgba(29,78,216,0.2)',
+      context: { cuisine: lastFavCuisine, mealType:'dinner' },
+    };
+  }
+
+  // 6. Default — fridge (always the fallback)
   return {
     emoji:'🧊', label:"What's in my fridge?",
     sub:'Use what you have — your pantry is ready',
@@ -201,24 +214,51 @@ function getFeaturedTile({ festival, sports, weather, dayCtx, profile }) {
 
 // ── Personalised picks engine — Zone 3 ─────────────────────────────
 function getPersonalisedPicks({ profile, ratings, festival, sports, weather }) {
+  const cuisines = profile?.preferred_cuisines || [];
+  const ratingCount = ratings ? Object.keys(ratings).length : 0;
+
   const all = [
     { id:'mood',    emoji:'😊', label:'Match my mood',   sub:'5 moods, one tap',      priority:50, modal:'mood' },
-    { id:'goal',    emoji:'🎯', label:'My goal',          sub: profile?.active_goal ? profile.active_goal.replace(/_/g,' ') : 'Plans & targets', priority:40, modal:'goal' },
+    { id:'goal',    emoji:'🎯',
+      label: profile?.active_goal === 'eat_healthier' ? 'Eating healthier'
+           : profile?.active_goal === 'cook_faster'   ? 'Quick meals'
+           : profile?.active_goal === 'reduce_waste'  ? 'Zero waste'
+           : profile?.active_goal === 'try_new_things'? 'Try something new'
+           : 'My goal',
+      sub: profile?.active_goal ? 'On track with your goal' : 'Plans & targets',
+      priority:40, modal:'goal' },
     { id:'seasonal',emoji:'🌿', label:'In season now',    sub:'Freshest produce',      priority:35, context:{ seasonal:true, mealType:'any' } },
     { id:'family',  emoji:'👨‍👩‍👧', label:'Family meal',  sub:'Everyone covered',      priority:profile?.has_kids||profile?.family_size>2?60:20, context:{ mealType:'dinner', family:true } },
     { id:'hosting', emoji:'🎉', label:'Hosting guests',   sub:'Impress a crowd',       priority:30, context:{ hosting:true, servings:10 } },
     { id:'leftover',emoji:'♻️', label:'Leftover rescue',  sub:'Cooked too much?',      priority:new Date().getDay()===0?55:25, context:{ type:'leftover' } },
-    { id:'surprise',emoji:'✨', label:'Surprise me',      sub:'Something unexpected',  priority:ratings&&Object.keys(ratings).length>3?45:15, context:{ surpriseMode:true } },
+    { id:'surprise',emoji:'✨', label:'Surprise me',      sub:'Something unexpected',  priority:ratingCount>3?45:15, context:{ surpriseMode:true } },
+    // Cuisine-personalised tile — shown when user has set preferred cuisines
+    ...(cuisines.length > 0 ? [{
+      id:'cuisine',
+      emoji: cuisines[0] === 'tamil_nadu' ? '🥥'
+           : cuisines[0] === 'bengali'    ? '🐟'
+           : cuisines[0] === 'punjabi'    ? '🍲'
+           : cuisines[0] === 'gujarati'   ? '🌿'
+           : cuisines[0] === 'hyderabadi' ? '🍖'
+           : '🍛',
+      label: (cuisines[0].replace(/_/g,' ').replace(/\w/g,c=>c.toUpperCase())) + ' tonight',
+      sub: 'Your favourite cuisine',
+      priority: 70,  // High — preferred cuisine is a strong signal
+      context: { cuisine: cuisines[0], mealType: 'dinner' },
+    }] : []),
   ];
 
-  // Boost picks based on profile goal
+  // Goal-based boosts
   const goal = profile?.active_goal || '';
   if (goal === 'reduce_waste'  ) { const r = all.find(p => p.id==='leftover'); if (r) r.priority = 80; }
   if (goal === 'try_new_things') { const r = all.find(p => p.id==='surprise'); if (r) r.priority = 75; }
   if (goal === 'eat_healthier' ) { const r = all.find(p => p.id==='goal');     if (r) r.priority = 80; }
+  if (goal === 'cook_faster'   ) {
+    const r = all.find(p => p.id==='mood');
+    if (r) { r.label = 'Quick meal'; r.sub = 'Under 20 min'; r.priority = 75;
+              r.context = { mealType:'any', time:'20 min' }; delete r.modal; }
+  }
 
-  // Don't show mood/goal if already in featured (those are the richest 1-tap journey)
-  // Sort and return top 3
   return all.sort((a, b) => b.priority - a.priority).slice(0, 3);
 }
 
@@ -253,7 +293,15 @@ export function JourneyTiles({
     return name ? base + ', ' + name : base;
   };
 
-  const featured = getFeaturedTile({ festival, sports, weather, dayCtx, profile });
+  const isReturning = !!(welcomeBack && welcomeBack.daysAway >= 3);
+  const lastFavCuisine = (() => {
+    if (!Array.isArray(mealHistory)) return null;
+    const hit = [...mealHistory]
+      .sort((a,b) => new Date(b.generated_at||0) - new Date(a.generated_at||0))
+      .find(h => h.cuisine && (ratings?.[h.meal_name] >= 4));
+    return hit?.cuisine || null;
+  })();
+  const featured = getFeaturedTile({ festival, sports, weather, dayCtx, profile, isReturning, lastFavCuisine });
   const picks    = getPersonalisedPicks({ profile, ratings, festival, sports, weather });
   const ratingCount = ratings ? Object.keys(ratings).length : 0;
 
@@ -313,6 +361,14 @@ export function JourneyTiles({
           challenge={challenge}
           onConfirmCooked={onConfirmCooked}
           onDismissNudge={onDismissNudge}
+          lastFavCuisine={(() => {
+            // Find last high-rated (>=4) cuisine from mealHistory
+            if (!Array.isArray(mealHistory)) return null;
+            const recent = [...mealHistory]
+              .sort((a,b) => new Date(b.generated_at||0) - new Date(a.generated_at||0))
+              .find(h => h.cuisine && (ratings?.[h.meal_name] >= 4));
+            return recent?.cuisine || null;
+          })()}
         />
 
         {/* 7-day cooking calendar */}
@@ -332,7 +388,11 @@ export function JourneyTiles({
       />
 
       {/* ── Zone 3 — Personalised picks (3 tiles) ────────────────── */}
-      <Label>{ratingCount >= 3 ? 'Picked for you' : 'Right now'}</Label>
+      <Label>{
+        ratingCount >= 3 ? 'Based on your taste' :
+        picks.some(p => p.id === 'family') ? 'For your family' :
+        'What you can make'
+      }</Label>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:20 }}>
         {picks.map((pick, i) => (
           <Tile key={pick.id}
@@ -358,7 +418,14 @@ export function JourneyTiles({
       )}
 
       {/* ── Zone 4 — Context chip row (scrollable) ───────────────── */}
-      <Label>More journeys</Label>
+      <Label>{(() => {
+        const h = new Date().getHours();
+        const dow = new Date().getDay();
+        if (dow === 1) return 'Plan your week';
+        if (dow === 0) return 'Explore more';
+        if (h >= 18) return 'More ideas for tonight';
+        return 'More journeys';
+      })()}</Label>
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:8, scrollbarWidth:'none', msOverflowStyle:'none', WebkitOverflowScrolling:'touch', marginBottom:20 }}>
         {chips.map((chip, i) => (
           <ContextChip key={i} emoji={chip.emoji} label={chip.label} onClick={chip.onClick} />
@@ -368,7 +435,7 @@ export function JourneyTiles({
       {/* ── Zone 5 — "For you" carousel (after 3+ ratings) ─────── */}
       {forYouCards.length > 0 && (
         <>
-          <Label>For you</Label>
+          <Label>{'Tailored for you'}</Label>
           <div style={{ fontSize:11, color:C.muted, marginBottom:10, fontWeight:300 }}>
             {'Based on '}
             {ratingCount}

@@ -122,6 +122,13 @@ export default function ResultsView({
         </div>
       )}
 
+      {/* Skill level badge */}
+      {profile?.skill_level === 'beginner' && (
+        <div style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 12px', borderRadius:20, background:'rgba(29,158,117,0.08)', border:'1px solid rgba(29,158,117,0.2)', marginBottom:10, fontSize:11, color:'#065F46', fontWeight:500 }}>
+          {'✓ Beginner-friendly recipes'}
+        </div>
+      )}
+
       <div className="meals-grid">
         {meals.map((meal, i) => (
           <MealCard

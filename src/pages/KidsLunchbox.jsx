@@ -4,6 +4,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/common/PageHeader';
 import { useAuth }     from '../contexts/AuthContext';
 import { generateRecipes } from '../services/recipeService';
 
@@ -146,21 +147,7 @@ Respond ONLY with valid JSON:
   return (
     <div style={{ minHeight:'100vh', background:C.cream, fontFamily:"'DM Sans',sans-serif", paddingBottom:80 }}>
       {/* Header */}
-      <header style={{
-        display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'14px 20px', borderBottom:`1px solid ${C.border}`,
-        position:'sticky', top:0, zIndex:10,
-        background:'rgba(255,250,245,0.96)', backdropFilter:'blur(10px)',
-      }}>
-        <button onClick={() => navigate('/app')}
-          style={{ fontSize:13, color:C.muted, background:'none', border:'1px solid ' + (C.border), borderRadius:8, padding:'6px 12px', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-          ← Home
-        </button>
-        <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>
-          🍱 Kids' Lunchbox
-        </span>
-        <div style={{ width:64 }}/>
-      </header>
+      <PageHeader title="🍱 Kids' Lunchbox" backTo='/plan' backLabel='← Plan' />
 
       <div style={{ padding:'24px 20px', maxWidth:520, margin:'0 auto' }}>
 
