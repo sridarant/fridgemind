@@ -168,17 +168,6 @@ export default function Favs() {
             <option value="cuisine">Sort: Cuisine</option>
           </select>
         } />
-          {/* Sort */}
-          <select value={sort} onChange={e => setSort(e.target.value)}
-            style={{
-              fontSize:12, border:'1px solid ' + (C.border), borderRadius:8,
-              padding:'5px 10px', background:'white', color:C.ink,
-              fontFamily:"'DM Sans',sans-serif", cursor:'pointer', outline:'none',
-            }}>
-            <option value="rating">Sort: Rating</option>
-            <option value="cuisine">Sort: Cuisine</option>
-          </select>
-        </div>
 
         {/* Stats + search */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
