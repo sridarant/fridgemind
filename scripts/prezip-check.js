@@ -306,6 +306,67 @@ for (const file of modelApiFiles) {
 if (modelIssues === 0) ok('Model validation: all ' + VALID_MODELS.length + ' valid model strings confirmed');
 
 
+
+// ── 15. import/first — no imports after executable code ─────────────
+// Catches ESLint import/first violations: any import statement that appears
+// after a non-import, non-comment executable line in the same file.
+// Handles multiline imports by tracking open brace depth.
+console.log('\n── import/first violation check ──');
+
+const IF_SCAN_DIRS = ['src/pages', 'src/components', 'src/hooks', 'src/services', 'src/contexts'];
+let if_issues = 0;
+
+for (const dir of IF_SCAN_DIRS) {
+  if (!fs.existsSync(path.join(ROOT, dir))) continue;
+  const allFiles = [];
+  const walkDir = (d) => {
+    for (const f of fs.readdirSync(d)) {
+      const full = path.join(d, f);
+      if (fs.statSync(full).isDirectory()) { walkDir(full); continue; }
+      if (f.endsWith('.jsx') || f.endsWith('.js')) allFiles.push(full);
+    }
+  };
+  walkDir(path.join(ROOT, dir));
+
+  for (const file of allFiles) {
+    const fileLines = fs.readFileSync(file, 'utf8').split('\n');
+    let seenCode   = false;
+    let braceDepth = 0; // track multiline imports
+    let inImport   = false;
+
+    for (let i = 0; i < fileLines.length; i++) {
+      const raw      = fileLines[i];
+      const stripped = raw.trim();
+      if (!stripped || stripped.startsWith('//') || stripped.startsWith('*')) continue;
+
+      // Track multiline import brace depth
+      if (stripped.startsWith('import ')) {
+        inImport = true;
+        if (!stripped.includes('from ') && !stripped.endsWith(';')) {
+          braceDepth++;
+        }
+        if (seenCode) {
+          err(path.basename(file) + ':' + (i+1) + ' import after executable code (import/first)');
+          if_issues++;
+        }
+        continue;
+      }
+      if (inImport && braceDepth > 0) {
+        if (stripped.includes('} from ') || stripped === '}' || stripped === '};') {
+          braceDepth--;
+          if (braceDepth === 0) inImport = false;
+        }
+        continue; // still inside multiline import
+      }
+      inImport = false;
+
+      // Anything else is executable code
+      seenCode = true;
+    }
+  }
+}
+if (if_issues === 0) ok('import/first: all imports precede executable code');
+
 // ── 14. Used-but-not-imported service functions ─────────────────────
 // Catches the recurring "function called in component but never imported" bug.
 // Scans pages + components for calls to known service exports and verifies

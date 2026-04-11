@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth }   from '../contexts/AuthContext';
 import { generatePlan } from '../services/plannerService';
+import styles from '../styles/plannerStyles';
 
 
 // ── Components + helpers → src/components/planner/PlannerComponents.jsx ──
@@ -20,7 +21,6 @@ const MEAL_TYPE_OPTIONS = [
 const DAYS       = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-import styles from '../styles/plannerStyles';
 export default function Planner() {
   const navigate = useNavigate();
   const { profile, pantry } = useAuth();

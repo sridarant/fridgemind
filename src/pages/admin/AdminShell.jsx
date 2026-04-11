@@ -3,10 +3,7 @@
 // All data loading via adminService. No inline fetch() calls.
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  fetchAdminStats, fetchWaitlist, fetchUsers,
-  fetchFeedback, broadcastMessage, resetTrial,
-} from '../../services/adminService';
+import { fetchAdminStats, fetchWaitlist, fetchUsers, fetchFeedback, broadcastMessage, resetTrial } from '../../services/adminService';
 
 import Tab_OVERVIEW  from './tabs/overview.jsx';
 import Tab_USERS     from './tabs/users.jsx';
