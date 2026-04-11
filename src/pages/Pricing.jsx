@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { trackUpgradeClick, trackSubscribed } from '../lib/analytics';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale, CURRENCY_MAP, ENABLED_COUNTRIES } from '../contexts/LocaleContext';

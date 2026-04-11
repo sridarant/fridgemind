@@ -183,7 +183,11 @@ export default function Onboarding() {
   const next = () => setScreen(s => Math.min(s + 1, TOTAL));
   const back = () => setScreen(s => Math.max(s - 1, 1));
 
-  const selectWho = (id) => { setCookingFor(id); setTimeout(next, 320); };
+  const selectWho = (id) => {
+    setCookingFor(id);
+    // Don't auto-advance for family/joint — user needs to answer kids question first
+    if (id !== 'family' && id !== 'joint') setTimeout(next, 320);
+  };
 
   const toggleDiet = (id) => setDiet(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id]);
   const toggleStaple = (id) => setStaples(p => p.includes(id) ? p.filter(x=>x!==id) : [...p, id]);
@@ -221,6 +225,13 @@ export default function Onboarding() {
     } catch {}
 
     setSaving(false);
+    // Mark onboarding complete in localStorage so it doesn't show again cross-session
+    try { localStorage.setItem('jiff-onboarding-done', '1'); } catch {}
+    try {
+      if (typeof window !== 'undefined' && window._jiffGA) {
+        window._jiffGA('onboarding_complete', { skipped: skip, cuisines_selected: cuisines.length, goal_set: !!goal });
+      }
+    } catch {}
     navigate('/app', {
       state: {
         generateContext: {

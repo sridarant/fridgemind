@@ -3,6 +3,8 @@
 // based on what's in the user's fridge.
 
 import { useState } from 'react';
+import { trackWhatsAppShare, trackGroceryShare } from '../../lib/analytics';
+import { trackWhatsAppShare, trackGroceryShare } from '../../lib/analytics';
 import { useLocale } from '../../contexts/LocaleContext.jsx';
 import { buildGroceryList } from '../../lib/grocery.js';
 
@@ -115,12 +117,12 @@ export function GroceryPanel({ ingredients: ingredientsProp = [], fridgeIngredie
 
       {/* Actions */}
       <div className="grocery-actions">
-        <button className={`grocery-action-btn copy ${copied ? 'copied' : ''}`} onClick={handleCopy}>
+        <button className={`grocery-action-btn copy ${copied ? 'copied' : ''}`} onClick={() => { handleCopy(); trackGroceryShare('copy'); }}>
           {copied ? <IconCheck/> : <IconCopy/>}
           {copied ? 'Copied!' : 'Copy list'}
         </button>
         <a className="grocery-action-btn wa" href={waUrl} target="_blank" rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()}>
+          onClick={e => { e.stopPropagation(); trackWhatsAppShare('grocery_list'); }}>
           <IconWA/>WhatsApp
         </a>
         {need.length > 0 && (

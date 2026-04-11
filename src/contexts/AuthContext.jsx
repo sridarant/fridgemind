@@ -57,9 +57,11 @@ export function AuthProvider({ children }) {
       supabase.from('favourites').select('meal, saved_at').eq('user_id', uid).order('saved_at', { ascending: false }),
     ]);
 
-    // Profile
+    // Profile — merge DB data with localStorage cache (covers fields not in DB schema)
+    let profileCache = {};
+    try { profileCache = JSON.parse(localStorage.getItem('jiff-profile-cache') || '{}'); } catch {}
     if (profRes.data) {
-      setProfile(profRes.data);
+      setProfile({ ...profileCache, ...profRes.data }); // DB always wins
     } else {
       // First-time user — create profile row
       const newProf = {
@@ -128,18 +130,28 @@ export function AuthProvider({ children }) {
     setProfile(merged);
     if (supabase && user) {
       // Only upsert columns that exist in the profiles schema
+      // Only upsert columns confirmed to exist in the profiles schema
+      // (matches the INSERT on signup + any confirmed additions)
+      // Confirmed Supabase profiles schema columns.
+      // Run this SQL in Supabase dashboard if cooking_for/family_size/has_kids/kids_ages are missing:
+      // ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cooking_for text DEFAULT 'just_me';
+      // ALTER TABLE profiles ADD COLUMN IF NOT EXISTS family_size int DEFAULT 2;
+      // ALTER TABLE profiles ADD COLUMN IF NOT EXISTS has_kids boolean DEFAULT false;
+      // ALTER TABLE profiles ADD COLUMN IF NOT EXISTS kids_ages text[] DEFAULT '{}';
       const SCHEMA_COLS = [
         'id','email','name','avatar_url','updated_at',
         'food_type','spice_level','allergies','preferred_cuisines','skill_level',
-        'cooking_for','family_size','has_kids','kids_ages',
         'family_members','active_goal','calorie_target',
         'streak','onboarding_done','country',
+        'cooking_for','family_size','has_kids','kids_ages',
       ];
       const safe = Object.fromEntries(
         Object.entries({ id: user.id, ...merged, updated_at: new Date().toISOString() })
           .filter(([k]) => SCHEMA_COLS.includes(k))
       );
       await supabase.from('profiles').upsert(safe);
+      // Cache full profile in localStorage for instant load + fields not in DB schema
+      try { localStorage.setItem('jiff-profile-cache', JSON.stringify(merged)); } catch {}
     }
   }, [profile, user]);
 

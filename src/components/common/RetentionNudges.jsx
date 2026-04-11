@@ -17,6 +17,7 @@ function DismissBtn({ onClick }) {
 
 export default function RetentionNudges({
   welcomeBack, weeklyDigest, milestone, didYouCookNudge, challenge,
+  upgradeNudge, onDismissUpgrade,
   onConfirmCooked, onDismissNudge, lastFavCuisine,
 }) {
   return (
@@ -99,6 +100,24 @@ export default function RetentionNudges({
         <div style={{ marginTop:10, padding:'8px 12px', borderRadius:10, background:'rgba(29,158,117,0.07)', border:'1px solid rgba(29,158,117,0.2)', display:'flex', alignItems:'center', gap:8 }}>
           <span>{'🏆'}</span>
           <span style={{ fontSize:12, color:'#065F46', fontWeight:500 }}>{'Weekly challenge complete! Great cooking this week.'}</span>
+        </div>
+      )}
+
+      {/* Engagement-based upgrade nudge */}
+      {upgradeNudge && (
+        <div style={{ marginTop:10, padding:'10px 14px', borderRadius:12, background:'rgba(255,69,0,0.06)', border:'1.5px solid rgba(255,69,0,0.2)', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:18, flexShrink:0 }}>{'⚡'}</span>
+          <div style={{ flex:1, fontSize:12, color:'#CC3700', lineHeight:1.5 }}>
+            {"You've rated "}{upgradeNudge.ratingCount}{" recipes — you're clearly into this. Unlock everything with Premium."}
+          </div>
+          <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+            <a href="/pricing" style={{ fontSize:11, padding:'5px 12px', borderRadius:8, background:'#FF4500', color:'white', textDecoration:'none', fontFamily:"'DM Sans',sans-serif", fontWeight:600, display:'inline-block' }}>
+              {'Upgrade'}
+            </a>
+            <button onClick={onDismissUpgrade} style={{ fontSize:11, padding:'5px 10px', borderRadius:8, background:'none', color:'#7C6A5E', border:'1px solid rgba(28,10,0,0.12)', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+              {'Later'}
+            </button>
+          </div>
         </div>
       )}
     </>

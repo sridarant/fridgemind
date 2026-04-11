@@ -8,7 +8,6 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate }         from 'react-router-dom';
-import { useLocale }           from '../../contexts/LocaleContext';
 import MoodSelector            from './MoodSelector.jsx';
 import OrderInSheet            from './OrderInSheet.jsx';
 import GoalSheet               from './GoalSheet.jsx';
@@ -132,8 +131,8 @@ function getFeaturedTile({ festival, sports, weather, dayCtx, profile, isReturni
   const h   = new Date().getHours();
   const dow = new Date().getDay();
 
-  // 1. Festival
-  if (festival) return {
+  // 1. Festival (defers to sports during match time — afternoons/evenings)
+  if (festival && !sports) return {
     emoji: festival.emoji, badge: 'FESTIVAL',
     label: festival.name + ' special',
     sub:   festival.note || 'Traditional recipes for the occasion',
@@ -141,7 +140,26 @@ function getFeaturedTile({ festival, sports, weather, dayCtx, profile, isReturni
     context: { type:'festival', cuisine: festival.cuisine || 'indian', mealType: festival.mealType || 'dinner' },
   };
 
-  // 2. Sports
+  // Festival + Sports both active: show festival at lunch, sports at snack/dinner
+  if (festival && sports) {
+    const hr = new Date().getHours();
+    if (hr >= 14) return {   // afternoon/evening → IPL time
+      emoji: sports.emoji, badge: 'MATCH DAY',
+      label: sports.label,
+      sub:   sports.note,
+      color: '#1D4ED8', bg:'rgba(29,78,216,0.06)', border:'rgba(29,78,216,0.2)',
+      context: { type:'sports', mealType:'snack', cuisine: sports.cuisine || 'indian' },
+    };
+    return {                 // morning/lunch → festival
+      emoji: festival.emoji, badge: 'FESTIVAL',
+      label: festival.name + ' special',
+      sub:   festival.note || 'Traditional recipes for the occasion',
+      color: '#DC2626', bg:'rgba(220,38,38,0.06)', border:'rgba(220,38,38,0.2)',
+      context: { type:'festival', cuisine: festival.cuisine || 'indian', mealType: festival.mealType || 'dinner' },
+    };
+  }
+
+  // 2. Sports only
   if (sports) return {
     emoji: sports.emoji, badge: 'MATCH DAY',
     label: sports.label,
@@ -213,7 +231,7 @@ function getFeaturedTile({ festival, sports, weather, dayCtx, profile, isReturni
 }
 
 // ── Personalised picks engine — Zone 3 ─────────────────────────────
-function getPersonalisedPicks({ profile, ratings, festival, sports, weather }) {
+function getPersonalisedPicks({ profile, ratings }) {
   const cuisines = profile?.preferred_cuisines || [];
   const ratingCount = ratings ? Object.keys(ratings).length : 0;
 
@@ -267,6 +285,7 @@ export function JourneyTiles({
   profile, season, streak, country,
   ratings, mealHistory,
   didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
+  upgradeNudge, onDismissUpgrade,
   onConfirmCooked, onDismissNudge,
   onSelectFridge, onGenerateDirect, onLeftoverRescue, onWeatherGenerate,
 }) {
@@ -277,7 +296,7 @@ export function JourneyTiles({
   const [weather,   setWeather]   = useState(null);
 
   const isIndia = (country || 'IN') === 'IN';
-  const festival = getUpcomingFestival();
+  const festival = getUpcomingFestival(profile);
   const sports   = getActiveSportsEvent();
   const dayCtx   = getDayOfWeekContext();
   const season_  = getCurrentSeason();
@@ -359,6 +378,8 @@ export function JourneyTiles({
           milestone={milestone}
           didYouCookNudge={didYouCookNudge}
           challenge={challenge}
+          upgradeNudge={upgradeNudge}
+          onDismissUpgrade={onDismissUpgrade}
           onConfirmCooked={onConfirmCooked}
           onDismissNudge={onDismissNudge}
           lastFavCuisine={(() => {

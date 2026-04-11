@@ -6,7 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/common/PageHeader';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth }   from '../contexts/AuthContext';
+import { usePremium } from '../contexts/PremiumContext';
 import { generatePlan } from '../services/plannerService';
+import { trackPaywallShown, trackUpgradeClick } from '../lib/analytics';
 import styles from '../styles/plannerStyles';
 
 
@@ -24,6 +26,7 @@ const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 export default function Planner() {
   const navigate = useNavigate();
+  const { isPremium, trialActive, PAID_RECIPE_CAP } = usePremium();
   const { profile, pantry } = useAuth();
   const { country } = useLocale();
 
@@ -99,6 +102,19 @@ export default function Planner() {
       <style>{styles}</style>
       <div className="page">
         <PageHeader title="Week Planner" backTo='/plan' backLabel='← Plan' />
+
+        {!isPremium && !trialActive && (
+          <div style={{ margin:'12px 16px 0', padding:'12px 16px', background:'rgba(255,69,0,0.06)', border:'1.5px solid rgba(255,69,0,0.2)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+            <div>
+              <div style={{ fontSize:13, color:'#CC3700', fontWeight:600 }}>{'⚡ Premium feature'}</div>
+              <div style={{ fontSize:11, color:'#7C6A5E', fontWeight:300, marginTop:2 }}>{'Full week planner requires a premium subscription'}</div>
+            </div>
+            <button onClick={() => { trackUpgradeClick('planner_gate'); navigate('/pricing'); }}
+              style={{ background:'#FF4500', color:'white', border:'none', borderRadius:8, padding:'7px 16px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", flexShrink:0, whiteSpace:'nowrap' }}>
+              {'Upgrade →'}
+            </button>
+          </div>
+        )}
 
         {/* No profile — redirect prompt */}
         {!hasProfile && (

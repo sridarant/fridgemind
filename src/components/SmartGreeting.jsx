@@ -37,7 +37,7 @@ export default function SmartGreeting({ user, profile, onSuggestRecipe, onCountr
       })
       .catch(() => { if (!cancelled) { setDenied(true); setLoading(false); } });
     return () => { cancelled = true; };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const name = profile?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'there';
 

@@ -1,6 +1,6 @@
 // src/pages/Profile.jsx
 // Profile page shell — tab routing only. All tab UI is in src/components/profile/.
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth }   from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
@@ -8,7 +8,6 @@ import { fetchHistory } from '../services/historyService';
 import { parseFoodTypeIds } from '../lib/dietary';
 import { INDIAN_PANTRY_DEFAULTS } from '../components/profile/PantryTab';
 import TasteTab    from '../components/profile/TasteTab';
-import FamilyTab   from '../components/profile/FamilyTab';
 import GoalsTab    from '../components/profile/GoalsTab';
 import PantryTab   from '../components/profile/PantryTab';
 import SettingsTab from '../components/profile/SettingsTab';
@@ -50,7 +49,6 @@ function StatsBanner({ streak, cookedCount, avgRating }) {
 
 const TABS = [
   { id:'taste',  label:'My Taste' },
-  { id:'family', label:'Family'   },
   { id:'goals',  label:'Goals'    },
   { id:'pantry', label:'Pantry'   },
 ];
@@ -75,9 +73,6 @@ export default function Profile() {
   const [prefCuisines, setPrefCuisines] = useState([]);
 
   // Family
-  const [familyMembers,    setFamilyMembers]    = useState([]);
-  const [newMemberName,    setNewMemberName]     = useState('');
-  const [newMemberDietary, setNewMemberDietary]  = useState('veg');
 
   // Goals
   const [activeGoal,    setActiveGoal]    = useState('');
@@ -105,7 +100,6 @@ export default function Profile() {
     if (profile.skill_level)               setSkillLevel(profile.skill_level);
     if (profile.allergies?.length)         setAllergies(profile.allergies);
     if (profile.preferred_cuisines?.length) setPrefCuisines(profile.preferred_cuisines);
-    if (profile.family_members)            setFamilyMembers(Array.isArray(profile.family_members) ? profile.family_members : []);
     if (profile.active_goal)               setActiveGoal(profile.active_goal);
     if (profile.calorie_target)            setCalorieTarget(String(profile.calorie_target));
   }, [profile]);
@@ -132,7 +126,6 @@ export default function Profile() {
       skill_level:        skillLevel,
       allergies,
       preferred_cuisines: prefCuisines,
-      family_members:     familyMembers,
       active_goal:        activeGoal,
       calorie_target:     calorieTarget ? parseInt(calorieTarget, 10) : null,
     });
@@ -194,14 +187,7 @@ export default function Profile() {
             {...tabProps}
           />
         )}
-        {activeTab === 'family' && (
-          <FamilyTab
-            familyMembers={familyMembers} setFamilyMembers={setFamilyMembers}
-            newMemberName={newMemberName} setNewMemberName={setNewMemberName}
-            newMemberDietary={newMemberDietary} setNewMemberDietary={setNewMemberDietary}
-            {...tabProps}
-          />
-        )}
+
         {activeTab === 'goals' && (
           <GoalsTab
             activeGoal={activeGoal} setActiveGoal={setActiveGoal}

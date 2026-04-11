@@ -4,7 +4,7 @@
 // ── Festival calendar — covers Hindu, Muslim, Christian, Sikh, Buddhist, Jain ──
 const FESTIVALS = [
   // January
-  { name:'Pongal',       emoji:'\ud83c\udf3e', m:1,  d1:13, d2:16, diet:'vegetarian', note:'Ven Pongal, Sakkarai Pongal, Vadai', community:'Tamil/South Indian' },
+  { name:'Pongal',       emoji:'\ud83c\udf3e', m:1,  d1:13, d2:16, diet:'vegetarian', note:'Ven Pongal, Sakkarai Pongal, Vadai', community:'Tamil/South Indian', region:['tamil_nadu','chettinad','udupi','andhra','karnataka'] },
   { name:'Makar Sankranti', emoji:'\ud83e\ude81', m:1, d1:14, d2:15, diet:'vegetarian', note:'Tilgul laddoo, Khichdi, Undhiyu', community:'Pan-India' },
   { name:'Lohri',        emoji:'\ud83d\udd25', m:1, d1:12, d2:14, diet:'none',       note:'Sarson saag, Makki roti, Rewri, Gajak', community:'Punjabi/North Indian' },
 
@@ -16,22 +16,25 @@ const FESTIVALS = [
   { name:'Shivratri',    emoji:'\ud83d\udc00', m:3,  d1:8,  d2:9,  diet:'vegetarian', note:'Sabudana, Makhana kheer, Kuttu puri, Fruits', community:'Hindu' },
 
   // April
-  { name:'Ugadi',        emoji:'\ud83c\udf38', m:4,  d1:1,  d2:3,  diet:'vegetarian', note:'Ugadi pachadi, Holige, Puliyogare', community:'Kannada/Telugu' },
-  { name:'Gudi Padwa',   emoji:'\ud83c\udde8', m:4,  d1:1,  d2:2,  diet:'vegetarian', note:'Puran poli, Shrikhand, Aamras', community:'Maharashtrian' },
-  { name:'Baisakhi',     emoji:'\ud83c\udf3e', m:4,  d1:13, d2:14, diet:'none',       note:'Makki di roti, Sarson saag, Lassi, Pinni', community:'Sikh/Punjabi' },
-  { name:'Navratri',     emoji:'\ud83c\udf38', m:4,  d1:2,  d2:11, diet:'vegetarian', note:'Sabudana khichdi, Kuttu puri, Singhara halwa', community:'Hindu' },
-  { name:'Eid ul-Fitr',  emoji:'\ud83c\udf19', m:4,  d1:9,  d2:11, diet:'halal',      note:'Sheer khurma, Biryani, Sewai, Phirni', community:'Muslim' },
+  { name:'Ugadi',        emoji:'\ud83c\udf38', m:4,  d1:1,  d2:3,  diet:'vegetarian', note:'Ugadi pachadi, Holige, Puliyogare', community:'Kannada/Telugu', region:['karnataka','andhra','hyderabadi'] },
+  { name:'Gudi Padwa',   emoji:'\ud83c\udde8', m:4,  d1:1,  d2:2,  diet:'vegetarian', note:'Puran poli, Shrikhand, Aamras', community:'Maharashtrian', region:['maharashtrian','goan'] },
+  { name:'Navratri',     emoji:'\ud83c\udf38', m:4,  d1:2,  d2:11, diet:'vegetarian', note:'Sabudana khichdi, Kuttu puri, Singhara halwa', community:'Hindu', region:[] },
+  { name:'Eid ul-Fitr',  emoji:'\ud83c\udf19', m:4,  d1:9,  d2:11, diet:'halal',      note:'Sheer khurma, Biryani, Sewai, Phirni', community:'Muslim', region:['hyderabadi'] },
+  { name:'Puthandu',     emoji:'🌸', m:4,  d1:14, d2:15, diet:'vegetarian', note:'Mango pachadi, Vadai, Payasam, Neem flower rasam', community:'Tamil', region:['tamil_nadu','chettinad','udupi'] },
+  { name:'Vishu',        emoji:'🌼', m:4,  d1:14, d2:15, diet:'vegetarian', note:'Vishu kanji, Vishu katta, Sadya, Papadam', community:'Malayali', region:['kerala'] },
+  { name:'Pohela Boishakh', emoji:'🎊', m:4, d1:14, d2:15, diet:'none',    note:'Ilish macher paturi, Panta bhat, Mishti doi, Rosogolla', community:'Bengali', region:['bengali','odia','assamese'] },
+  { name:'Baisakhi',     emoji:'\ud83c\udf3e', m:4,  d1:13, d2:14, diet:'none',       note:'Makki di roti, Sarson saag, Lassi, Pinni', community:'Sikh/Punjabi', region:['punjabi','kashmiri','himachali'] },
 
   // July
   { name:'Eid ul-Adha',  emoji:'\ud83d\udc11', m:6, d1:16, d2:18, diet:'halal',      note:'Mutton biryani, Seekh kebab, Haleem, Kheer', community:'Muslim' },
 
   // August
   { name:'Janmashtami',  emoji:'\ud83d\udc5a', m:8,  d1:14, d2:16, diet:'vegetarian', note:'Panjiri, Makhana kheer, Panchamrit, Laddoo', community:'Hindu' },
-  { name:'Onam',         emoji:'\ud83c\udf3a', m:8,  d1:28, d2:31, diet:'vegetarian', note:'Avial, Sambar, Payasam, Sadya thali', community:'Kerala/Malayali' },
+  { name:'Onam',         emoji:'\ud83c\udf3a', m:8,  d1:28, d2:31, diet:'vegetarian', note:'Avial, Sambar, Payasam, Sadya thali', community:'Kerala/Malayali', region:['kerala'] },
   { name:'Raksha Bandhan',emoji:'\ud83e\uddf5', m:8, d1:19, d2:19, diet:'vegetarian', note:'Ghewar, Mohanthal, Kaju katli, Ras malai', community:'Pan-India' },
 
   // September
-  { name:'Ganesh Chaturthi', emoji:'\ud83d\udc18', m:9, d1:1, d2:12, diet:'vegetarian', note:'Modak, Karanji, Puran poli, Ladoo', community:'Maharashtrian/South Indian' },
+  { name:'Ganesh Chaturthi', emoji:'\ud83d\udc18', m:9, d1:1, d2:12, diet:'vegetarian', note:'Modak, Karanji, Puran poli, Ladoo', community:'Maharashtrian/South Indian', region:['maharashtrian','goan','karnataka'] },
 
   // October
   { name:'Navratri',     emoji:'\ud83c\udf38', m:10, d1:2,  d2:12, diet:'vegetarian', note:'Fasting specials — sabudana, singhara, makhana', community:'Hindu' },
@@ -116,7 +119,7 @@ export function getActiveSportsEvent() {
   return null;
 }
 
-export function getUpcomingFestival() {
+export function getUpcomingFestival(profile = null) {
   const now   = new Date();
   const month = now.getMonth() + 1;
   const day   = now.getDate();
@@ -124,7 +127,23 @@ export function getUpcomingFestival() {
     if (d1 <= d2) return month === m && day >= d1 - 2 && day <= d2;
     return (month === m && day >= d1 - 2) || (month === (m % 12) + 1 && day <= d2);
   };
-  return FESTIVALS.find(f => inRange(f.m, f.d1, f.d2)) || null;
+
+  const active = FESTIVALS.filter(f => inRange(f.m, f.d1, f.d2));
+  if (!active.length) return null;
+  if (active.length === 1) return active[0];
+
+  // Multiple festivals active — prefer one matching user's preferred cuisines/region
+  const prefCuisines = profile?.preferred_cuisines || [];
+  if (prefCuisines.length) {
+    const matched = active.find(f =>
+      f.region?.some(r => prefCuisines.includes(r))
+    );
+    if (matched) return matched;
+  }
+
+  // Pan-India festivals have no region — prefer them as default
+  // Otherwise return first (calendar order)
+  return active.find(f => !f.region?.length) || active[0];
 }
 
 export function getCurrentSeason() {

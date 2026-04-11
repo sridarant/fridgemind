@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { trackTrialStart } from '../lib/analytics';
 
 const PremiumContext = createContext(null);
 export const usePremium = () => useContext(PremiumContext);
@@ -114,16 +115,8 @@ export function PremiumProvider({ children }) {
     if (existing) { setTrialState(existing); return existing; }
     const t = initTrial(userId);
     setTrialState(t);
-    // Sync trial start to Supabase
-    const sbUrl = process.env.REACT_APP_SUPABASE_URL;
-    const anonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-    if (sbUrl && anonKey && userId) {
-      fetch(`${sbUrl}/rest/v1/profiles?id=eq.${userId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type':'application/json','apikey':anonKey,'Authorization':`Bearer ${anonKey}`,'Prefer':'return=minimal' },
-        body: JSON.stringify({ trial_started_at: new Date(t.startedAt).toISOString() }),
-      }).catch(()=>{});
-    }
+    trackTrialStart(userId);
+    // Trial tracked via GA4 (trial_started_at not in profiles schema)
     return t;
   }, []);
 
@@ -133,6 +126,7 @@ export function PremiumProvider({ children }) {
     if (trialExpired || hasNoAccess) {
       setGateReason(trialExpired ? 'trial_expired' : reason);
       setShowGate(true);
+      trackPaywallShown(trialExpired ? 'trial_expired' : reason);
       return false;
     }
     return true; // trial active

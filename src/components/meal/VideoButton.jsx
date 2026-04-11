@@ -19,7 +19,7 @@ export function VideoButton({ recipeName, cuisine = '', lang = 'en', compact = f
       setVideoData(video);
       setState('found');
     } catch {
-      setState('notfound');
+      setState('unconfigured'); // fall back to YouTube search link on any error
     }
   };
 
@@ -66,12 +66,12 @@ export function VideoButton({ recipeName, cuisine = '', lang = 'en', compact = f
   if (state === 'unconfigured') return (
     <a href={ytFallback} target="_blank" rel="noopener noreferrer" style={{
       display:'inline-flex', alignItems:'center', gap:6,
-      padding:'6px 12px', borderRadius:8,
-      border:'1px solid rgba(204,0,0,0.2)', background:'rgba(204,0,0,0.05)',
-      color:'#CC0000', fontSize:12, fontWeight:500, textDecoration:'none',
+      padding: compact ? '4px 10px' : '7px 12px', borderRadius:8,
+      border:'1px solid rgba(204,0,0,0.25)', background:'rgba(204,0,0,0.05)',
+      color:'#CC0000', fontSize: compact ? 11 : 12, fontWeight:500, textDecoration:'none',
       fontFamily:"'DM Sans',sans-serif",
     }}>
-      {'\ud83d\udcfa Watch recipe video'}
+      {'▶ Watch on YouTube'}
     </a>
   );
 

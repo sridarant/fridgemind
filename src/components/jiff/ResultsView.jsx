@@ -4,6 +4,7 @@
 import { MealCard } from '../meal/MealCard.jsx';
 import { mealKey }  from '../../lib/mealKey.js';
 import { updateRating } from '../../services/historyService';
+import { trackPaywallShown, trackUpgradeClick, trackRating } from '../../lib/analytics';
 
 const MEAL_TYPE_OPTIONS = [
   { id: 'any', label: 'Any meal', emoji: '🍽️' },
@@ -24,6 +25,7 @@ export default function ResultsView({
 }) {
   // onRate is passed from parent (Jiff.jsx) which handles Supabase sync
   const handleRate = onRate || ((meal, stars) => {
+    trackRating({ stars, cuisine: meal.cuisine, mealType });
     const key = mealKey(meal);
     setRatings(prev => ({ ...prev, [key]: stars }));
     if (user) updateRating({ userId: user.id, mealName: meal.name, rating: stars });
@@ -108,16 +110,37 @@ export default function ResultsView({
         <span className="filter-pill">{'🥦 '}{ingredients.length}{' ingredient'}{ingredients.length > 1 ? 's' : ''}</span>
       </div>
 
+
       {!isPremium && trialActive && (
-        <div style={{ background: 'rgba(255,184,0,0.08)', border: '1px solid rgba(255,184,0,0.25)', borderRadius: 12, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, color: '#854F0B', fontWeight: 300 }}>
-            {'🎁 Trial preview — you\'re seeing 1 recipe. Upgrade to see all '}{PAID_RECIPE_CAP}{'.'}
-          </span>
-          <button
-            onClick={() => navigate('/pricing')}
-            style={{ background: '#854F0B', color: 'white', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif", whiteSpace: 'nowrap' }}
-          >
+        <div style={{ background:'rgba(255,184,0,0.08)', border:'1px solid rgba(255,184,0,0.25)', borderRadius:12, padding:'10px 16px', marginBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+          <div>
+            <div style={{ fontSize:13, color:'#854F0B', fontWeight:500 }}>
+              {'🎁 Trial — seeing 1 of '}{PAID_RECIPE_CAP}{' recipes'}
+            </div>
+            <div style={{ fontSize:11, color:'#92400E', fontWeight:300, marginTop:2 }}>
+              {'Upgrade to unlock all recipes + week planner + saved meals'}
+            </div>
+          </div>
+          <button onClick={() => { trackUpgradeClick('trial_banner'); navigate('/pricing'); }}
+            style={{ background:'#854F0B', color:'white', border:'none', borderRadius:8, padding:'7px 16px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap', flexShrink:0 }}>
             {'⚡ Upgrade'}
+          </button>
+        </div>
+      )}
+
+      {!isPremium && !trialActive && user && (
+        <div style={{ background:'rgba(255,69,0,0.06)', border:'1.5px solid rgba(255,69,0,0.25)', borderRadius:12, padding:'12px 16px', marginBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+          <div>
+            <div style={{ fontSize:13, color:'#CC3700', fontWeight:600 }}>
+              {'✨ '}{meals.length}{' recipes found'}
+            </div>
+            <div style={{ fontSize:11, color:'#7C6A5E', fontWeight:300, marginTop:2 }}>
+              {'Unlock all '}{PAID_RECIPE_CAP}{' recipes, week planner, and saved meals'}
+            </div>
+          </div>
+          <button onClick={() => { trackUpgradeClick('results_gate'); navigate('/pricing'); }}
+            style={{ background:'#FF4500', color:'white', border:'none', borderRadius:8, padding:'7px 16px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap', flexShrink:0 }}>
+            {'⚡ Upgrade →'}
           </button>
         </div>
       )}
@@ -147,21 +170,34 @@ export default function ResultsView({
         ))}
       </div>
 
-      {/* Smart recommendations */}
-      {topRated.length >= 1 && (
-        <div style={{ background: 'rgba(255,69,0,0.04)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 14, padding: '14px 16px', marginBottom: 16 }}>
-          <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--jiff)', fontWeight: 500, marginBottom: 10 }}>
-            {'✨ Based on meals you loved'}
+      {/* Smart recommendations — post-rating 'More like this' */}
+      {topRated.length >= 1 && (() => {
+        const topMeal    = meals.find(m => (ratings[mealKey(m)] || 0) >= 4 && m.cuisine);
+        const topCuisine = topMeal?.cuisine;
+        const cuisineLabel = topCuisine
+          ? topCuisine.replace(/_/g,' ').split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ')
+          : null;
+        return (
+          <div style={{ background:'rgba(255,69,0,0.04)', border:'1px solid rgba(255,69,0,0.15)', borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
+            <div style={{ fontSize:11, letterSpacing:'1.5px', textTransform:'uppercase', color:'var(--muted)', fontWeight:600, marginBottom:8 }}>
+              {'✨ More like what you loved'}
+            </div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {cuisineLabel && (
+                <button onClick={() => handleSurprise()}
+                  style={{ padding:'8px 16px', borderRadius:20, background:'#FF4500', color:'white', border:'none', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                  {'More '}{cuisineLabel}{' ideas →'}
+                </button>
+              )}
+              <button onClick={handleSurprise}
+                style={{ padding:'8px 16px', borderRadius:20, background:'white', color:'#FF4500', border:'1.5px solid rgba(255,69,0,0.3)', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                {'✨ Surprise me'}
+              </button>
+            </div>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 300, margin: '0 0 10px' }}>
-            {'You\'ve rated '}{topRated.length}{' recipe'}{topRated.length !== 1 ? 's' : ''}{' highly. Generate similar dishes:'}
-          </p>
-          <button
-            onClick={handleSurprise}
-            style={{ background: 'var(--jiff)', color: 'white', border: 'none', borderRadius: 10, padding: '8px 18px', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif" }}
-          >
-            {'✨ Surprise me with something similar'}
-          </button>
+        );
+      })()}
+            })}
         </div>
       )}
 

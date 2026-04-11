@@ -4,6 +4,8 @@
 
 import { useState, useCallback } from 'react';
 import { generateRecipes } from '../services/recipeService';
+import { trackGeneration } from '../lib/analytics';
+import { trackGeneration } from '../lib/analytics';
 import { saveHistory, fetchHistory, buildRatingsFromHistory, updateRating } from '../services/historyService';
 import { updateStreak, computeNextStreak } from '../services/userService';
 
@@ -89,6 +91,7 @@ export function useRecipes({
         userId: user.id, meals: data.meals,
         mealType, cuisine, servings: defaultServings, ingredients,
       });
+      trackGeneration({ cuisine, mealType, diet, isPremium, source: 'fridge' });
     } catch (err) {
       setErrorMsg('Connection error. Please try again.');
       setView('error');
@@ -172,6 +175,7 @@ export function useRecipes({
       setMeals(resultMeals);
       handleStreak(user.id);
       saveHistory({ userId: user.id, meals: resultMeals, mealType, cuisine, servings: defaultServings, ingredients: tileIngredients });
+      trackGeneration({ cuisine: context.cuisine || cuisine, mealType: context.mealType || mealType, diet, isPremium, source: context.type || 'tile' });
       setView('results');
       return true;
     } catch {

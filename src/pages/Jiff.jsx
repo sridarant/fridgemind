@@ -64,7 +64,6 @@ export default function Jiff() {
   const [profileLoaded,   setProfileLoaded]   = useState(false);
   const [journeyMode,     setJourneyMode]     = useState(false);
   const [inputMode,       setInputMode]       = useState('direct');
-  const [familySelected,  setFamilySelected]  = useState([]);
   const [gatePlan,        setGatePlan]        = useState('annual');
   const [gateLoading,     setGateLoading]     = useState(false);
   const [gateDismissed,   setGateDismissed]   = useState(false);
@@ -99,7 +98,7 @@ export default function Jiff() {
   const {
     didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
     recordGeneration, confirmCooked, dismissNudge, recordRating,
-  } = useRetention({ mealHistory, ratings, user });
+
 
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
@@ -125,10 +124,10 @@ export default function Jiff() {
 
   useEffect(() => {
     if (user && view === 'input') {
-      setJourneyMode(true);
-      if (profile && !profile.onboarding_done && !sessionStorage.getItem('jiff-onboarding-shown')) {
-        sessionStorage.setItem('jiff-onboarding-shown', '1');
-        navigate('/onboarding');
+        const onbDone = profile.onboarding_done || localStorage.getItem('jiff-onboarding-done') === '1';
+        if (profile && !onbDone) {
+          navigate('/onboarding');
+        }
       }
     }
   }, [user]); // eslint-disable-line
@@ -302,7 +301,6 @@ export default function Jiff() {
           defaultServings={defaultServings} setDefaultServings={setDefaultServings}
           profile={profile} lang={lang} user={user}
           isPremium={isPremium} trialActive={trialActive} PAID_RECIPE_CAP={PAID_RECIPE_CAP}
-          familySelected={familySelected} setFamilySelected={setFamilySelected}
           ingredients={ingredients}
           handleSubmit={() => {
             // Track fridge items for pantry learning
@@ -369,6 +367,8 @@ export default function Jiff() {
             welcomeBack={welcomeBack}
             challenge={challenge}
             milestone={milestone}
+            upgradeNudge={upgradeNudge}
+            onDismissUpgrade={() => setUpgradeNudge(null)}
             onConfirmCooked={confirmCooked}
             onDismissNudge={dismissNudge}
             onSelectFridge={() => { setJourneyMode(false); setInputMode('fridge'); }}

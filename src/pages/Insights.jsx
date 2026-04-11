@@ -142,8 +142,17 @@ export default function Insights() {
       const recentCount = history.filter(h => new Date(h.generated_at).getTime() > weekAgo).length;
 
       setData({ history, cuisines, mealTypes, topIngs, avgNutr, ratingDist, avgRating,
-        streak: streak.count || 0, recentCount, totalMeals: allMeals.length,
-        totalSessions: history.length, ratedCount: Object.values(ratings).length });
+        streak: streak.count || 0, recentCount,
+        totalMeals: allMeals.length,
+        totalSessions: history.length,
+        ratedCount: Object.values(ratings).length,
+        // Passport fields
+        cuisinesExplored: cuisines.filter(c => c.label && c.label !== 'any').length,
+        topCuisines: cuisines
+          .filter(c => c.label && c.label !== 'any')
+          .slice(0, 10)
+          .map(c => ({ name: c.label, count: c.count })),
+      });
     };
     loadData();
   }, [user]);
@@ -353,7 +362,8 @@ export default function Insights() {
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(100px,1fr))', gap:8 }}>
                     {['Tamil Nadu','Kerala','Karnataka','Andhra Pradesh','Maharashtra','Gujarat','Rajasthan','Punjab','Bengal','Odisha','Bihari','Kashmiri','Hyderabadi','Goan','Mughlai','North Indian','South Indian','Street Food','Chinese','Japanese','Korean','Thai','Vietnamese','Malaysian','Italian','French','Spanish','Mediterranean','Mexican','American'].map(cuisine=>{
-                      const explored = (data.topCuisines||[]).some(c=>c.name?.toLowerCase()===cuisine.toLowerCase());
+                      const normalise = s => (s||'').toLowerCase().replace(/[_\s-]+/g,'');
+                      const explored = (data.topCuisines||[]).some(c => normalise(c.name) === normalise(cuisine));
                       return (
                         <div key={cuisine} style={{
                           padding:'10px 8px', borderRadius:10, textAlign:'center',

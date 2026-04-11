@@ -44,12 +44,13 @@ function save(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
 }
 
-export function useRetention({ mealHistory = [], ratings = {}, user }) {
+export function useRetention({ mealHistory = [], ratings = {}, user, isPremium = false }) {
   const [didYouCookNudge, setDidYouCookNudge] = useState(null); // { mealName }
   const [weeklyDigest,    setWeeklyDigest]    = useState(null); // { cooks, cuisines, saved }
   const [welcomeBack,     setWelcomeBack]     = useState(null); // { daysAway }
   const [challenge,       setChallenge]       = useState(null); // { label, progress, target, done }
   const [milestone,       setMilestone]       = useState(null); // { type:'rating5'|'rating15' }
+  const [upgradeNudge,    setUpgradeNudge]    = useState(null); // streak-based upgrade prompt
 
   const ratingCount = Object.keys(ratings).length;
 
@@ -117,6 +118,20 @@ export function useRetention({ mealHistory = [], ratings = {}, user }) {
     }
   }, [user]); // eslint-disable-line
 
+  // Streak-based upgrade nudge (separate effect — watches streak in ratings count)
+  useEffect(() => {
+    if (!user || isPremium) return;
+    const ratingCount = Object.keys(ratings).length;
+    // After 3 rated recipes: user is engaged — show upgrade nudge once
+    if (ratingCount >= 3) {
+      const shown = localStorage.getItem('jiff-upgrade-nudge-shown');
+      if (!shown) {
+        setUpgradeNudge({ reason: 'engaged', ratingCount });
+        localStorage.setItem('jiff-upgrade-nudge-shown', '1');
+      }
+    }
+  }, [user, isPremium, ratings]); // eslint-disable-line
+
   // ── Event triggers (called from Jiff.jsx) ────────────────────────
 
   // Call after a generation completes — stores last meal for did-you-cook
@@ -160,7 +175,8 @@ export function useRetention({ mealHistory = [], ratings = {}, user }) {
 
   return {
     didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
-    setDidYouCookNudge, setWeeklyDigest, setWelcomeBack, setChallenge, setMilestone,
+    setDidYouCookNudge, setWeeklyDigest, setWelcomeBack, setChallenge, setMilestone, setUpgradeNudge,
+    upgradeNudge, setUpgradeNudge,
     recordGeneration, confirmCooked, dismissNudge, recordRating,
   };
 }

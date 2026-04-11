@@ -124,7 +124,7 @@ const dishLine    = dish           ? `Feature this dish: ${dish}.` : '';
 const familyLine  = familyMembers?.length > 0 ? `Family: ${familyMembers.map(m=>m.name||m).join(', ')}.` : '';
 
 const prompt = `Creative chef. Suggest ${maxCount} ${mealType!=='any'?mealType+' ':' '}meals.
-Ingredients: ${ingredients.join(', ')}.
+Ingredients: ${(ingredients || []).filter(i => typeof i === 'string').join(', ')}.
 ${time} prep. Diet: ${dietLabel}. ${cuisineLabel?'Cuisine: '+cuisineLabel+'.':''} Servings: ${servings}. ${units==='imperial'?'Imperial.':'Metric.'} ${moodLine} ${weatherLine} ${dishLine} ${familyLine} ${langName!=='English'?'Language: '+langName+'.':''}
 JSON only — ${maxCount} objects:
 [{"name":"..","emoji":"..","time":"..","servings":${servings},"diet":"..","description":"..","ingredients":["qty unit item"],"steps":["step text"],"calories":"..","protein":"..","carbs":"..","fat":".."}]`;
@@ -267,7 +267,7 @@ JSON only — ${maxCount} objects:
     // ── Egg + vegetarian conflict fix (item u) ────────────────
     // If diet is vegetarian and ingredients contain eggs, treat as eggetarian
     // This prevents AI from returning egg dishes for strict vegetarian
-    const hasEggs = (ingredients || []).some(i => ['egg','eggs','boiled egg'].includes(i.toLowerCase().trim()));
+    const hasEggs = (ingredients || []).some(i => typeof i === 'string' && ['egg','eggs','boiled egg'].includes(i.toLowerCase().trim()));
     let effectiveDiet = dietLabel;
     let eggRule = '';
     if (diet === 'vegetarian' && hasEggs) {
@@ -331,7 +331,7 @@ JSON only — ${maxCount} objects:
 
     const prompt = `You are a creative, practical chef with deep knowledge of world cuisines.
 
-Available ingredients: ${ingredients.join(', ')}.
+Available ingredients: ${(ingredients || []).filter(i => typeof i === 'string').join(', ')}.
 Time available: ${time}.
 Dietary preference: ${effectiveDiet}. ${eggRule}
 Meal type: ${mealTypeRule}
