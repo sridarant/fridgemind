@@ -169,32 +169,34 @@ export default function Favs() {
           </select>
         } />
 
-        {/* Stats + search */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-          <span style={{ fontFamily:"'Fraunces',serif", fontSize:18, fontWeight:700, color:C.ink }}>
-            ❤️ Favourites
+      <div style={{ padding:'10px 16px', borderBottom:'1px solid rgba(28,10,0,0.06)', background:'white' }}>
+        {/* Stats */}
+        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+          <span style={{ fontFamily:"'Fraunces',serif", fontSize:16, fontWeight:700, color:C.ink }}>
+            {'Saved recipes'}
           </span>
-          <span style={{ fontSize:12, color:C.muted }}>· {favList.length} saved</span>
+          <span style={{ fontSize:12, color:C.muted }}>{'· '}{favList.length}{' saved'}</span>
         </div>
 
         {/* Search */}
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search your favourites…"
+          placeholder="Search your saved recipes…"
           style={{
             width:'100%', boxSizing:'border-box',
-            padding:'9px 14px', border:'1px solid ' + (C.border),
+            padding:'9px 14px', border:'1px solid rgba(28,10,0,0.08)',
             borderRadius:10, fontSize:13, outline:'none',
             fontFamily:"'DM Sans',sans-serif",
           }}
         />
 
-        {/* Cuisine filter chips — horizontal scroll on mobile */}
+        {/* Cuisine filter chips */}
         {cuisinesInFavs.length > 0 && (
           <div style={{
-            display:'flex', gap:6, marginTop:10,
-            overflowX:'auto', paddingBottom:4,
+            display:'flex', gap:6, marginTop:8,
+            overflowX:'auto', paddingBottom:2,
             scrollbarWidth:'none', msOverflowStyle:'none',
+            WebkitOverflowScrolling:'touch',
           }}>
             {['all', ...cuisinesInFavs].map(c => (
               <button key={c} onClick={() => setFilter(c)}
