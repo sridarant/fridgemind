@@ -13,6 +13,7 @@ export default function JiffHeader({
     { label: '👤 My Profile',   action: () => navigate('/profile') },
     { label: '📜 History',      action: () => navigate('/history') },
     { label: '📊 Insights',     action: () => navigate('/insights') },
+    ...(!isPremium ? [{ label: '⚡ Upgrade to Premium', action: () => navigate('/pricing'), highlight: true }] : []),
   ];
 
   return (
@@ -127,9 +128,9 @@ export default function JiffHeader({
                   <button
                     key={item.label}
                     onClick={() => { item.action(); setShowUserMenu(false); }}
-                    style={{ width: '100%', padding: '10px 14px', border: 'none', background: 'white', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1C0A00', fontWeight: 400, fontFamily: "'DM Sans',sans-serif", borderBottom: '1px solid rgba(28,10,0,0.05)', transition: 'background 0.1s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,69,0,0.05)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'white'; }}
+                    style={{ width: '100%', padding: '10px 14px', border: 'none', background: item.highlight ? 'rgba(255,69,0,0.04)' : 'white', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: item.highlight ? '#FF4500' : '#1C0A00', fontWeight: item.highlight ? 600 : 400, fontFamily: "'DM Sans',sans-serif", borderBottom: '1px solid rgba(28,10,0,0.05)', transition: 'background 0.1s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = item.highlight ? 'rgba(255,69,0,0.08)' : 'rgba(255,69,0,0.05)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = item.highlight ? 'rgba(255,69,0,0.04)' : 'white'; }}
                   >
                     {item.label}
                   </button>

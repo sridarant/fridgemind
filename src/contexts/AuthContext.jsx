@@ -127,7 +127,19 @@ export function AuthProvider({ children }) {
     const merged = { ...profile, ...updates };
     setProfile(merged);
     if (supabase && user) {
-      await supabase.from('profiles').upsert({ id: user.id, ...merged, updated_at: new Date().toISOString() });
+      // Only upsert columns that exist in the profiles schema
+      const SCHEMA_COLS = [
+        'id','email','name','avatar_url','updated_at',
+        'food_type','spice_level','allergies','preferred_cuisines','skill_level',
+        'cooking_for','family_size','has_kids','kids_ages',
+        'family_members','active_goal','calorie_target',
+        'streak','onboarding_done','country',
+      ];
+      const safe = Object.fromEntries(
+        Object.entries({ id: user.id, ...merged, updated_at: new Date().toISOString() })
+          .filter(([k]) => SCHEMA_COLS.includes(k))
+      );
+      await supabase.from('profiles').upsert(safe);
     }
   }, [profile, user]);
 

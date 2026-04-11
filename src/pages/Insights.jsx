@@ -68,8 +68,13 @@ export default function Insights() {
           const serverHistory = await fetchHistory(user.id);
           if (serverHistory.length) {
             history = serverHistory.map(m => ({
-              id: m.id, generated_at: m.generated_at,
-              cuisine: m.cuisine, meal_name: m.meal_name, meals: m.meal_data || [],
+              id: m.id,
+              generated_at: m.generated_at,
+              cuisine:   m.cuisine,
+              mealType:  m.meal_type,
+              meal_name: m.meal?.name || '',
+              meals:     m.meal ? [m.meal] : [],
+              ingredients: Array.isArray(m.ingredients) ? m.ingredients : [],
             }));
             const newRatings = {};
             serverHistory.forEach(m => { if (m.rating && m.meal_name) newRatings[m.meal_name] = m.rating; });
@@ -110,7 +115,7 @@ export default function Insights() {
         .sort((a,b) => b.count - a.count);
 
       // Nutrition averages
-      const allMeals = history.flatMap(h => h.meal || []);
+      const allMeals = history.flatMap(h => h.meals || []);
       const parseNum = v => parseFloat((v||'').toString().replace(/[^0-9.]/g,'')) || 0;
       const avgNutr = {
         calories: allMeals.length

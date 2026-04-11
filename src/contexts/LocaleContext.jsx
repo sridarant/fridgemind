@@ -121,41 +121,13 @@ export function LocaleProvider({ children }) {
     setLangState(l);
     try { localStorage.setItem('jiff-lang', l); } catch {}
     document.documentElement.lang = l;
-    // Sync to Supabase profiles.lang (best-effort, no blocking)
-    const sbUrl = process.env.REACT_APP_SUPABASE_URL;
-    const key   = process.env.REACT_APP_SUPABASE_ANON_KEY;
-    const { createClient } = window._supabase || {};
-    // Use supabase lib if available to get current user id
-    import('../lib/supabase.js').then(({ supabase }) => {
-      if (!supabase) return;
-      supabase.auth.getUser().then(({ data }) => {
-        if (!data?.user?.id || !sbUrl || !key) return;
-        fetch(`${sbUrl}/rest/v1/profiles?id=eq.${data.user.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type':'application/json','apikey':key,'Authorization':`Bearer ${key}`,'Prefer':'return=minimal' },
-          body: JSON.stringify({ lang: l }),
-        }).catch(() => {});
-      });
-    }).catch(() => {});
+    // Language stored in localStorage — Supabase sync removed (lang not in profiles schema)
   }, []);
 
   const setUnits = useCallback((u) => {
     setUnitsState(u);
     try { localStorage.setItem('jiff-units', u); } catch {}
-    // Sync to Supabase profiles.units
-    const sbUrl = process.env.REACT_APP_SUPABASE_URL;
-    const key   = process.env.REACT_APP_SUPABASE_ANON_KEY;
-    import('../lib/supabase.js').then(({ supabase }) => {
-      if (!supabase) return;
-      supabase.auth.getUser().then(({ data }) => {
-        if (!data?.user?.id || !sbUrl || !key) return;
-        fetch(`${sbUrl}/rest/v1/profiles?id=eq.${data.user.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type':'application/json','apikey':key,'Authorization':`Bearer ${key}`,'Prefer':'return=minimal' },
-          body: JSON.stringify({ units: u }),
-        }).catch(() => {});
-      });
-    }).catch(() => {});
+    // Units stored in localStorage — Supabase sync removed (units not in profiles schema)
   }, []);
 
   const setCountry = useCallback((c) => {

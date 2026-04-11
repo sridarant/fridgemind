@@ -367,8 +367,10 @@ Rules: use given ingredients as base; mark pantry staples with *; keep steps con
       body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 2500, messages: [{ role: 'user', content: prompt }] }),
     });
 
-    const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'API error' });
+    const rawBody = await response.text();
+    let data;
+    try { data = JSON.parse(rawBody); } catch { data = {}; }
+    if (!response.ok) return res.status(response.status).json({ error: data.error?.message || 'AI service error.', status: response.status });
 
     const rawText = data.content?.map(c => c.text || '').join('') || '';
     let meals = null;
@@ -392,6 +394,7 @@ Rules: use given ingredients as base; mark pantry staples with *; keep steps con
     return res.status(200).json({ meals });
   } catch (err) {
     console.error('Handler error:', err);
-    return res.status(500).json({ error: 'Internal server error.' });
+    const errMsg = err?.message || String(err) || 'Internal server error.';
+    return res.status(500).json({ error: errMsg, stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined });
   }
 }

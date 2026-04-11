@@ -205,16 +205,35 @@ export default function FridgeCard({
           <p style={{ fontSize:12, color:'#7C6A5E', marginTop:8, fontWeight:300 }}>{t('cta_note')}</p>
         )}
 
-        {user && Array.isArray(profile?.family_members) && profile.family_members.length > 0 && (
-          <FamilySelector
-            members={profile.family_members}
-            selected={familySelected}
-            onToggle={idx => {
-              if (idx==='all') { setFamilySelected([]); return; }
-              setFamilySelected(prev => prev.includes(idx)?prev.filter(i=>i!==idx):[...prev,idx]);
-            }}
-          />
-        )}
+        {user && Array.isArray(profile?.family_members) && profile.family_members.length > 0 ? (
+          <div style={{ marginTop:10 }}>
+            <div style={{ fontSize:11, color:'#7C6A5E', fontWeight:500, marginBottom:6, letterSpacing:'0.5px', textTransform:'uppercase' }}>
+              {"Who's eating tonight?"}
+            </div>
+            <FamilySelector
+              members={profile.family_members}
+              selected={familySelected}
+              onToggle={idx => {
+                if (idx==='all') { setFamilySelected([]); return; }
+                setFamilySelected(prev => prev.includes(idx)?prev.filter(i=>i!==idx):[...prev,idx]);
+              }}
+            />
+          </div>
+        ) : user && (profile?.cooking_for === 'family' || profile?.cooking_for === 'joint') ? (
+          <div style={{ marginTop:10, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            <span style={{ fontSize:11, color:'#7C6A5E', fontWeight:500 }}>{"Who's eating?"}</span>
+            {[
+              { label:'Just me',   servings:1 },
+              { label:'Us two',    servings:2 },
+              { label:'Family',    servings: profile?.family_size || 4 },
+            ].map(opt => (
+              <button key={opt.label} onClick={() => setDefaultServings(opt.servings)}
+                style={{ padding:'5px 12px', borderRadius:20, fontSize:11, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:defaultServings===opt.servings?600:400, border:'1.5px solid '+(defaultServings===opt.servings?'#FF4500':'rgba(28,10,0,0.10)'), background:defaultServings===opt.servings?'rgba(255,69,0,0.06)':'white', color:defaultServings===opt.servings?'#FF4500':'#7C6A5E', transition:'all 0.12s' }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {trialActive && !isPremium && (
           <p style={{ fontSize:11, color:'#854F0B', marginTop:10, background:'rgba(255,184,0,0.10)', borderRadius:8, padding:'6px 12px', display:'inline-block' }}>

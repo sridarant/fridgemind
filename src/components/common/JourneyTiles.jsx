@@ -419,12 +419,19 @@ export function JourneyTiles({
 
       {/* ── Zone 4 — Context chip row (scrollable) ───────────────── */}
       <Label>{(() => {
-        const h = new Date().getHours();
+        const h   = new Date().getHours();
         const dow = new Date().getDay();
+        const goal = profile?.active_goal || '';
         if (dow === 1) return 'Plan your week';
-        if (dow === 0) return 'Explore more';
-        if (h >= 18) return 'More ideas for tonight';
-        return 'More journeys';
+        if (dow === 0) return 'Something for Sunday';
+        if (h >= 18 && h < 22) return 'More ideas for tonight';
+        if (h >= 5 && h < 11) return 'Start your morning right';
+        if (goal === 'reduce_waste') return 'Use what you have';
+        if (goal === 'eat_healthier') return 'More healthy options';
+        if (goal === 'try_new_things') return 'Explore more cuisines';
+        if (goal === 'cook_faster') return 'Quick cooking options';
+        if (profile?.preferred_cuisines?.length) return 'Your other favourites';
+        return 'Explore more';
       })()}</Label>
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:8, scrollbarWidth:'none', msOverflowStyle:'none', WebkitOverflowScrolling:'touch', marginBottom:20 }}>
         {chips.map((chip, i) => (
