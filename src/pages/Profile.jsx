@@ -6,10 +6,9 @@ import { useAuth }   from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
 import { fetchHistory } from '../services/historyService';
 import { parseFoodTypeIds } from '../lib/dietary';
-import { INDIAN_PANTRY_DEFAULTS } from '../components/profile/PantryTab';
+import PantryTab, { INDIAN_PANTRY_DEFAULTS } from '../components/profile/PantryTab';
 import TasteTab    from '../components/profile/TasteTab';
 import GoalsTab    from '../components/profile/GoalsTab';
-import PantryTab   from '../components/profile/PantryTab';
 import SettingsTab from '../components/profile/SettingsTab';
 
 const C = {

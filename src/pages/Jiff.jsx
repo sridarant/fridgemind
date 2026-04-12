@@ -127,13 +127,12 @@ export default function Jiff() {
 
   useEffect(() => {
     if (user && view === 'input') {
-        const onbDone = profile.onboarding_done || localStorage.getItem('jiff-onboarding-done') === '1';
-        if (profile && !onbDone) {
-          navigate('/onboarding');
-        }
+      const onbDone = profile?.onboarding_done || localStorage.getItem('jiff-onboarding-done') === '1';
+      if (profile && !onbDone) {
+        navigate('/onboarding');
       }
     }
-  }, [user]); // eslint-disable-line
+  }, [user, profile, view, navigate]); // eslint-disable-line
 
   useEffect(() => {
     if (genCtxNav && user) handleGenerateDirect(genCtxNav);
