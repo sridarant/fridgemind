@@ -5,7 +5,6 @@
 import { useState, useCallback } from 'react';
 import { generateRecipes } from '../services/recipeService';
 import { trackGeneration } from '../lib/analytics';
-import { trackGeneration } from '../lib/analytics';
 import { saveHistory, fetchHistory, buildRatingsFromHistory, updateRating } from '../services/historyService';
 import { updateStreak, computeNextStreak } from '../services/userService';
 

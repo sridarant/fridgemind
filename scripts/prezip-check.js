@@ -453,6 +453,49 @@ if (fs.existsSync(hookDir)) {
 }
 if (hookIssues === 0) ok('Hook return completeness: all hooks export what they define');
 
+// ── Duplicate import lines ─────────────────────────────────────────
+{
+  console.log('\n── Duplicate import lines ──');
+  let dupIssues = 0;
+  srcFiles.forEach(f => {
+    const lines = fs.readFileSync(f, 'utf8').split('\n');
+    const importLines = lines.filter(l => l.trim().startsWith('import '));
+    const seen = {};
+    importLines.forEach(l => {
+      const key = l.trim();
+      if (seen[key]) {
+        console.error(`  ✗ ${path.relative('.', f)}: duplicate import: ${key.slice(0,70)}`);
+        dupIssues++; errors++;
+      }
+      seen[key] = true;
+    });
+  });
+  if (dupIssues === 0) ok('Duplicate import check: no duplicate import lines found');
+}
+
+// ── Orphaned JSX closure after IIFE ──────────────────────────────
+// Detects })} immediately after })()  — the specific signature of a phantom
+// closing tag left behind when an IIFE block replaces a .map() block.
+{
+  console.log('\n── Orphaned post-IIFE closure check ──');
+  let orphanIssues = 0;
+  srcFiles.forEach(f => {
+    const lines = fs.readFileSync(f, 'utf8').split('\n');
+    lines.forEach((l, i) => {
+      const t = l.trim();
+      if (t === '})}') {
+        const prev = lines.slice(0, i).filter(x => x.trim()).slice(-1)[0]?.trim() || '';
+        // Only flag when the previous substantive line closed an IIFE: })()  or  })()}
+        if (prev === '})()}' || prev.endsWith('})()}')) {
+          console.error(`  ✗ ${path.relative('.', f)} L${i+1}: orphaned })} after IIFE close`);
+          orphanIssues++; errors++;
+        }
+      }
+    });
+  });
+  if (orphanIssues === 0) ok('Orphaned post-IIFE closure check: clean');
+}
+
 // ── Summary ───────────────────────────────────────────────────────
 console.log('\n' + '─'.repeat(52));
 if (errors > 0) {

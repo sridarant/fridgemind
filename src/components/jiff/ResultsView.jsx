@@ -197,9 +197,6 @@ export default function ResultsView({
           </div>
         );
       })()}
-            })}
-        </div>
-      )}
 
       {/* Order-in strip */}
       {meals?.[0]?.name && (
