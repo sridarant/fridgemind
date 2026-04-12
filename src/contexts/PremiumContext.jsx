@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
-import { trackTrialStart } from '../lib/analytics';
+import { trackTrialStart, trackPaywallShown } from '../lib/analytics';
 
 const PremiumContext = createContext(null);
 export const usePremium = () => useContext(PremiumContext);

@@ -4,7 +4,6 @@
 
 import { useState } from 'react';
 import { trackWhatsAppShare, trackGroceryShare } from '../../lib/analytics';
-import { trackWhatsAppShare, trackGroceryShare } from '../../lib/analytics';
 import { useLocale } from '../../contexts/LocaleContext.jsx';
 import { buildGroceryList } from '../../lib/grocery.js';
 

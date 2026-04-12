@@ -4,7 +4,7 @@
 // Method: inline step timers, Focus step button (replaces CookMode)
 // CookModeOverlay: removed entirely
 
-import { useState, useRef } from 'react';
+import { useState, useRef, memo } from 'react';
 import { useLocale }        from '../../contexts/LocaleContext.jsx';
 import { scaleIngredient, scaleNutrition } from '../../lib/scaling.js';
 import { buildShareText }   from '../../lib/sharing.js';
@@ -136,7 +136,8 @@ function FocusStep({ step, stepNum, total, onClose }) {
 }
 
 // ── Main MealCard ──────────────────────────────────────────────────
-export function MealCard({
+// MealCard is memo-wrapped — only re-renders when rating, isFavourite, or meal changes
+const MealCardInner = function MealCard({
   meal, isFav, onToggleFav,
   rating, onRate,
   pantry = [], lang = 'en',
@@ -354,3 +355,13 @@ export function MealCard({
     </>
   );
 }
+
+export const MealCard = memo(MealCardInner, (prev, next) => {
+  // Only re-render if these props change
+  return (
+    prev.rating      === next.rating      &&
+    prev.isFav       === next.isFav       &&
+    prev.meal?.name  === next.meal?.name  &&
+    prev.defaultServings === next.defaultServings
+  );
+});

@@ -1,0 +1,15 @@
+{
+  "extends": ["react-app", "react-app/jest"],
+  "rules": {
+    "no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }],
+    "no-undef": "error",
+    "import/first": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    "no-duplicate-imports": "error"
+  },
+  "env": {
+    "browser": true,
+    "es2021": true
+  }
+}

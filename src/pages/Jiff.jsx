@@ -97,7 +97,10 @@ export default function Jiff() {
 
   const {
     didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
+    upgradeNudge, setUpgradeNudge,
+    setDidYouCookNudge, setWeeklyDigest, setWelcomeBack, setChallenge, setMilestone,
     recordGeneration, confirmCooked, dismissNudge, recordRating,
+  } = useRetention({ mealHistory, ratings, user, isPremium });
 
 
   // ── Effects ────────────────────────────────────────────────────

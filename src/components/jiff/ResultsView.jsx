@@ -158,7 +158,7 @@ export default function ResultsView({
             key={mealKey(meal) + i}
             meal={meal}
             index={i}
-            isFavourite={isFav(meal)}
+            isFav={isFav(meal)}
             onToggleFav={toggleFavourite}
             fridgeIngredients={ingredients}
             defaultServings={defaultServings}
