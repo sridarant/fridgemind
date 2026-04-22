@@ -279,6 +279,51 @@ export default async function handler(req, res) {
       return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
     }
 
+    // ── recommendation_log: persist feedback events ──────────────
+    if (action === 'log-recommendation' && req.method === 'POST') {
+      const { userId, mealId, mealName, action: fbAction, position, cuisine, timestamp } = req.body || {};
+      if (!fbAction) return res.status(400).json({ error: 'action required' });
+      const row = {
+        user_id:    userId || null,
+        meal_id:    mealId,
+        meal_name:  mealName,
+        action:     fbAction,
+        position:   position !== undefined ? position : null,
+        cuisine:    cuisine  || null,
+        created_at: timestamp || new Date().toISOString(),
+      };
+      await fetch(`${url}/rest/v1/recommendation_log`, {
+        method: 'POST',
+        headers: { ...h, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(row),
+      }).catch(() => {});
+      return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'recommendation-log' && req.method === 'GET') {
+      const { userId, limit = '100' } = req.query;
+      const lim    = Math.min(parseInt(limit) || 100, 500);
+      const filter = (!userId || userId === 'all') ? '' : `&user_id=eq.${encodeURIComponent(userId)}`;
+      const r      = await fetch(
+        `${url}/rest/v1/recommendation_log?order=created_at.desc&limit=${lim}${filter}`,
+        { headers: h }
+      );
+      const data   = await r.json();
+      return res.status(200).json({ log: Array.isArray(data) ? data : [] });
+    }
+
+    // ── update-behaviour: persist learned weights to profiles.behaviour_data ──
+    if (action === 'update-behaviour' && req.method === 'POST') {
+      const { userId, behaviourData } = req.body || {};
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const r = await fetch(`${url}/rest/v1/profiles?id=eq.${userId}`, {
+        method: 'PATCH',
+        headers: { ...h, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ behaviour_data: behaviourData }),
+      });
+      return res.status(r.ok ? 200 : 500).json({ ok: r.ok });
+    }
+
     return res.status(400).json({ error: `Unknown action: ${action}` });
   } catch(e) { return res.status(500).json({ error: e.message }); }
 }

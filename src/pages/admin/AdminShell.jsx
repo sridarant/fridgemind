@@ -26,6 +26,7 @@ import Tab_ANALYTICS from './tabs/analytics.jsx';
 import Tab_TOKENS    from './tabs/tokens.jsx';
 import Tab_PROMPTS   from './tabs/prompts.jsx';
 import Tab_UIKIT     from './tabs/uikit.jsx';
+import Tab_GROWTH    from './tabs/growth.jsx';
 
 const ADMIN_KEY = 'jiff-admin-2026';
 const C = {
@@ -44,7 +45,10 @@ const CHANGELOG_RELEASES = [
 ];
 
 const SIDEBAR = [
-  { group:'Dashboard', items:[{ id:'overview', icon:'\ud83d\udcca', label:'Overview' }]},
+  { group:'Dashboard', items:[
+    { id:'overview', icon:'\ud83d\udcca', label:'Overview' },
+    { id:'growth',   icon:'\ud83d\udcc8', label:'Growth'   },
+  ]},
   { group:'Users & Feedback', items:[
     { id:'users',    icon:'\ud83d\udc65', label:'Users' },
     { id:'waitlist', icon:'\ud83d\udccb', label:'Waitlist' },
@@ -272,6 +276,7 @@ export default function Admin() {
           {activeTab==='tokens'    && <Tab_TOKENS    {...tabProps}/>}
           {activeTab==='prompts'   && <Tab_PROMPTS   {...tabProps}/>}
           {activeTab==='uikit'     && <Tab_UIKIT     {...tabProps}/>}
+          {activeTab==='growth'    && <Tab_GROWTH    {...tabProps}/>}
         </div>
       </div>
     </div>

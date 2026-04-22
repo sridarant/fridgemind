@@ -144,6 +144,7 @@ export function AuthProvider({ children }) {
         'family_members','active_goal','calorie_target',
         'streak','onboarding_done','country',
         'cooking_for','family_size','has_kids','kids_ages',
+        'behaviour_data',
       ];
       const safe = Object.fromEntries(
         Object.entries({ id: user.id, ...merged, updated_at: new Date().toISOString() })

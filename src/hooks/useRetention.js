@@ -4,6 +4,7 @@
 // Uses localStorage only — no extra API calls. Reads on mount, writes on events.
 
 import { useState, useEffect, useCallback } from 'react';
+import { logFeedback } from '../services/feedbackService';
 
 const K = {
   lastGenerated:    'jiff-last-generated',   // { mealName, timestamp, shown }
@@ -143,7 +144,22 @@ export function useRetention({ mealHistory = [], ratings = {}, user, isPremium =
 
   // Call when user taps "Yes, I cooked it"
   const confirmCooked = useCallback(() => {
-    setDidYouCookNudge(null);
+    setDidYouCookNudge(prev => {
+      // Fire completed feedback before clearing the nudge
+      if (prev?.mealName) {
+        logFeedback({
+          meal: {
+            id:         prev.mealName.toLowerCase().replace(/\s+/g, '_'),
+            name:       prev.mealName,
+            cuisine:    'any',
+            effortMins: 30,
+          },
+          action: 'completed',
+          userId: user ? user.id : null,
+        });
+      }
+      return null;
+    });
     // Increment cook count for challenge progress
     const ch = safe(K.challenge);
     if (ch && !ch.done) {
@@ -152,7 +168,7 @@ export function useRetention({ mealHistory = [], ratings = {}, user, isPremium =
       save(K.challenge, updated);
       setChallenge(updated);
     }
-  }, []);
+  }, [user]);
 
   // Call when user dismisses any nudge
   const dismissNudge = useCallback((type) => {
