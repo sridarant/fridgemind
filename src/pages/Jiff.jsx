@@ -1,13 +1,19 @@
 // src/pages/Jiff.jsx
 // Main app page — orchestration only. Business logic lives in hooks/services.
-// Target: <500 lines. Phases 1-3 compliant.
+//
+// ROUTING CONTRACT:
+//   /app → user lands here. If user is logged in, show JourneyTiles (decision
+//   screen) immediately — journeyMode defaults TRUE. Onboarding redirect fires
+//   once if profile.onboarding_done is false.
+//   After login (OAuth/magic-link), Supabase redirects to /app via redirectTo.
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale, getCurrentSeason } from '../contexts/LocaleContext';
 import { useRecipes }       from '../hooks/useRecipes';
-import { useRetention }    from '../hooks/useRetention';
+import { useRetention }     from '../hooks/useRetention';
 import { useNotifications } from '../hooks/useNotifications';
 import SmartGreeting    from '../components/SmartGreeting';
 import { JourneyTiles } from '../components/common/JourneyTiles.jsx';
@@ -19,11 +25,6 @@ import ResultsView      from '../components/jiff/ResultsView';
 import styles           from '../styles/jiffStyles';
 import { mealKey }      from '../lib/mealKey.js';
 import { fetchHistory, trackStapleUsage, getStapleSuggestions } from '../services/historyService';
-
-const FACTS = [
-  'Raiding your fridge\u2026','Cross-referencing 50,000+ recipes\u2026',
-  'Matching cuisine and flavour profile\u2026','Crunching nutrition numbers\u2026','Preparing your recipes\u2026',
-];
 
 export default function Jiff() {
   const navigate  = useNavigate();
@@ -62,7 +63,12 @@ export default function Jiff() {
   const [defaultServings, setDefaultServings] = useState(2);
   const [pantryLoaded,    setPantryLoaded]    = useState(false);
   const [profileLoaded,   setProfileLoaded]   = useState(false);
-  const [journeyMode,     setJourneyMode]     = useState(false);
+
+  // journeyMode = true  → show JourneyTiles (decision screen)
+  // journeyMode = false → show FridgeCard (ingredient input)
+  // Logged-in users always start on the decision screen.
+  const [journeyMode,     setJourneyMode]     = useState(true);
+
   const [inputMode,       setInputMode]       = useState('direct');
   const [gatePlan,        setGatePlan]        = useState('annual');
   const [gateLoading,     setGateLoading]     = useState(false);
@@ -98,10 +104,8 @@ export default function Jiff() {
   const {
     didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
     upgradeNudge, setUpgradeNudge,
-    setDidYouCookNudge, setWeeklyDigest, setWelcomeBack, setChallenge, setMilestone,
-    recordGeneration, confirmCooked, dismissNudge, recordRating,
+    confirmCooked, dismissNudge, recordGeneration, recordRating,
   } = useRetention({ mealHistory, ratings, user, isPremium });
-
 
   // ── Effects ────────────────────────────────────────────────────
   useEffect(() => {
@@ -114,7 +118,6 @@ export default function Jiff() {
       if (ft === 'vegan') setDiet('vegan');
       else if (ft === 'veg' || ft === 'eggetarian' || ft === 'jain') setDiet('vegetarian');
       if (profile.preferred_cuisines?.length) setCuisine(profile.preferred_cuisines[0]);
-      // Family-aware default servings
       if (profile.family_size > 4) setDefaultServings(6);
       else if (profile.family_size > 2) setDefaultServings(4);
       setProfileLoaded(true);
@@ -125,23 +128,24 @@ export default function Jiff() {
     if (user && !trial && !isPremium) startTrial(user.id);
   }, [user, trial, isPremium, startTrial]);
 
+  // Onboarding redirect — fires once, only when profile loaded and not done
   useEffect(() => {
-    if (user && view === 'input') {
-      const onbDone = profile?.onboarding_done || localStorage.getItem('jiff-onboarding-done') === '1';
-      if (profile && !onbDone) {
-        navigate('/onboarding');
-      }
+    if (user && profile && view === 'input') {
+      const done = profile.onboarding_done || localStorage.getItem('jiff-onboarding-done') === '1';
+      if (!done) navigate('/onboarding');
     }
-  }, [user, profile, view, navigate]); // eslint-disable-line
+  }, [user, profile]); // eslint-disable-line
 
+  // Handle navigation-state generate context (e.g. from plan page)
   useEffect(() => {
     if (genCtxNav && user) handleGenerateDirect(genCtxNav);
   }, []); // eslint-disable-line
 
+  // Streak
   useEffect(() => {
     try {
       if (profile?.streak) { setStreak(profile.streak); return; }
-      const d = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
+      const d    = JSON.parse(localStorage.getItem('jiff-streak') || '{}');
       const yest = new Date(Date.now() - 86400000).toDateString();
       setStreak((d.lastDate === new Date().toDateString() || d.lastDate === yest) ? (d.count || 1) : 0);
     } catch {}
@@ -149,12 +153,10 @@ export default function Jiff() {
 
   useEffect(() => { if (user) syncRatings(user.id); }, [user]); // eslint-disable-line
 
-  // Record generation for 'did you cook this' nudge
   useEffect(() => {
-    if (view === 'results' && meals.length && user) {
-      recordGeneration(meals[0]?.name || 'your meal');
-    }
+    if (view === 'results' && meals.length && user) recordGeneration(meals[0]?.name || 'your meal');
   }, [view]); // eslint-disable-line
+
   useEffect(() => {
     if (!user) return;
     fetchHistory(user.id).then(h => { if (h.length) setMealHistory(h); }).catch(() => {});
@@ -179,19 +181,20 @@ export default function Jiff() {
     setFridgeItems(['leftover rice', 'leftover curry']);
     setTileContext({ emoji:'♻️', color:'#D97706', bg:'rgba(217,119,6,0.08)',
       border:'rgba(217,119,6,0.25)', label:'Leftover rescue',
-      sub:"Turning what you have into something great" });
+      sub:'Turning what you have into something great' });
     setView('input');
   };
 
   const reset = () => {
     resetRecipes(); setFridgeItems([]); setPantryItems(pantry || []);
-    setPantryLoaded(true); setInputMode('direct'); setJourneyMode(!!user);
-    setTileContext(null);
+    setPantryLoaded(true); setInputMode('direct');
+    // Return to decision screen, not the fridge card
+    setJourneyMode(true); setTileContext(null);
   };
 
   const showSignInGate = !authLoading && !user && !gateDismissed;
 
-  // ── View renderer ──────────────────────────────────────────────
+  // ── View renderer (used when journeyMode=false OR user=null) ───
   const renderView = () => {
     if (view === 'loading') return (
       <LoadingView
@@ -203,10 +206,10 @@ export default function Jiff() {
 
     if (view === 'error') return (
       <div className="error-wrap">
-        <div className="error-icon">{'\ud83d\ude15'}</div>
+        <div className="error-icon">{'😕'}</div>
         <div className="error-title">{t('error_title_app')}</div>
         <div className="error-msg">{errorMsg}</div>
-        <button className="cta-btn" onClick={reset}>{'\u2190 Start over'}</button>
+        <button className="cta-btn" onClick={reset}>{'← Start over'}</button>
       </div>
     );
 
@@ -214,8 +217,10 @@ export default function Jiff() {
       <>
         {user && (
           <div style={{ textAlign:'center', padding:'12px 0 4px' }}>
-            <button onClick={() => { setView('input'); setJourneyMode(true); }} style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:'var(--muted)', fontFamily:"'DM Sans',sans-serif" }}>
-              {'\u21ba Cook something else'}
+            <button
+              onClick={reset}
+              style={{ background:'none', border:'none', cursor:'pointer', fontSize:12, color:'var(--muted)', fontFamily:"'DM Sans',sans-serif" }}>
+              {'↺ Try something else'}
             </button>
           </div>
         )}
@@ -231,7 +236,6 @@ export default function Jiff() {
           stapleSuggestion={stapleSuggestion}
           onDismissStapleSuggestion={() => setStapleSuggestion(null)}
           onAddStaple={async (items) => {
-            // Add items to profile weekly_staples + savePantry
             const newStaples = [...(profile?.weekly_staples || []), ...items.map(i => i.toLowerCase())];
             await updateProfile?.({ weekly_staples: newStaples });
             setStapleSuggestion(null);
@@ -243,55 +247,26 @@ export default function Jiff() {
       </>
     );
 
-    // Input view
+    // Fridge / ingredient input view
     return (
       <div className="main-layout">
+        {/* Back to decision screen */}
         {user && (
-          <button onClick={() => { setJourneyMode(true); setInputMode('direct'); }}
+          <button
+            onClick={() => { setJourneyMode(true); setInputMode('direct'); setView('input'); }}
             style={{ display:'inline-flex', alignItems:'center', gap:5, marginBottom:14, background:'none', border:'none', cursor:'pointer', fontSize:12, color:'var(--muted)', fontFamily:"'DM Sans',sans-serif", padding:0 }}>
-            {'\u2190 Home'}
+            {'← Decision screen'}
           </button>
         )}
 
-        {/* Profile completion nudge */}
-        {user && profile && !profile.spice_level && !profile.preferred_cuisines?.length
-          && !sessionStorage.getItem('jiff-prefs-dismissed') && (
-          <div style={{ background:'rgba(255,69,0,0.07)', border:'1.5px solid rgba(255,69,0,0.25)', borderRadius:12, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
-            <div>
-              <div style={{ fontSize:13, fontWeight:500, color:'#CC3700', marginBottom:2 }}>{'\ud83d\udc4b Personalise your experience'}</div>
-              <div style={{ fontSize:12, color:'#CC3700', fontWeight:300 }}>{'Set your food type, cuisine and pantry so every recipe is tailored to you.'}</div>
-            </div>
-            <div style={{ display:'flex', gap:8 }}>
-              <button onClick={() => navigate('/profile')} style={{ background:'#CC3700', color:'white', border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>{'Set up profile \u2192'}</button>
-              <button onClick={() => sessionStorage.setItem('jiff-prefs-dismissed','1')} style={{ background:'none', border:'1px solid rgba(204,55,0,0.3)', borderRadius:8, padding:'7px 10px', fontSize:12, color:'#CC3700', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>{'Later'}</button>
-            </div>
-          </div>
-        )}
-
-        {/* Direct mode heading */}
-        {inputMode === 'direct' && (
+        {/* First-use heading for non-logged-in users */}
+        {!user && inputMode === 'direct' && (
           <>
-            {user && (
-              <SmartGreeting user={user} profile={profile}
-                onCountryDetected={setCountry}
-                onSuggestRecipe={(suggestion, autoMealType) => {
-                  if (autoMealType && autoMealType !== 'any') setMealType(autoMealType);
-                  if (suggestion?.dish) setFridgeItems(prev => prev.includes(suggestion.dish.toLowerCase()) ? prev : [...prev, suggestion.dish.toLowerCase()]);
-                  setTimeout(() => { if (ingredients.length || suggestion?.dish) handleSubmit(ingredients, () => setGateDismissed(false)); }, 100);
-                }}
-              />
-            )}
-            {streak >= 2 && (
-              <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,69,0,0.08)', borderRadius:20, padding:'4px 12px', fontSize:11, color:'var(--jiff)', fontWeight:500, marginBottom:12 }}>
-                {'\ud83d\udd25 '}{streak}{'-day streak!'}
-              </div>
-            )}
             <h1 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(26px,4vw,40px)', fontWeight:900, color:'var(--ink)', letterSpacing:'-1px', lineHeight:1.05, marginBottom:6 }}>
               {t('main_heading')}
             </h1>
             <p style={{ fontSize:13, color:'var(--muted)', fontWeight:300, marginBottom:20 }}>
-              {isPremium ? '\u26a1 Premium \u00b7 ' + PAID_RECIPE_CAP + ' recipes per search'
-                : trialActive ? '\ud83c\udf81 Free trial \u00b7 1 recipe preview \u00b7 ' + trialDaysLeft + ' days left' : ''}
+              {t('main_sub') || 'Tell me what you have — get a recipe in seconds.'}
             </p>
           </>
         )}
@@ -305,7 +280,6 @@ export default function Jiff() {
           isPremium={isPremium} trialActive={trialActive} PAID_RECIPE_CAP={PAID_RECIPE_CAP}
           ingredients={ingredients}
           handleSubmit={() => {
-            // Track fridge items for pantry learning
             if (fridgeItems.length) {
               trackStapleUsage(fridgeItems);
               const suggestions = getStapleSuggestions(pantryItems);
@@ -351,14 +325,15 @@ export default function Jiff() {
           navigate={navigate} t={t}
         />
 
-        {/* Error toast on journey home */}
+        {/* Error toast — shown on journey home if generation fails */}
         {journeyMode && user && view === 'input' && errorMsg && (
           <div style={{ margin:'8px 16px', padding:'10px 14px', background:'rgba(229,62,62,0.08)', border:'1px solid rgba(229,62,62,0.25)', borderRadius:10, fontSize:13, color:'#C53030', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             {errorMsg}
-            <button onClick={() => setErrorMsg('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#C53030', fontSize:16, lineHeight:1 }}>{'\u00d7'}</button>
+            <button onClick={() => setErrorMsg('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#C53030', fontSize:16, lineHeight:1 }}>{'×'}</button>
           </div>
         )}
 
+        {/* Decision screen — shown first for all logged-in users */}
         {journeyMode && user && view === 'input' && (
           <JourneyTiles
             user={user} profile={profile} season={season} streak={streak}
@@ -380,6 +355,7 @@ export default function Jiff() {
           />
         )}
 
+        {/* Fridge input / results / loading — shown when not in journey mode */}
         {(!journeyMode || !user) && renderView()}
 
       </div>

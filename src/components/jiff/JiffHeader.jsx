@@ -1,5 +1,8 @@
 // src/components/jiff/JiffHeader.jsx
-// Sticky app header: logo, desktop nav, notifications bell, user menu
+// Sticky app header: logo, settings, notifications bell, user menu.
+//
+// Premium: "Upgrade to Premium" lives ONLY in the user dropdown — no
+// extra CTA button in the header bar to avoid clutter on the decision screen.
 
 import JiffLogo from '../JiffLogo';
 
@@ -9,6 +12,7 @@ export default function JiffHeader({
   showUserMenu, setShowUserMenu,
   markAllRead, signOut, navigate, t,
 }) {
+  // Dropdown items — Upgrade lives here and ONLY here
   const menuItems = [
     { label: '👤 My Profile',   action: () => navigate('/profile') },
     { label: '📜 History',      action: () => navigate('/history') },
@@ -18,16 +22,15 @@ export default function JiffHeader({
 
   return (
     <header className="header">
-      <JiffLogo size="md" spinning={view === 'loading'} onClick={() => navigate('/')} />
+      <JiffLogo size="md" spinning={view === 'loading'} onClick={() => navigate('/app')} />
 
       <div className="header-right">
-        {trialActive && <div className="trial-badge">{'⏳ Trial: '}{trialDaysLeft}{'d left'}</div>}
-        {user && !isPremium && (
-          <button className="hdr-btn premium" onClick={() => navigate('/pricing')}>
-            {'⚡ '}{t('go_premium')}
-          </button>
+        {/* Trial days badge — informational only, no action */}
+        {trialActive && (
+          <div className="trial-badge">{'⏳ Trial: '}{trialDaysLeft}{'d left'}</div>
         )}
 
+        {/* Settings gear */}
         <button
           className="hdr-btn"
           onClick={() => navigate('/profile', { state: { tab: 'settings' } })}
@@ -49,6 +52,7 @@ export default function JiffHeader({
                 <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
             </button>
+
             {showNotifications && (
               <>
                 <div
