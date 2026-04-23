@@ -155,12 +155,27 @@ export function useRecipes({
     setTileContext(ctxType ? CTX_MAP[ctxType] : null);
     setView('loading'); setFactIdx(0); setJourneyMode(false);
     try {
-      const count = isPremium ? PAID_RECIPE_CAP : 1;
+      // Leftover: always show 3-5 options split by effort; hosting: full-menu count
+      const baseCount = isPremium ? PAID_RECIPE_CAP : 1;
+      const count = context.type === 'leftover' ? Math.max(3, baseCount)
+                  : context.hosting            ? Math.max(4, baseCount)
+                  : baseCount;
+
+      // Build a dish hint for hosting (multi-course) or leftover (effort-split)
+      const dishHint = context.hosting
+        ? 'Include a starter, main, side, and dessert. Label each with its course type in the name.'
+        : context.type === 'leftover'
+        ? 'Split suggestions: first 2 under 15 min (label Quick Fix), rest as Creative Twist.'
+        : null;
+
       const data  = await generateRecipes({
         ingredients: tileIngredients, time, diet,
         cuisine: context.cuisine || cuisine,
         mealType: context.mealType || mealType,
         count, country, language: lang,
+        servings: context.servings || defaultServings,
+        dish: dishHint || context.dish || null,
+        moodContext: context.moodContext || null,
       });
 
       if (data.error) {
