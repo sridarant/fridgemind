@@ -2,19 +2,20 @@
 // Adaptive decision assistant — decision-first, rejection-aware, session-adaptive.
 //
 // LAYOUT (strict order):
-//   §1  Greeting + week badge + event banner (festival/sports only when active)
-//   §2  "This should work for today" framing
+//   §1  Greeting + week badge + event banner (ONLY when event is active in time window)
+//   §2  Continuity nudge (behaviour insight, 1 line, subtle)
 //   §3  ONE retention nudge (inline, dismissible)
 //   §4  PRIMARY card (dominates screen)
 //   §5  ALTERNATES (2 compact rows, tap → swap)
-//   §6  "Change direction" — 6 intent options (3×2 grid)
-//   §7  Context tile — below fold
+//   §6  "Change direction" — 6 options (3×2 grid)
+//   §7  Context tile — below fold (ONLY non-fridge, i.e. only when event/festival/context active)
 //   §8  ChallengeTracker — below fold
 //   §9  Weekly planner — below fold
 //
 // All 6 change-direction options route through buildJourneyContext → same engine.
-// Rejection: re-scores in-place, no reload, adaptation message shown after 2 consecutive.
-// Trust: ✔ why text, context labels, "Got it — switching it up", "Nice — I'll keep this in mind 👍".
+// Rejection: re-scores in-place, no reload.
+// Trust: ✔ why text, context labels, "Got it — switching it up", micro-reward toasts.
+// Habit: streak, weekly goal progress, continuity nudge, re-entry state.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -44,8 +45,7 @@ function SL({ children, mt }) {
   );
 }
 
-// ── Context label pill ─────────────────────────────────────────────
-// "Light meal" | "High protein" | "Festive" | "Kid-friendly"
+// ── Context label pill ────────────────────────────────────────────
 function ContextLabel({ label }) {
   if (!label) return null;
   const colors = {
@@ -62,7 +62,7 @@ function ContextLabel({ label }) {
   );
 }
 
-// ── §4 Primary card ────────────────────────────────────────────────
+// ── §4 Primary card ───────────────────────────────────────────────
 function PrimaryCard({ emoji, label, effortMins, why, contextLabel, timePressure, confidenceLabel, onCook, onNotForMe, animKey }) {
   const [hov, setHov] = useState(false);
   const isQuick = effortMins <= 15;
@@ -74,7 +74,7 @@ function PrimaryCard({ emoji, label, effortMins, why, contextLabel, timePressure
         onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
         style={{ background:hov?C.softOrangeMid:C.softOrange, border:'1.5px solid '+(hov?'rgba(255,69,0,0.28)':'rgba(255,69,0,0.16)'), borderRadius:20, padding:'18px 18px 16px', transition:'all 0.13s', boxShadow:hov?'0 6px 24px rgba(255,69,0,0.11)':'0 2px 10px rgba(28,10,0,0.05)' }}>
 
-        {/* Top row: labels + not-this */}
+        {/* Top row */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:13, gap:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
             <span style={{ fontSize:9, fontWeight:700, color:C.jiff, background:'rgba(255,69,0,0.09)', border:'1px solid rgba(255,69,0,0.20)', borderRadius:6, padding:'2px 8px', letterSpacing:'1px' }}>
@@ -128,7 +128,7 @@ function PrimaryCard({ emoji, label, effortMins, why, contextLabel, timePressure
   );
 }
 
-// ── §5 Alternate row ───────────────────────────────────────────────
+// ── §5 Alternate row ──────────────────────────────────────────────
 function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
@@ -156,15 +156,15 @@ function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
   );
 }
 
-// ── §6 "Change direction" — 6 options, 3×2 grid ───────────────────
+// ── §6 "Change direction" — 6 options ────────────────────────────
 function ChangeDirectionRow({ onOption }) {
   const options = [
-    { key:'mood',     label:'Match my mood',   emoji:'😊' },
-    { key:'fridge',   label:'Use what I have', emoji:'🧊' },
-    { key:'surprise', label:'Surprise me',     emoji:'✨' },
-    { key:'kids',     label:'Pack for kids',   emoji:'🎒' },
-    { key:'leftover', label:'Use leftovers',   emoji:'♻️' },
-    { key:'hosting',  label:'Guests coming',   emoji:'🎉' },
+    { key:'mood',     label:'Match my mood',  emoji:'😊' },
+    { key:'fridge',   label:'Use what I have',emoji:'🧊' },
+    { key:'surprise', label:'Surprise me',    emoji:'✨' },
+    { key:'kids',     label:'Cook for kids',  emoji:'🎒' },
+    { key:'leftover', label:'Use leftovers',  emoji:'♻️' },
+    { key:'hosting',  label:'Guests coming',  emoji:'🎉' },
   ];
   return (
     <div style={{ marginBottom:20 }}>
@@ -184,7 +184,7 @@ function ChangeDirectionRow({ onOption }) {
   );
 }
 
-// ── §7 Context tile ────────────────────────────────────────────────
+// ── §7 Context tile ───────────────────────────────────────────────
 function ContextTile({ emoji, label, sub, color, bg, border, badge, onClick }) {
   const [hov, setHov] = useState(false);
   return (
@@ -202,7 +202,7 @@ function ContextTile({ emoji, label, sub, color, bg, border, badge, onClick }) {
   );
 }
 
-// ── §9 Weekly planner ──────────────────────────────────────────────
+// ── §9 Weekly planner ─────────────────────────────────────────────
 function WeeklyPlanner({ onGenerateDirect }) {
   const today = new Date();
   const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -243,7 +243,7 @@ function WeeklyPlanner({ onGenerateDirect }) {
   );
 }
 
-// ── Toast ──────────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────────
 function Toast({ message, visible }) {
   return (
     <div style={{ position:'fixed', bottom:90, left:'50%', transform:'translateX(-50%) translateY('+(visible?0:20)+'px)', background:'#1C0A00', color:'white', borderRadius:24, padding:'9px 20px', fontSize:13, fontWeight:600, whiteSpace:'nowrap', opacity:visible?1:0, transition:'all 0.22s ease', pointerEvents:'none', zIndex:300, fontFamily:"'DM Sans',sans-serif", boxShadow:'0 4px 18px rgba(28,10,0,0.22)' }}>
@@ -252,7 +252,40 @@ function Toast({ message, visible }) {
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────────
+// ── Continuity nudge (Part 10 §3) ────────────────────────────────
+// 1-line subtle text just above primary card. Reads from mealHistory.
+function ContinuityNudge({ mealHistory, streak }) {
+  const text = (() => {
+    if (!Array.isArray(mealHistory) || mealHistory.length === 0) return null;
+    const now     = Date.now();
+    const day1    = 86400000;
+    const lastTs  = new Date(mealHistory[0].generated_at || mealHistory[0].created_at || 0).getTime();
+    const daysSince = Math.floor((now - lastTs) / day1);
+
+    // Re-entry state: >48h → nudge toward quick meals
+    if (daysSince >= 2) return "You haven't cooked in " + daysSince + " days — try something quick";
+
+    // Last meal was light → continue?
+    const lastTags = mealHistory[0].meal?.tags || [];
+    if (lastTags.includes('light') || lastTags.includes('healthy')) {
+      return 'You cooked something light — continue the streak?';
+    }
+
+    // Streak signal
+    if (streak >= 3) return "You're on a " + streak + "-day cooking streak 🔥";
+
+    return null;
+  })();
+
+  if (!text) return null;
+  return (
+    <div style={{ fontSize:11, color:C.muted, fontWeight:400, marginBottom:8, marginTop:4, paddingLeft:2, fontStyle:'italic' }}>
+      {text}
+    </div>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────
 export function JourneyTiles({
   profile, season, streak, country,
   ratings, mealHistory,
@@ -276,12 +309,11 @@ export function JourneyTiles({
   const feedbackCountRef   = useRef(0);
   const shownTrackedRef    = useRef(false);
 
-  const isIndia  = (country || 'IN') === 'IN';
   const festival = getUpcomingFestival(profile);
   const sports   = getActiveSportsEvent();
   const dayCtx   = getDayOfWeekContext();
 
-  // ── Load cards — all journeys route through here ──────────────
+  // ── Load cards ────────────────────────────────────────────────
   const loadCards = useCallback((journeyCtx = null) => {
     const jCtx = journeyCtx || buildJourneyContext({ journeyType:'default', profile, mealHistory });
     const recs  = getPersonalisedRecommendations({ profile, ratings, mealHistory, journeyContext: jCtx });
@@ -338,6 +370,16 @@ export function JourneyTiles({
     setTimeout(() => setToast({ visible:false, message:msg }), ms);
   };
 
+  // Micro-reward: context-aware post-cook message
+  const cookToastMsg = (card) => {
+    if (card.effortMins <= 15 && card.tags && card.tags.includes('healthy')) {
+      return "Nice — quick and healthy 👍";
+    }
+    const realStreak = (streak || 0) + 1;
+    if (realStreak >= 2) return "You're on a " + realStreak + "-day streak 🔥";
+    return "Nice — I'll keep this in mind 👍";
+  };
+
   const greet = () => {
     const h    = new Date().getHours();
     const name = profile && profile.name ? profile.name.split(' ')[0] : '';
@@ -370,10 +412,10 @@ export function JourneyTiles({
     if (featured.context)  { onGenerateDirect && onGenerateDirect(featured.context); }
   };
 
-  const ratingCount = ratings ? Object.keys(ratings).length : 0;
-  const primaryCard = cards ? cards.find(c => c.role === 'primary') : null;
-  const alternates  = cards ? cards.filter(c => c.role === 'alternate') : [];
-  const hasSignal   = ratingCount >= 1 ||
+  const ratingCount  = ratings ? Object.keys(ratings).length : 0;
+  const primaryCard  = cards ? cards.find(c => c.role === 'primary') : null;
+  const alternates   = cards ? cards.filter(c => c.role === 'alternate') : [];
+  const hasSignal    = ratingCount >= 1 ||
     (profile && (profile.preferred_cuisines || []).length > 0) ||
     (profile && profile.active_goal);
 
@@ -384,6 +426,7 @@ export function JourneyTiles({
     return 'SUGGESTED FOR YOU';
   })();
 
+  // Weekly cook count for header badge
   const weekCookCount = (() => {
     if (!Array.isArray(mealHistory)) return 0;
     const weekAgo = Date.now() - 7 * 86400000;
@@ -393,10 +436,20 @@ export function JourneyTiles({
     }).length;
   })();
 
-  // Active event from primary card (computed in engine)
+  // Weekly goal: cook 3 times this week (Part 10 §2)
+  const weeklyGoalTarget = 3;
+  const weeklyGoalProgress = Math.min(weekCookCount, weeklyGoalTarget);
+  const showWeeklyGoal = weeklyGoalProgress > 0 && weeklyGoalProgress < weeklyGoalTarget;
+
+  // Streak logic: show only if ≥1 cook in last 7 days; else show restart prompt (Part 10 §1)
+  const hasRecentCook = weekCookCount >= 1;
+  const showStreak    = (streak || 0) >= 2 && hasRecentCook;
+  const showRestart   = (streak || 0) === 0 && !hasRecentCook && Array.isArray(mealHistory) && mealHistory.length > 0;
+
+  // Active event from primary card — only shown when truly active
   const activeEvent = primaryCard && primaryCard.activeEvent ? primaryCard.activeEvent : null;
 
-  // ── Cook this ─────────────────────────────────────────────────
+  // ── Cook this ───────────────────────────────────────────────
   const handleCook = (card, position) => {
     const action = (position > 0 && acceptedPrimaryRef.current) ? 'swapped' : 'accepted';
     if (position === 0) acceptedPrimaryRef.current = true;
@@ -407,18 +460,18 @@ export function JourneyTiles({
     } else {
       trackRecommendationSwapped({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
     }
-    showToast("Nice — I'll keep this in mind 👍");
+    showToast(cookToastMsg(card));
     setAdaptMsg(null);
     onGenerateDirect && onGenerateDirect(card.context);
   };
 
-  // ── Reject → re-score in-place ────────────────────────────────
+  // ── Reject → re-score ───────────────────────────────────────
   const handleNotForMe = (card, position) => {
     logFeedback({ meal: card.meal, action: 'rejected', userId: user ? user.id : null, position });
     syncBehaviour();
     trackRecommendationRejected({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
-    const streak = (() => { try { return parseInt(sessionStorage.getItem('jiff-session-reject-streak') || '0'); } catch { return 0; } })();
-    if (streak >= 2 && !adaptMsg) {
+    const rejectStreak = (() => { try { return parseInt(sessionStorage.getItem('jiff-session-reject-streak') || '0'); } catch { return 0; } })();
+    if (rejectStreak >= 2 && !adaptMsg) {
       setAdaptMsg('Got it — switching it up');
       setTimeout(() => setAdaptMsg(null), 3000);
     }
@@ -426,7 +479,7 @@ export function JourneyTiles({
     markAsShown(newCards.map(c => c.label));
   };
 
-  // ── Swap: alternate → primary ─────────────────────────────────
+  // ── Swap: alternate → primary ───────────────────────────────
   const handleSwap = (altCard, altPosition) => {
     if (primaryCard) {
       logFeedback({ meal: primaryCard.meal, action: 'swapped', userId: user ? user.id : null, position: 0 });
@@ -435,12 +488,12 @@ export function JourneyTiles({
     logFeedback({ meal: altCard.meal, action: 'accepted', userId: user ? user.id : null, position: altPosition });
     trackRecommendationAccepted({ mealId: altCard.meal?.id || altCard.label, mealName: altCard.label, cuisine: altCard.cuisine, position: altPosition });
     syncBehaviour();
-    showToast("Nice — I'll keep this in mind 👍");
+    showToast(cookToastMsg(altCard));
     setAdaptMsg(null);
     onGenerateDirect && onGenerateDirect(altCard.context);
   };
 
-  // ── Change direction — 6 options → all same engine ───────────
+  // ── Change direction ─────────────────────────────────────────
   const handleChangeDirection = (optionKey) => {
     let journeyCtx;
     switch (optionKey) {
@@ -488,40 +541,54 @@ export function JourneyTiles({
   return (
     <div style={{ maxWidth:680, margin:'0 auto', padding:'14px 16px 100px', fontFamily:"'DM Sans',sans-serif" }}>
 
-      {/* §1 GREETING + badge */}
+      {/* §1 GREETING + streak / week badge */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
         <div>
           <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(19px,5vw,24px)', fontWeight:900, color:C.ink, margin:0, lineHeight:1.2 }}>
             {greet()} ⚡
           </h2>
           <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginTop:3 }}>{framingText()}</div>
-          {streak >= 2 && weekCookCount === 0 && (
+
+          {/* Streak — only if ≥2 and has recent cook */}
+          {showStreak && (
             <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:5, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'2px 10px', fontSize:10, color:'#CC3700', fontWeight:600 }}>
               {'🔥 '}{streak}{'-day streak!'}
             </div>
           )}
+
+          {/* Restart prompt — if streak broke */}
+          {showRestart && (
+            <div style={{ marginTop:5, fontSize:11, color:C.muted, fontStyle:'italic' }}>
+              {"Let's restart today — even a quick meal counts"}
+            </div>
+          )}
         </div>
+
+        {/* Weekly goal progress — 🔥 X/3 this week */}
         {weekCookCount > 0 && (
-          <div style={{ flexShrink:0, marginTop:2, display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'3px 10px', fontSize:11, color:'#CC3700', fontWeight:700, whiteSpace:'nowrap' }}>
-            {'🔥 '}{weekCookCount}{'/7 this week'}
+          <div style={{ flexShrink:0, marginTop:2, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3 }}>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'3px 10px', fontSize:11, color:'#CC3700', fontWeight:700, whiteSpace:'nowrap' }}>
+              {'🔥 '}{weekCookCount}{'/7 this week'}
+            </div>
+            {showWeeklyGoal && (
+              <div style={{ fontSize:10, color:C.muted, fontWeight:400 }}>
+                {'Goal: '}{weeklyGoalProgress}{'/'}{weeklyGoalTarget}{' this week'}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Event banner — only when there's an active festival or sports event */}
+      {/* Event banner — ONLY when event is truly active in current time window */}
       {activeEvent && activeEvent.message && (
-        <div style={{ marginTop:8, marginBottom:4, padding:'7px 13px', borderRadius:10, background: activeEvent.type==='festival'?'rgba(220,38,38,0.06)':'rgba(29,78,216,0.06)', border:'1px solid '+(activeEvent.type==='festival'?'rgba(220,38,38,0.18)':'rgba(29,78,216,0.18)'), fontSize:12, color:activeEvent.type==='festival'?'#991B1B':'#1E40AF', fontWeight:500, display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ marginTop:8, marginBottom:4, padding:'7px 13px', borderRadius:10, background:activeEvent.type==='festival'?'rgba(220,38,38,0.06)':'rgba(29,78,216,0.06)', border:'1px solid '+(activeEvent.type==='festival'?'rgba(220,38,38,0.18)':'rgba(29,78,216,0.18)'), fontSize:12, color:activeEvent.type==='festival'?'#991B1B':'#1E40AF', fontWeight:500, display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:16 }}>{activeEvent.emoji}</span>
           <span>{activeEvent.message}</span>
         </div>
       )}
 
-      {/* §2 Decision framing */}
-      {hasSignal && primaryCard && (
-        <div style={{ fontSize:12, color:C.muted, fontWeight:400, marginBottom:10, marginTop:8 }}>
-          {'This should work for today'}
-        </div>
-      )}
+      {/* §2 Continuity nudge — subtle, 1 line above primary */}
+      <ContinuityNudge mealHistory={mealHistory} streak={streak} />
 
       {/* §3 NUDGE */}
       <RetentionNudges
@@ -532,7 +599,7 @@ export function JourneyTiles({
         lastFavCuisine={lastFavCuisine}
       />
 
-      {/* Adaptation signal — "Got it — switching it up" */}
+      {/* Adaptation signal */}
       {adaptMsg && (
         <div style={{ marginTop:8, marginBottom:4, padding:'8px 14px', borderRadius:10, background:'rgba(29,158,117,0.07)', border:'1px solid rgba(29,158,117,0.2)', fontSize:12, color:'#065F46', fontWeight:600, textAlign:'center', animation:'fadeUp 0.2s ease' }}>
           {adaptMsg}
@@ -582,7 +649,7 @@ export function JourneyTiles({
       {/* §6 CHANGE DIRECTION */}
       <ChangeDirectionRow onOption={handleChangeDirection} />
 
-      {/* §7 CONTEXT TILE */}
+      {/* §7 CONTEXT TILE — only when NOT the generic fridge fallback */}
       {!featured.isFridge && (
         <ContextTile
           emoji={featured.emoji} label={featured.label} sub={featured.sub}

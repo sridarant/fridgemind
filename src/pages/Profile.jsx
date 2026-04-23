@@ -1,7 +1,6 @@
-// src/pages/Profile.jsx
-// Merged "Your Preferences" screen — one page, clean hierarchy.
-// Sections: Quick Setup | Goals | Tell Jiff more (collapsible) | Pantry (collapsible) | Language/Region
-// No tab navigation. Sticky save button on mobile.
+// src/pages/Profile.jsx — "Your Preferences" merged settings screen.
+// Single scrollable page, 5 sections, sticky save. Max-width 480px.
+// Cuisine model: 6 primary groups visible by default, expandable to 9 regional options.
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +17,36 @@ const C = {
   border:'rgba(28,10,0,0.08)', borderMid:'rgba(28,10,0,0.15)',
 };
 
+// ── Cuisine model (Part 1) ────────────────────────────────────────
+// Primary: 6 visible by default
+// Secondary: 9 regional, expandable
+const PRIMARY_CUISINES = [
+  { id:'south_indian',  label:'South Indian', emoji:'🥥' },
+  { id:'north_indian',  label:'North Indian',  emoji:'🌾' },
+  { id:'west_indian',   label:'West Indian',   emoji:'🌶️' },
+  { id:'east_indian',   label:'East Indian',   emoji:'🐟' },
+  { id:'northeast',     label:'North-East',    emoji:'🍃' },
+  { id:'global',        label:'Global',        emoji:'🌍' },
+];
+
+const SECONDARY_CUISINES = [
+  { id:'tamil_nadu',    label:'Tamil Nadu',    primary:'south_indian'  },
+  { id:'kerala',        label:'Kerala',        primary:'south_indian'  },
+  { id:'karnataka',     label:'Karnataka',     primary:'south_indian'  },
+  { id:'andhra',        label:'Andhra',        primary:'south_indian'  },
+  { id:'punjabi',       label:'Punjabi',       primary:'north_indian'  },
+  { id:'gujarati',      label:'Gujarati',      primary:'west_indian'   },
+  { id:'maharashtrian', label:'Maharashtrian', primary:'west_indian'   },
+  { id:'bengali',       label:'Bengali',       primary:'east_indian'   },
+  { id:'rajasthani',    label:'Rajasthani',    primary:'north_indian'  },
+];
+
+// Map stored regional IDs → primary group (for display normalisation)
+function toPrimaryId(id) {
+  const sec = SECONDARY_CUISINES.find(c => c.id === id);
+  return sec ? sec.primary : id;
+}
+
 const DIET_OPTS = [
   { id:'veg',        label:'Vegetarian', emoji:'🥦' },
   { id:'non-veg',    label:'Non-veg',    emoji:'🍗' },
@@ -33,27 +62,16 @@ const SPICE_OPTS = [
 ];
 
 const STYLE_OPTS = [
-  { id:'beginner',  label:'Quick',          sub:'Under 20 min' },
-  { id:'home_cook', label:'Balanced',        sub:'20–35 min'    },
-  { id:'advanced',  label:'Enjoy cooking',   sub:'Any time'     },
+  { id:'beginner',  label:'Quick',         sub:'Under 20 min' },
+  { id:'home_cook', label:'Balanced',       sub:'20–35 min'    },
+  { id:'advanced',  label:'Enjoy cooking',  sub:'Any time'     },
 ];
 
 const GOAL_OPTS = [
-  { id:'eat_healthier',  label:'Eat healthy',        emoji:'🥗' },
-  { id:'cook_faster',    label:'Save time',           emoji:'⚡' },
-  { id:'family',         label:'Cook for family',     emoji:'👨‍👩‍👧' },
-  { id:'try_new_things', label:'Try something new',   emoji:'🌍' },
-];
-
-const CUISINE_OPTS = [
-  { id:'north_indian',  label:'North Indian'  },
-  { id:'south_indian',  label:'South Indian'  },
-  { id:'tamil_nadu',    label:'Tamil Nadu'    },
-  { id:'punjabi',       label:'Punjabi'       },
-  { id:'gujarati',      label:'Gujarati'      },
-  { id:'maharashtrian', label:'Maharashtrian' },
-  { id:'bengali',       label:'Bengali'       },
-  { id:'kerala',        label:'Kerala'        },
+  { id:'eat_healthier',  label:'Eat healthy',       emoji:'🥗' },
+  { id:'cook_faster',    label:'Save time',          emoji:'⚡' },
+  { id:'family',         label:'Cook for family',    emoji:'👨‍👩‍👧' },
+  { id:'try_new_things', label:'Try something new',  emoji:'🌍' },
 ];
 
 const LANG_OPTS = [
@@ -74,7 +92,7 @@ const REGION_OPTS = [
   { id:'AE', label:'UAE 🇦🇪'       },
 ];
 
-// ── Small UI primitives ───────────────────────────────────────────
+// ── UI primitives ─────────────────────────────────────────────────
 function SectionLabel({ children }) {
   return (
     <div style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:600, marginBottom:12, marginTop:4 }}>
@@ -90,10 +108,10 @@ function RadioRow({ options, selected, onSelect }) {
         const active = selected === opt.id;
         return (
           <button key={opt.id} onClick={() => onSelect(opt.id)}
-            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:20, border:'1.5px solid '+(active ? C.jiff : C.border), background:active ? 'rgba(255,69,0,0.07)' : 'white', color:active ? C.jiff : C.ink, fontSize:13, fontWeight:active ? 600 : 400, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s' }}>
+            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:20, border:'1.5px solid '+(active?C.jiff:C.border), background:active?'rgba(255,69,0,0.07)':'white', color:active?C.jiff:C.ink, fontSize:13, fontWeight:active?600:400, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s' }}>
             {opt.emoji && <span>{opt.emoji}</span>}
             <span>{opt.label}</span>
-            {opt.sub && <span style={{ fontSize:10, color:active ? C.jiff : C.muted }}>{'· '+opt.sub}</span>}
+            {opt.sub && <span style={{ fontSize:10, color:active?C.jiff:C.muted }}>{'· '+opt.sub}</span>}
           </button>
         );
       })}
@@ -105,12 +123,13 @@ function ChipRow({ options, selected, onToggle, max = 99 }) {
   return (
     <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
       {options.map(opt => {
-        const active = Array.isArray(selected) ? selected.includes(opt.id) : selected === opt.id;
+        const active   = Array.isArray(selected) ? selected.includes(opt.id) : selected === opt.id;
         const disabled = !active && Array.isArray(selected) && selected.length >= max;
         return (
           <button key={opt.id} onClick={() => !disabled && onToggle(opt.id)}
-            style={{ padding:'6px 13px', borderRadius:20, border:'1.5px solid '+(active ? C.jiff : C.border), background:active ? 'rgba(255,69,0,0.07)' : 'white', color:active ? C.jiff : (disabled ? C.border : C.ink), fontSize:12, fontWeight:active ? 600 : 400, cursor:disabled ? 'default' : 'pointer', fontFamily:"'DM Sans',sans-serif", opacity:disabled ? 0.45 : 1, transition:'all 0.12s' }}>
-            {opt.emoji && opt.emoji + ' '}{opt.label}
+            style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 13px', borderRadius:20, border:'1.5px solid '+(active?C.jiff:C.border), background:active?'rgba(255,69,0,0.07)':'white', color:active?C.jiff:(disabled?C.border:C.ink), fontSize:12, fontWeight:active?600:400, cursor:disabled?'default':'pointer', fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, transition:'all 0.12s' }}>
+            {opt.emoji && <span>{opt.emoji}</span>}
+            <span>{opt.label}</span>
           </button>
         );
       })}
@@ -126,8 +145,8 @@ function Toggle({ value, onChange, label, sub }) {
         {sub && <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{sub}</div>}
       </div>
       <button onClick={() => onChange(!value)}
-        style={{ width:44, height:24, borderRadius:12, background:value ? C.jiff : 'rgba(28,10,0,0.12)', border:'none', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
-        <div style={{ position:'absolute', top:2, left:value ? 22 : 2, width:20, height:20, borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.18)' }} />
+        style={{ width:44, height:24, borderRadius:12, background:value?C.jiff:'rgba(28,10,0,0.12)', border:'none', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+        <div style={{ position:'absolute', top:2, left:value?22:2, width:20, height:20, borderRadius:'50%', background:'white', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.18)' }} />
       </button>
     </div>
   );
@@ -140,9 +159,78 @@ function Collapsible({ label, children, defaultOpen = false }) {
       <button onClick={() => setOpen(v => !v)}
         style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', background:'none', border:'none', borderBottom:'1px solid '+C.border, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
         <span style={{ fontSize:13, fontWeight:600, color:C.ink }}>{label}</span>
-        <span style={{ fontSize:13, color:C.muted, transition:'transform 0.2s', display:'inline-block', transform:open ? 'rotate(180deg)' : 'none' }}>{'▾'}</span>
+        <span style={{ fontSize:13, color:C.muted, display:'inline-block', transform:open?'rotate(180deg)':'none', transition:'transform 0.2s' }}>{'▾'}</span>
       </button>
       {open && <div style={{ paddingTop:14 }}>{children}</div>}
+    </div>
+  );
+}
+
+// ── Cuisine selector (Part 1) ─────────────────────────────────────
+// Shows 6 primary groups. Expand to see 9 regional options.
+// Stores regional IDs internally; maps to primary for display.
+function CuisineSelector({ selected, onChange }) {
+  const [showSecondary, setShowSecondary] = useState(false);
+  const MAX = 4;
+
+  const togglePrimary = (id) => {
+    // Selecting a primary group: store primary ID
+    if (selected.includes(id)) {
+      onChange(selected.filter(c => c !== id));
+    } else {
+      if (selected.length < MAX) onChange([...selected, id]);
+    }
+  };
+
+  const toggleSecondary = (id) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter(c => c !== id));
+    } else {
+      if (selected.length < MAX) onChange([...selected, id]);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>
+        {'Favourite cuisines (pick up to '}{MAX}{')'}
+      </div>
+
+      {/* Primary groups */}
+      <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:10 }}>
+        {PRIMARY_CUISINES.map(opt => {
+          const active   = selected.includes(opt.id);
+          const disabled = !active && selected.length >= MAX;
+          return (
+            <button key={opt.id} onClick={() => !disabled && togglePrimary(opt.id)}
+              style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 13px', borderRadius:20, border:'1.5px solid '+(active?C.jiff:C.border), background:active?'rgba(255,69,0,0.07)':'white', color:active?C.jiff:(disabled?C.border:C.ink), fontSize:12, fontWeight:active?600:400, cursor:disabled?'default':'pointer', fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, transition:'all 0.12s' }}>
+              <span>{opt.emoji}</span>
+              <span>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Expand to regional */}
+      <button onClick={() => setShowSecondary(v => !v)}
+        style={{ background:'none', border:'none', cursor:'pointer', fontSize:11, color:C.jiff, fontFamily:"'DM Sans',sans-serif", fontWeight:500, padding:0, marginBottom:showSecondary?10:0 }}>
+        {showSecondary ? '▲ Show less' : '▼ Pick specific region'}
+      </button>
+
+      {showSecondary && (
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:8 }}>
+          {SECONDARY_CUISINES.map(opt => {
+            const active   = selected.includes(opt.id);
+            const disabled = !active && selected.length >= MAX;
+            return (
+              <button key={opt.id} onClick={() => !disabled && toggleSecondary(opt.id)}
+                style={{ padding:'5px 12px', borderRadius:20, border:'1.5px solid '+(active?C.jiff:'rgba(28,10,0,0.12)'), background:active?'rgba(255,69,0,0.07)':'rgba(28,10,0,0.02)', color:active?C.jiff:(disabled?C.border:C.muted), fontSize:11, fontWeight:active?600:400, cursor:disabled?'default':'pointer', fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, transition:'all 0.12s' }}>
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -153,35 +241,23 @@ export default function Profile() {
   const { user, profile, pantry, updateProfile, savePantry } = useAuth();
   const { lang, setLang, country, setCountry } = useLocale();
 
-  // Section 1 — Quick Setup
-  const [diet,         setDiet]         = useState('veg');
-  const [spice,        setSpice]        = useState('medium');
-  const [style,        setStyle]        = useState('home_cook');
+  const [diet,        setDiet]        = useState('veg');
+  const [spice,       setSpice]       = useState('medium');
+  const [style,       setStyle]       = useState('home_cook');
+  const [goal,        setGoal]        = useState('');
+  const [hasKids,     setHasKids]     = useState(false);
+  const [allergies,   setAllergies]   = useState('');
+  const [cuisines,    setCuisines]    = useState([]);
+  const [pantryItems, setPantryItems] = useState([]);
+  const [pantryInput, setPantryInput] = useState('');
+  const [region,      setRegion]      = useState('IN');
+  const [notifsOn,    setNotifsOn]    = useState(isNotificationsEnabled());
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [streak,      setStreak]      = useState(0);
+  const [cookCount,   setCookCount]   = useState(0);
 
-  // Section 2 — Goals
-  const [goal,         setGoal]         = useState('');
-
-  // Section 3 — Tell Jiff more
-  const [hasKids,      setHasKids]      = useState(false);
-  const [allergies,    setAllergies]    = useState('');
-  const [cuisines,     setCuisines]     = useState([]);
-
-  // Section 4 — Pantry (collapsed by default)
-  const [pantryItems,  setPantryItems]  = useState([]);
-  const [pantryInput,  setPantryInput]  = useState('');
-
-  // Section 5 — Language / Region / Notifications
-  const [region,       setRegion]       = useState('IN');
-  const [notifsOn,     setNotifsOn]     = useState(isNotificationsEnabled());
-
-  // UI state
-  const [saving, setSaving] = useState(false);
-  const [saved,  setSaved]  = useState(false);
-
-  const [streak,     setStreak]     = useState(0);
-  const [cookCount,  setCookCount]  = useState(0);
-
-  // ── Load from profile ─────────────────────────────────────────
+  // Load from profile
   useEffect(() => {
     if (!profile) return;
     const ids = parseFoodTypeIds(profile.food_type);
@@ -206,7 +282,6 @@ export default function Profile() {
     fetchHistory(user.id).then(h => { if (h.length) setCookCount(h.filter(x => x.rating).length); }).catch(() => {});
   }, [user]);
 
-  // ── Save ──────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -232,10 +307,6 @@ export default function Profile() {
     setSaving(false);
   };
 
-  const toggleCuisine = (id) => {
-    setCuisines(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
-  };
-
   const addPantryItem = (e) => {
     if (e.key === 'Enter' && pantryInput.trim()) {
       setPantryItems(prev => prev.includes(pantryInput.trim()) ? prev : [...prev, pantryInput.trim()]);
@@ -252,21 +323,19 @@ export default function Profile() {
           style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:C.muted, padding:'4px 2px', lineHeight:1 }}>
           {'←'}
         </button>
-        <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>
-          {'Your Preferences'}
-        </span>
+        <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>{'Your Preferences'}</span>
         <div style={{ width:40 }} />
       </header>
 
       {/* Stats strip */}
       {user && (streak > 0 || cookCount > 0) && (
-        <div style={{ display:'flex', gap:0, borderBottom:'1px solid '+C.border, background:'white' }}>
+        <div style={{ display:'flex', borderBottom:'1px solid '+C.border, background:'white' }}>
           {[
-            { emoji:'🔥', value: streak,    label:'day streak' },
-            { emoji:'🍳', value: cookCount, label:'cooked'     },
-          ].filter(s => s.value > 0).map((s, i) => (
-            <div key={i} style={{ flex:1, textAlign:'center', padding:'12px 8px', borderRight: i === 0 ? '1px solid '+C.border : 'none' }}>
-              <div style={{ fontSize:10, color:C.muted }}>{s.emoji} {s.value} {s.label}</div>
+            { emoji:'🔥', value:streak,    label:'day streak', show: streak > 0    },
+            { emoji:'🍳', value:cookCount, label:'cooked',     show: cookCount > 0 },
+          ].filter(s => s.show).map((s, i, arr) => (
+            <div key={i} style={{ flex:1, textAlign:'center', padding:'12px 8px', borderRight:i<arr.length-1?'1px solid '+C.border:'none' }}>
+              <div style={{ fontSize:10, color:C.muted }}>{s.emoji}{' '}{s.value}{' '}{s.label}</div>
             </div>
           ))}
         </div>
@@ -274,7 +343,7 @@ export default function Profile() {
 
       <div style={{ maxWidth:480, margin:'0 auto', padding:'20px 16px' }}>
 
-        {/* ── SECTION 1: Quick Setup ─────────────────────────── */}
+        {/* ── SECTION 1: Quick Setup ───────────────────────── */}
         <div style={{ marginBottom:28 }}>
           <SectionLabel>{'Quick setup'}</SectionLabel>
 
@@ -294,7 +363,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* ── SECTION 2: Goals ──────────────────────────────── */}
+        {/* ── SECTION 2: Goal ──────────────────────────────── */}
         <div style={{ marginBottom:28 }}>
           <SectionLabel>{'My goal'}</SectionLabel>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
@@ -302,9 +371,9 @@ export default function Profile() {
               const active = goal === opt.id;
               return (
                 <button key={opt.id} onClick={() => setGoal(active ? '' : opt.id)}
-                  style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:12, border:'1.5px solid '+(active ? C.jiff : C.border), background:active ? 'rgba(255,69,0,0.07)' : 'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", textAlign:'left', transition:'all 0.12s' }}>
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', borderRadius:12, border:'1.5px solid '+(active?C.jiff:C.border), background:active?'rgba(255,69,0,0.07)':'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", textAlign:'left', transition:'all 0.12s' }}>
                   <span style={{ fontSize:20 }}>{opt.emoji}</span>
-                  <span style={{ fontSize:13, fontWeight:active ? 600 : 400, color:active ? C.jiff : C.ink }}>{opt.label}</span>
+                  <span style={{ fontSize:13, fontWeight:active?600:400, color:active?C.jiff:C.ink }}>{opt.label}</span>
                 </button>
               );
             })}
@@ -315,7 +384,7 @@ export default function Profile() {
         <Collapsible label="Tell Jiff more">
           <Toggle value={hasKids} onChange={setHasKids}
             label="Kids in the household"
-            sub="Suggests mild, easy options" />
+            sub="Suggests mild, easy-to-eat options" />
 
           <div style={{ paddingTop:14, marginBottom:14 }}>
             <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>{'Allergies or avoids (comma separated)'}</div>
@@ -326,16 +395,13 @@ export default function Profile() {
             />
           </div>
 
-          <div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>{'Favourite cuisines (pick up to 4)'}</div>
-            <ChipRow options={CUISINE_OPTS} selected={cuisines} onToggle={toggleCuisine} max={4} />
-          </div>
+          <CuisineSelector selected={cuisines} onChange={setCuisines} />
         </Collapsible>
 
         {/* ── SECTION 4: Pantry (collapsible) ─────────────── */}
         <Collapsible label="Pantry basics included">
           <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>
-            {'These are included when suggesting recipes. Add or remove items.'}
+            {'These are always available when suggesting recipes. Add or remove freely.'}
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:12 }}>
             {pantryItems.map(item => (
@@ -362,7 +428,11 @@ export default function Profile() {
 
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>{'Language'}</div>
-            <ChipRow options={LANG_OPTS.map(l => ({ id:l.code, label:l.label }))} selected={[lang]} onToggle={(code) => { if (typeof setLang === 'function') setLang(code); }} />
+            <ChipRow
+              options={LANG_OPTS.map(l => ({ id:l.code, label:l.label }))}
+              selected={[lang]}
+              onToggle={(code) => { if (typeof setLang === 'function') setLang(code); }}
+            />
           </div>
 
           <div style={{ marginBottom:14 }}>
@@ -370,9 +440,12 @@ export default function Profile() {
             <ChipRow options={REGION_OPTS} selected={[region]} onToggle={setRegion} />
           </div>
 
-          <Toggle value={notifsOn} onChange={async (val) => { setNotifsOn(val); setNotificationsEnabled(val); if (val) await requestPermission(); }}
+          <Toggle
+            value={notifsOn}
+            onChange={async (val) => { setNotifsOn(val); setNotificationsEnabled(val); if (val) await requestPermission(); }}
             label="Meal reminders"
-            sub="One notification per day at most" />
+            sub="One notification per day at most"
+          />
         </div>
 
       </div>
@@ -381,7 +454,7 @@ export default function Profile() {
       <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'rgba(255,250,245,0.97)', borderTop:'1px solid '+C.border, padding:'12px 16px', zIndex:50 }}>
         <div style={{ maxWidth:480, margin:'0 auto' }}>
           <button onClick={handleSave} disabled={saving || !user}
-            style={{ width:'100%', padding:'13px', borderRadius:13, background:saved ? '#1D9E75' : (saving || !user) ? C.muted : C.jiff, color:'white', border:'none', fontSize:14, fontWeight:700, cursor:(saving || !user) ? 'default' : 'pointer', fontFamily:"'DM Sans',sans-serif", transition:'background 0.2s' }}>
+            style={{ width:'100%', padding:'13px', borderRadius:13, background:saved?'#1D9E75':(saving||!user)?C.muted:C.jiff, color:'white', border:'none', fontSize:14, fontWeight:700, cursor:(saving||!user)?'default':'pointer', fontFamily:"'DM Sans',sans-serif", transition:'background 0.2s' }}>
             {saving ? 'Saving…' : saved ? '✔ Saved' : user ? 'Save preferences' : 'Sign in to save'}
           </button>
         </div>
