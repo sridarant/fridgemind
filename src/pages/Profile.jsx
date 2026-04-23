@@ -25,7 +25,7 @@ const PRIMARY_CUISINES = [
   { id:'north_indian',  label:'North Indian',  emoji:'🌾' },
   { id:'west_indian',   label:'West Indian',   emoji:'🌶️' },
   { id:'east_indian',   label:'East Indian',   emoji:'🐟' },
-  { id:'northeast',     label:'North-East',    emoji:'🍃' },
+  { id:'northeast',     label:'North-East Indian',    emoji:'🍃' },
   { id:'global',        label:'Global',        emoji:'🌍' },
 ];
 
