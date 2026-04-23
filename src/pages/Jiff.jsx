@@ -29,7 +29,8 @@ import { fetchHistory, trackStapleUsage, getStapleSuggestions } from '../service
 export default function Jiff() {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const genCtxNav = location.state?.generateContext || null;
+  const genCtxNav    = location.state?.generateContext || null;
+  const navJourneyCtx = location.state?.journeyContext   || null;
 
   const {
     user, profile, pantry, updateProfile, toggleFavourite, isFav,
@@ -348,6 +349,7 @@ export default function Jiff() {
             onDismissUpgrade={() => setUpgradeNudge(null)}
             onConfirmCooked={confirmCooked}
             onDismissNudge={dismissNudge}
+            navJourneyCtx={navJourneyCtx}
             onSelectFridge={() => { setJourneyMode(false); setInputMode('fridge'); }}
             onGenerateDirect={handleGenerateDirect}
             onLeftoverRescue={handleLeftoverRescue}

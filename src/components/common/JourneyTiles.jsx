@@ -1,19 +1,20 @@
 // src/components/common/JourneyTiles.jsx
-// Unified adaptive decision assistant.
+// Adaptive decision assistant — decision-first, rejection-aware, session-adaptive.
 //
-// LAYOUT (top → bottom):
-//   §1  Greeting + week badge + event banner (if active)
-//   §2  Decision framing text
+// LAYOUT (strict order):
+//   §1  Greeting + week badge + event banner (festival/sports only when active)
+//   §2  "This should work for today" framing
 //   §3  ONE retention nudge (inline, dismissible)
 //   §4  PRIMARY card (dominates screen)
-//   §5  ALTERNATES — 2 compact rows (tap → swap)
-//   §6  "Change direction" row — 6 intent options
+//   §5  ALTERNATES (2 compact rows, tap → swap)
+//   §6  "Change direction" — 6 intent options (3×2 grid)
 //   §7  Context tile — below fold
 //   §8  ChallengeTracker — below fold
 //   §9  Weekly planner — below fold
 //
-// All 6 change-direction options call buildJourneyContext + getPersonalisedRecommendations.
-// No separate flows. Rejection re-scores in-place.
+// All 6 change-direction options route through buildJourneyContext → same engine.
+// Rejection: re-scores in-place, no reload, adaptation message shown after 2 consecutive.
+// Trust: ✔ why text, context labels, "Got it — switching it up", "Nice — I'll keep this in mind 👍".
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -43,8 +44,26 @@ function SL({ children, mt }) {
   );
 }
 
+// ── Context label pill ─────────────────────────────────────────────
+// "Light meal" | "High protein" | "Festive" | "Kid-friendly"
+function ContextLabel({ label }) {
+  if (!label) return null;
+  const colors = {
+    'Light meal':    { bg:'rgba(29,158,117,0.08)', border:'rgba(29,158,117,0.22)', color:'#065F46' },
+    'High protein':  { bg:'rgba(37,99,235,0.08)',  border:'rgba(37,99,235,0.22)',  color:'#1E40AF' },
+    'Festive':       { bg:'rgba(220,38,38,0.07)',   border:'rgba(220,38,38,0.22)',  color:'#991B1B' },
+    'Kid-friendly':  { bg:'rgba(217,119,6,0.07)',   border:'rgba(217,119,6,0.22)',  color:'#92400E' },
+  };
+  const s = colors[label] || { bg:'rgba(28,10,0,0.05)', border:C.border, color:C.muted };
+  return (
+    <span style={{ fontSize:9, fontWeight:700, letterSpacing:'0.8px', padding:'2px 8px', borderRadius:6, border:'1px solid '+s.border, background:s.bg, color:s.color }}>
+      {label.toUpperCase()}
+    </span>
+  );
+}
+
 // ── §4 Primary card ────────────────────────────────────────────────
-function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLabel, onCook, onNotForMe, animKey }) {
+function PrimaryCard({ emoji, label, effortMins, why, contextLabel, timePressure, confidenceLabel, onCook, onNotForMe, animKey }) {
   const [hov, setHov] = useState(false);
   const isQuick = effortMins <= 15;
 
@@ -53,14 +72,15 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div
         onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-        style={{ background:hov?C.softOrangeMid:C.softOrange, border:'1.5px solid '+(hov?'rgba(255,69,0,0.28)':'rgba(255,69,0,0.16)'), borderRadius:20, padding:'18px 18px 16px', transition:'all 0.13s', boxShadow:hov?'0 6px 24px rgba(255,69,0,0.11)':'0 2px 10px rgba(28,10,0,0.05)', position:'relative' }}>
+        style={{ background:hov?C.softOrangeMid:C.softOrange, border:'1.5px solid '+(hov?'rgba(255,69,0,0.28)':'rgba(255,69,0,0.16)'), borderRadius:20, padding:'18px 18px 16px', transition:'all 0.13s', boxShadow:hov?'0 6px 24px rgba(255,69,0,0.11)':'0 2px 10px rgba(28,10,0,0.05)' }}>
 
-        {/* Top row */}
+        {/* Top row: labels + not-this */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:13, gap:8 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
             <span style={{ fontSize:9, fontWeight:700, color:C.jiff, background:'rgba(255,69,0,0.09)', border:'1px solid rgba(255,69,0,0.20)', borderRadius:6, padding:'2px 8px', letterSpacing:'1px' }}>
               {confidenceLabel || 'BEST MATCH TODAY'}
             </span>
+            {contextLabel && <ContextLabel label={contextLabel} />}
             {timePressure && (
               <span style={{ fontSize:9, fontWeight:600, color:'#1D9E75', background:'rgba(29,158,117,0.09)', border:'1px solid rgba(29,158,117,0.22)', borderRadius:6, padding:'2px 7px' }}>
                 {'SHORT ON TIME?'}
@@ -68,7 +88,7 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
             )}
           </div>
           <button onClick={onNotForMe}
-            style={{ background:'none', border:'1px solid rgba(28,10,0,0.10)', cursor:'pointer', color:C.muted, fontSize:11, padding:'2px 8px', lineHeight:1.4, borderRadius:6, fontFamily:"'DM Sans',sans-serif" }}>
+            style={{ background:'none', border:'1px solid rgba(28,10,0,0.10)', cursor:'pointer', color:C.muted, fontSize:11, padding:'2px 8px', lineHeight:1.4, borderRadius:6, fontFamily:"'DM Sans',sans-serif", flexShrink:0 }}>
             {'Not this'}
           </button>
         </div>
@@ -89,7 +109,7 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
           </div>
         </div>
 
-        {/* Why */}
+        {/* Why block — ✔ line1 + line2 */}
         {why && why.line1 && (
           <div style={{ borderTop:'1px solid rgba(255,69,0,0.11)', paddingTop:11, marginBottom:13 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.ink, lineHeight:1.5 }}>{'✔ '}{why.line1}</div>
@@ -97,7 +117,6 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
           </div>
         )}
 
-        {/* CTA */}
         <button onClick={onCook}
           style={{ width:'100%', padding:'12px', borderRadius:13, background:C.jiff, color:'white', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", letterSpacing:'0.2px', transition:'background 0.12s' }}
           onMouseEnter={e => { e.currentTarget.style.background = C.jiffDark; }}
@@ -137,8 +156,7 @@ function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
   );
 }
 
-// ── §6 "Change direction" row — 6 intent options ──────────────────
-// All 6 options call the same engine via buildJourneyContext.
+// ── §6 "Change direction" — 6 options, 3×2 grid ───────────────────
 function ChangeDirectionRow({ onOption }) {
   const options = [
     { key:'mood',     label:'Match my mood',   emoji:'😊' },
@@ -148,12 +166,9 @@ function ChangeDirectionRow({ onOption }) {
     { key:'leftover', label:'Use leftovers',   emoji:'♻️' },
     { key:'hosting',  label:'Guests coming',   emoji:'🎉' },
   ];
-
   return (
     <div style={{ marginBottom:20 }}>
-      <div style={{ fontSize:11, color:C.muted, fontWeight:400, marginBottom:10, textAlign:'center' }}>
-        {'Change direction'}
-      </div>
+      <div style={{ fontSize:11, color:C.muted, fontWeight:400, marginBottom:10, textAlign:'center' }}>{'Change direction'}</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
         {options.map(opt => (
           <button key={opt.key} onClick={() => onOption(opt.key)}
@@ -192,27 +207,22 @@ function WeeklyPlanner({ onGenerateDirect }) {
   const today = new Date();
   const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const h     = today.getHours();
-
   const slots = [
-    { offsetDays:0,  label:'Today',   mealType: h<11?'breakfast':h<16?'lunch':h<19?'snack':'dinner', description: h<11?'Quick breakfast':h<16?'Light lunch':h<19?'Quick snack':'Quick dinner', context:{} },
-    { offsetDays:2,  label:'',        mealType:'lunch',  description:'Lighter midweek meal', context:{ goal:'eat_healthier' } },
-    { offsetDays:4,  label:'',        mealType:'dinner', description:'Comfort dinner',       context:{} },
-    { offsetDays:6,  label:'Weekend', mealType:'dinner', description:'Something special',    context:{ hosting:true, servings:4 } },
+    { offsetDays:0,  label:'Today',   mealType:h<11?'breakfast':h<16?'lunch':h<19?'snack':'dinner', description:h<11?'Quick breakfast':h<16?'Light lunch':h<19?'Quick snack':'Quick dinner', context:{} },
+    { offsetDays:2,  label:'',        mealType:'lunch',  description:'Lighter midweek meal',  context:{ goal:'eat_healthier' } },
+    { offsetDays:4,  label:'',        mealType:'dinner', description:'Comfort dinner',         context:{} },
+    { offsetDays:6,  label:'Weekend', mealType:'dinner', description:'Something special',      context:{ hosting:true, servings:4 } },
   ].map(slot => {
     const d = new Date(today);
     d.setDate(today.getDate() + slot.offsetDays);
     return { ...slot, dayLabel: slot.label || DAYS[d.getDay()] };
   });
-
   const MEAL_EMOJI = { breakfast:'🌅', lunch:'☀️', snack:'🍎', dinner:'🌙' };
-
   return (
     <div style={{ marginBottom:16 }}>
       <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16, overflow:'hidden' }}>
         <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(28,10,0,0.05)' }}>
-          <div style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:600 }}>
-            {'This week looks like'}
-          </div>
+          <div style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:600 }}>{'This week looks like'}</div>
         </div>
         {slots.map((slot, i) => (
           <button key={i}
@@ -242,7 +252,7 @@ function Toast({ message, visible }) {
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────
+// ── Main ───────────────────────────────────────────────────────────
 export function JourneyTiles({
   profile, season, streak, country,
   ratings, mealHistory,
@@ -251,6 +261,7 @@ export function JourneyTiles({
   onConfirmCooked, onDismissNudge,
   onSelectFridge, onGenerateDirect, onLeftoverRescue, onWeatherGenerate,
   user,
+  navJourneyCtx = null,
 }) {
   const navigate = useNavigate();
   const [showMood,  setShowMood]  = useState(false);
@@ -261,7 +272,6 @@ export function JourneyTiles({
   const [adaptMsg,  setAdaptMsg]  = useState(null);
   const [cards,          setCards]          = useState(null);
   const [primaryAnimKey, setPrimaryAnimKey] = useState(0);
-
   const acceptedPrimaryRef = useRef(false);
   const feedbackCountRef   = useRef(0);
   const shownTrackedRef    = useRef(false);
@@ -271,17 +281,24 @@ export function JourneyTiles({
   const sports   = getActiveSportsEvent();
   const dayCtx   = getDayOfWeekContext();
 
-  // ── Load recommendations ──────────────────────────────────────────
+  // ── Load cards — all journeys route through here ──────────────
   const loadCards = useCallback((journeyCtx = null) => {
     const jCtx = journeyCtx || buildJourneyContext({ journeyType:'default', profile, mealHistory });
     const recs  = getPersonalisedRecommendations({ profile, ratings, mealHistory, journeyContext: jCtx });
     const mapped = recs.map(rec => ({
-      meal: rec.meal, emoji: rec.meal.emoji, label: rec.meal.name,
-      cuisine: rec.meal.cuisine, effortMins: rec.meal.effortMins,
-      tags: rec.meal.tags, why: rec.why, role: rec.role, score: rec.score,
+      meal:         rec.meal,
+      emoji:        rec.meal.emoji,
+      label:        rec.meal.name,
+      cuisine:      rec.meal.cuisine,
+      effortMins:   rec.meal.effortMins,
+      tags:         rec.meal.tags,
+      why:          rec.why,
+      role:         rec.role,
+      score:        rec.score,
       timePressure: rec.timePressure || false,
       activeEvent:  rec.activeEvent  || null,
-      context: recommendationToContext(rec),
+      contextLabel: rec.contextLabel || null,
+      context:      recommendationToContext(rec),
     }));
     setCards(mapped);
     setPrimaryAnimKey(k => k + 1);
@@ -294,7 +311,8 @@ export function JourneyTiles({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const mapped = loadCards();
+    const initCtx = navJourneyCtx || null;
+    const mapped  = loadCards(initCtx);
     if (mapped.length > 0) markAsShown(mapped.map(c => c.label));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -355,8 +373,7 @@ export function JourneyTiles({
   const ratingCount = ratings ? Object.keys(ratings).length : 0;
   const primaryCard = cards ? cards.find(c => c.role === 'primary') : null;
   const alternates  = cards ? cards.filter(c => c.role === 'alternate') : [];
-
-  const hasSignal = ratingCount >= 1 ||
+  const hasSignal   = ratingCount >= 1 ||
     (profile && (profile.preferred_cuisines || []).length > 0) ||
     (profile && profile.active_goal);
 
@@ -376,10 +393,10 @@ export function JourneyTiles({
     }).length;
   })();
 
-  // Active event from primary card (already computed in engine)
+  // Active event from primary card (computed in engine)
   const activeEvent = primaryCard && primaryCard.activeEvent ? primaryCard.activeEvent : null;
 
-  // ── Cook this ────────────────────────────────────────────────────
+  // ── Cook this ─────────────────────────────────────────────────
   const handleCook = (card, position) => {
     const action = (position > 0 && acceptedPrimaryRef.current) ? 'swapped' : 'accepted';
     if (position === 0) acceptedPrimaryRef.current = true;
@@ -395,7 +412,7 @@ export function JourneyTiles({
     onGenerateDirect && onGenerateDirect(card.context);
   };
 
-  // ── Reject → re-score in-place ───────────────────────────────────
+  // ── Reject → re-score in-place ────────────────────────────────
   const handleNotForMe = (card, position) => {
     logFeedback({ meal: card.meal, action: 'rejected', userId: user ? user.id : null, position });
     syncBehaviour();
@@ -409,7 +426,7 @@ export function JourneyTiles({
     markAsShown(newCards.map(c => c.label));
   };
 
-  // ── Swap alternate → primary ──────────────────────────────────────
+  // ── Swap: alternate → primary ─────────────────────────────────
   const handleSwap = (altCard, altPosition) => {
     if (primaryCard) {
       logFeedback({ meal: primaryCard.meal, action: 'swapped', userId: user ? user.id : null, position: 0 });
@@ -423,7 +440,7 @@ export function JourneyTiles({
     onGenerateDirect && onGenerateDirect(altCard.context);
   };
 
-  // ── 6 change-direction options → all call same engine ────────────
+  // ── Change direction — 6 options → all same engine ───────────
   const handleChangeDirection = (optionKey) => {
     let journeyCtx;
     switch (optionKey) {
@@ -452,7 +469,6 @@ export function JourneyTiles({
       default:
         journeyCtx = buildJourneyContext({ journeyType:'default', profile, mealHistory });
     }
-    // Re-score locally for immediate visual feedback if not navigating away
     if (journeyCtx && optionKey !== 'surprise' && optionKey !== 'fridge') {
       const newCards = loadCards(journeyCtx);
       markAsShown(newCards.map(c => c.label));
@@ -492,10 +508,10 @@ export function JourneyTiles({
         )}
       </div>
 
-      {/* Event banner — only when active and has a message */}
+      {/* Event banner — only when there's an active festival or sports event */}
       {activeEvent && activeEvent.message && (
-        <div style={{ marginTop:8, marginBottom:4, padding:'7px 13px', borderRadius:10, background:'rgba(29,78,216,0.06)', border:'1px solid rgba(29,78,216,0.18)', fontSize:12, color:'#1E40AF', fontWeight:500, display:'flex', alignItems:'center', gap:8 }}>
-          <span>{activeEvent.emoji}</span>
+        <div style={{ marginTop:8, marginBottom:4, padding:'7px 13px', borderRadius:10, background: activeEvent.type==='festival'?'rgba(220,38,38,0.06)':'rgba(29,78,216,0.06)', border:'1px solid '+(activeEvent.type==='festival'?'rgba(220,38,38,0.18)':'rgba(29,78,216,0.18)'), fontSize:12, color:activeEvent.type==='festival'?'#991B1B':'#1E40AF', fontWeight:500, display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:16 }}>{activeEvent.emoji}</span>
           <span>{activeEvent.message}</span>
         </div>
       )}
@@ -516,9 +532,9 @@ export function JourneyTiles({
         lastFavCuisine={lastFavCuisine}
       />
 
-      {/* Adaptation signal */}
+      {/* Adaptation signal — "Got it — switching it up" */}
       {adaptMsg && (
-        <div style={{ marginTop:8, marginBottom:4, padding:'7px 12px', borderRadius:10, background:'rgba(29,158,117,0.07)', border:'1px solid rgba(29,158,117,0.2)', fontSize:11, color:'#065F46', fontWeight:500, textAlign:'center', animation:'fadeUp 0.2s ease' }}>
+        <div style={{ marginTop:8, marginBottom:4, padding:'8px 14px', borderRadius:10, background:'rgba(29,158,117,0.07)', border:'1px solid rgba(29,158,117,0.2)', fontSize:12, color:'#065F46', fontWeight:600, textAlign:'center', animation:'fadeUp 0.2s ease' }}>
           {adaptMsg}
         </div>
       )}
@@ -529,6 +545,7 @@ export function JourneyTiles({
           animKey={primaryAnimKey}
           emoji={primaryCard.emoji} label={primaryCard.label}
           effortMins={primaryCard.effortMins} why={primaryCard.why}
+          contextLabel={primaryCard.contextLabel}
           timePressure={primaryCard.timePressure}
           confidenceLabel={confidenceLabel}
           onCook={() => handleCook(primaryCard, 0)}
@@ -562,7 +579,7 @@ export function JourneyTiles({
         </div>
       )}
 
-      {/* §6 CHANGE DIRECTION — 6 options, 3×2 grid */}
+      {/* §6 CHANGE DIRECTION */}
       <ChangeDirectionRow onOption={handleChangeDirection} />
 
       {/* §7 CONTEXT TILE */}
@@ -582,7 +599,6 @@ export function JourneyTiles({
 
       <Toast message={toast.message} visible={toast.visible} />
 
-      {/* Modals */}
       {showMood && (
         <MoodSelector
           onSelect={({ mood, context }) => handleMoodEntry(mood, context)}

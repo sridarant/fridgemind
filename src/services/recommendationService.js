@@ -12,10 +12,10 @@
 // Primary dominance:  primaryScore *= 1.2
 // Time pressure:      boost ≤15 min meals when flag active
 // Session adaptation: streak ≥2 → force cuisine + effort shift
-// Repetition control: same meal blocked 3 sessions; same cuisine capped at 2 consecutive
+// Repetition control: same meal blocked 3 sessions; same cuisine capped 2 consecutive
 
 import { parseFoodTypeIds } from '../lib/dietary.js';
-import { getActiveEvent, getEventBoost } from '../lib/eventIntelligence.js';
+import { getActiveEvent, getEventBoost, getMealContextLabel } from '../lib/eventIntelligence.js';
 import {
   getAllLearnedWeights,
   getRejectedMealNames,
@@ -85,17 +85,16 @@ export function clearRecentlyShown() {
 // ── Time pressure detection ───────────────────────────────────────
 export function getTimePressureFlag(rejectStreak = 0) {
   const h = new Date().getHours();
-  // Late evening, morning rush, or user has rejected 2+ times
   if (rejectStreak >= 2) return true;
-  if (h >= 21 || (h >= 7 && h < 9)) return true;  // morning rush / late night
+  if (h >= 21 || (h >= 7 && h < 9)) return true;
   return false;
 }
 
 // ── Journey context builder ───────────────────────────────────────
-// All entry points call this to normalise into a unified context object.
-// { mood, ingredients, mealType, effortPreference, continuityData, timePressureFlag }
+// All entry points must call this. Returns a normalised context consumed by
+// getPersonalisedRecommendations(). No per-journey scoring logic allowed outside.
 export function buildJourneyContext({
-  journeyType  = 'default',  // default|mood|ingredient|surprise|weekly|continuity|kids|leftover|hosting
+  journeyType  = 'default',  // default|mood|ingredient|surprise|weekly|continuity|kids|leftover|hosting|health|religious
   mood         = null,
   ingredients  = [],
   mealTypeOverride = null,
@@ -106,43 +105,56 @@ export function buildJourneyContext({
   const h = new Date().getHours();
   const autoMealType = mealTypeOverride || getMealTypeFromHour(h);
 
-  // Continuity data: what was cooked recently (last 3 days)
-  const cutoff3d = Date.now() - 3 * 86400000;
-  const recent   = (mealHistory || [])
-    .filter(m => new Date(m.generated_at || m.created_at || 0).getTime() > cutoff3d)
-    .slice(0, 5);
+  // Continuity: what was cooked in the last 3 days
+  const cutoff3d       = Date.now() - 3 * 86400000;
+  const recent         = (mealHistory || []).filter(m => new Date(m.generated_at || m.created_at || 0).getTime() > cutoff3d).slice(0, 5);
   const recentCuisines = [...new Set(recent.map(m => m.cuisine).filter(Boolean))];
   const recentMeals    = recent.map(m => m.meal_name || m.meal?.name).filter(Boolean);
 
   const timePressureFlag = getTimePressureFlag(rejectStreak);
 
-  // Effort preference: time pressure or morning/evening → prefer quick
+  // Base effort preference
   let effortPreference = 'any';
   if (timePressureFlag) effortPreference = 'quick';
   else if (autoMealType === 'breakfast') effortPreference = 'quick';
   else if (isWeekend()) effortPreference = 'any';
   else if (autoMealType === 'dinner') effortPreference = 'moderate';
 
-  // Detect active event for context
-  const activeEvent = getActiveEvent({ region: (profile && profile.country) || 'IN' });
+  // Journey-type overrides for effort + tag boosts
+  // These shape the context consumed by the engine — NOT separate logic paths
+  const journeyTagBoosts = [];  // extra tag signals to boost in scoring
+  let   journeyMealType  = autoMealType;
 
-  // Journey-type overrides
   if (journeyType === 'kids') {
-    effortPreference = 'quick';  // kids meals → quick, mild
+    effortPreference = 'quick';
+    journeyTagBoosts.push('mild', 'safe', 'light', 'healthy', 'protein', 'quick');
+    journeyMealType  = autoMealType === 'dinner' ? 'lunch' : autoMealType;
   }
   if (journeyType === 'leftover') {
-    effortPreference = 'quick';  // leftovers → minimal effort
+    effortPreference = 'quick';
+    journeyTagBoosts.push('leftover', 'quick', 'comfort');
   }
   if (journeyType === 'hosting') {
-    effortPreference = 'any';    // guests → allow elaborate
+    effortPreference = 'any';
+    journeyTagBoosts.push('crowd-friendly', 'popular', 'comfort', 'indulgent', 'special');
   }
+  if (journeyType === 'health') {
+    effortPreference = effortPreference === 'any' ? 'moderate' : effortPreference;
+    journeyTagBoosts.push('healthy', 'light', 'protein');
+  }
+  if (journeyType === 'religious' || journeyType === 'festival') {
+    journeyTagBoosts.push('festive', 'mild', 'comfort');
+  }
+
+  const activeEvent = getActiveEvent({ region: (profile && profile.country) || 'IN' });
 
   return {
     journeyType,
     mood,
     ingredients,
-    mealType:          autoMealType,
+    mealType:          journeyMealType,
     effortPreference,
+    journeyTagBoosts,
     continuityData:    { recentCuisines, recentMeals },
     timePressureFlag,
     activeEvent,
@@ -152,55 +164,55 @@ export function buildJourneyContext({
 // ── Meal catalogue ────────────────────────────────────────────────
 const MEAL_CATALOGUE = [
   // Breakfast
-  { id:'poha',              name:'Poha',               emoji:'🍚', cuisine:'maharashtrian', mealType:['breakfast','snack'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:15, tags:['quick','light','popular','mild'] },
-  { id:'upma',              name:'Upma',               emoji:'🥣', cuisine:'south_indian',  mealType:['breakfast'],                 diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['quick','filling','mild'] },
-  { id:'idli_sambar',       name:'Idli Sambar',        emoji:'🫓', cuisine:'tamil_nadu',    mealType:['breakfast','lunch'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:10, tags:['light','popular','mild','healthy','protein'] },
+  { id:'poha',              name:'Poha',               emoji:'🍚', cuisine:'maharashtrian', mealType:['breakfast','snack'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:15, tags:['quick','light','popular','mild','safe'] },
+  { id:'upma',              name:'Upma',               emoji:'🥣', cuisine:'south_indian',  mealType:['breakfast'],                 diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['quick','filling','mild','safe'] },
+  { id:'idli_sambar',       name:'Idli Sambar',        emoji:'🫓', cuisine:'tamil_nadu',    mealType:['breakfast','lunch'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:10, tags:['light','popular','mild','healthy','protein','safe'] },
   { id:'paratha',           name:'Paratha',            emoji:'🫓', cuisine:'punjabi',       mealType:['breakfast','lunch'],         diet:['veg','eggetarian'],                 effortMins:20, tags:['filling','popular','comfort'] },
   { id:'aloo_paratha',      name:'Aloo Paratha',       emoji:'🫓', cuisine:'punjabi',       mealType:['breakfast','lunch'],         diet:['veg','jain','eggetarian'],          effortMins:25, tags:['filling','popular','comfort','heavy'] },
-  { id:'vermicelli',        name:'Vermicelli Upma',    emoji:'🍜', cuisine:'south_indian',  mealType:['breakfast'],                 diet:['veg','vegan','eggetarian'],         effortMins:15, tags:['quick','light','mild'] },
+  { id:'vermicelli',        name:'Vermicelli Upma',    emoji:'🍜', cuisine:'south_indian',  mealType:['breakfast'],                 diet:['veg','vegan','eggetarian'],         effortMins:15, tags:['quick','light','mild','safe'] },
   { id:'oats_savory',       name:'Masala Oats',        emoji:'🥣', cuisine:'any',           mealType:['breakfast'],                 diet:['veg','vegan','jain','eggetarian'],  effortMins:10, tags:['quick','healthy','light','protein'] },
   { id:'egg_bhurji',        name:'Egg Bhurji',         emoji:'🍳', cuisine:'any',           mealType:['breakfast','snack'],         diet:['eggetarian','non-veg'],             effortMins:12, tags:['quick','protein','spicy','light'] },
-  { id:'dosa',              name:'Plain Dosa',         emoji:'🥞', cuisine:'tamil_nadu',    mealType:['breakfast','snack'],         diet:['veg','vegan','eggetarian'],         effortMins:15, tags:['light','popular','mild'] },
-  { id:'moong_chilla',      name:'Moong Dal Chilla',   emoji:'🥞', cuisine:'any',           mealType:['breakfast','snack'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['healthy','protein','quick','light'] },
-  { id:'pongal',            name:'Ven Pongal',         emoji:'🍲', cuisine:'tamil_nadu',    mealType:['breakfast','lunch'],         diet:['veg','jain'],                       effortMins:25, tags:['light','healthy','mild','comfort','festive'] },
-  { id:'dhokla',            name:'Dhokla',             emoji:'🧆', cuisine:'gujarati',      mealType:['breakfast','snack'],         diet:['veg','vegan','eggetarian'],         effortMins:25, tags:['light','popular','healthy','mild'] },
+  { id:'dosa',              name:'Plain Dosa',         emoji:'🥞', cuisine:'tamil_nadu',    mealType:['breakfast','snack'],         diet:['veg','vegan','eggetarian'],         effortMins:15, tags:['light','popular','mild','safe'] },
+  { id:'moong_chilla',      name:'Moong Dal Chilla',   emoji:'🥞', cuisine:'any',           mealType:['breakfast','snack'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['healthy','protein','quick','light','safe'] },
+  { id:'pongal',            name:'Ven Pongal',         emoji:'🍲', cuisine:'tamil_nadu',    mealType:['breakfast','lunch'],         diet:['veg','jain'],                       effortMins:25, tags:['light','healthy','mild','comfort','festive','safe'] },
+  { id:'dhokla',            name:'Dhokla',             emoji:'🧆', cuisine:'gujarati',      mealType:['breakfast','snack'],         diet:['veg','vegan','eggetarian'],         effortMins:25, tags:['light','popular','healthy','mild','safe'] },
   { id:'puttu_kadala',      name:'Puttu Kadala',       emoji:'🫙', cuisine:'kerala',        mealType:['breakfast'],                 diet:['veg','vegan'],                      effortMins:20, tags:['heavy','healthy','protein'] },
   // Lunch
-  { id:'dal_rice',          name:'Dal Rice',           emoji:'🍛', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['comfort','popular','filling','protein','healthy'] },
+  { id:'dal_rice',          name:'Dal Rice',           emoji:'🍛', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['comfort','popular','filling','protein','healthy','safe'] },
   { id:'rajma',             name:'Rajma Chawal',       emoji:'🫘', cuisine:'punjabi',       mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:30, tags:['comfort','popular','protein','heavy'] },
-  { id:'curd_rice',         name:'Curd Rice',          emoji:'🍚', cuisine:'tamil_nadu',    mealType:['lunch'],                     diet:['veg','eggetarian'],                 effortMins:10, tags:['light','quick','mild','summer'] },
-  { id:'khichdi',           name:'Khichdi',            emoji:'🍲', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['comfort','light','healthy','mild'] },
-  { id:'roti_sabzi',        name:'Roti Sabzi',         emoji:'🫓', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['everyday','popular','light'] },
+  { id:'curd_rice',         name:'Curd Rice',          emoji:'🍚', cuisine:'tamil_nadu',    mealType:['lunch'],                     diet:['veg','eggetarian'],                 effortMins:10, tags:['light','quick','mild','summer','safe'] },
+  { id:'khichdi',           name:'Khichdi',            emoji:'🍲', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['comfort','light','healthy','mild','safe'] },
+  { id:'roti_sabzi',        name:'Roti Sabzi',         emoji:'🫓', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['everyday','popular','light','safe'] },
   { id:'sambar_rice',       name:'Sambar Rice',        emoji:'🍛', cuisine:'tamil_nadu',    mealType:['lunch'],                     diet:['veg','vegan','eggetarian'],         effortMins:20, tags:['comfort','popular','spicy','protein'] },
   { id:'chole_bhature',     name:'Chole Bhature',      emoji:'🫘', cuisine:'punjabi',       mealType:['lunch'],                     diet:['veg','vegan','jain','eggetarian'],  effortMins:30, tags:['indulgent','popular','heavy','spicy'] },
-  { id:'biryani_veg',       name:'Veg Biryani',        emoji:'🍚', cuisine:'hyderabadi',    mealType:['lunch','dinner'],            diet:['veg','jain','eggetarian'],          effortMins:40, tags:['indulgent','popular','festive','spicy','heavy'] },
+  { id:'biryani_veg',       name:'Veg Biryani',        emoji:'🍚', cuisine:'hyderabadi',    mealType:['lunch','dinner'],            diet:['veg','jain','eggetarian'],          effortMins:40, tags:['indulgent','popular','festive','spicy','heavy','crowd-friendly'] },
   { id:'misal_pav',         name:'Misal Pav',          emoji:'🌶️', cuisine:'maharashtrian', mealType:['breakfast','lunch','snack'], diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['spicy','popular','protein','heavy'] },
-  { id:'thepla',            name:'Thepla',             emoji:'🫓', cuisine:'gujarati',      mealType:['breakfast','lunch'],         diet:['veg','jain'],                       effortMins:20, tags:['light','quick','healthy','mild'] },
+  { id:'thepla',            name:'Thepla',             emoji:'🫓', cuisine:'gujarati',      mealType:['breakfast','lunch'],         diet:['veg','jain'],                       effortMins:20, tags:['light','quick','healthy','mild','safe'] },
   { id:'rasam_rice',        name:'Rasam Rice',         emoji:'🍲', cuisine:'tamil_nadu',    mealType:['lunch','dinner'],            diet:['veg','vegan','eggetarian'],         effortMins:20, tags:['light','spicy','healthy','monsoon','comfort'] },
   // Dinner
-  { id:'palak_paneer',      name:'Palak Paneer',       emoji:'🥬', cuisine:'punjabi',       mealType:['dinner','lunch'],            diet:['veg','eggetarian'],                 effortMins:25, tags:['popular','healthy','comfort','protein','spicy'] },
-  { id:'dal_tadka',         name:'Dal Tadka',          emoji:'🍛', cuisine:'any',           mealType:['dinner','lunch'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['comfort','popular','everyday','protein'] },
-  { id:'aloo_gobi',         name:'Aloo Gobi',          emoji:'🥦', cuisine:'punjabi',       mealType:['dinner','lunch'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['everyday','popular','mild','light'] },
-  { id:'chicken_curry',     name:'Chicken Curry',      emoji:'🍗', cuisine:'any',           mealType:['dinner','lunch'],            diet:['non-veg','halal'],                  effortMins:35, tags:['popular','protein','comfort','spicy'] },
+  { id:'palak_paneer',      name:'Palak Paneer',       emoji:'🥬', cuisine:'punjabi',       mealType:['dinner','lunch'],            diet:['veg','eggetarian'],                 effortMins:25, tags:['popular','healthy','comfort','protein','spicy','crowd-friendly'] },
+  { id:'dal_tadka',         name:'Dal Tadka',          emoji:'🍛', cuisine:'any',           mealType:['dinner','lunch'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['comfort','popular','everyday','protein','safe'] },
+  { id:'aloo_gobi',         name:'Aloo Gobi',          emoji:'🥦', cuisine:'punjabi',       mealType:['dinner','lunch'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['everyday','popular','mild','light','safe'] },
+  { id:'chicken_curry',     name:'Chicken Curry',      emoji:'🍗', cuisine:'any',           mealType:['dinner','lunch'],            diet:['non-veg','halal'],                  effortMins:35, tags:['popular','protein','comfort','spicy','crowd-friendly'] },
   { id:'fish_curry',        name:'Fish Curry',         emoji:'🐟', cuisine:'bengali',       mealType:['dinner','lunch'],            diet:['non-veg','halal'],                  effortMins:30, tags:['popular','protein','spicy','comfort'] },
-  { id:'butter_chicken',    name:'Butter Chicken',     emoji:'🍗', cuisine:'punjabi',       mealType:['dinner'],                    diet:['non-veg','halal'],                  effortMins:35, tags:['popular','comfort','indulgent','protein'] },
-  { id:'hyderabadi_biryani',name:'Hyderabadi Biryani', emoji:'🍚', cuisine:'hyderabadi',    mealType:['lunch','dinner'],            diet:['non-veg','halal'],                  effortMins:60, tags:['special','popular','festive','spicy','heavy'] },
+  { id:'butter_chicken',    name:'Butter Chicken',     emoji:'🍗', cuisine:'punjabi',       mealType:['dinner'],                    diet:['non-veg','halal'],                  effortMins:35, tags:['popular','comfort','indulgent','protein','crowd-friendly'] },
+  { id:'hyderabadi_biryani',name:'Hyderabadi Biryani', emoji:'🍚', cuisine:'hyderabadi',    mealType:['lunch','dinner'],            diet:['non-veg','halal'],                  effortMins:60, tags:['special','popular','festive','spicy','heavy','crowd-friendly'] },
   { id:'macher_jhol',       name:'Macher Jhol',        emoji:'🐟', cuisine:'bengali',       mealType:['lunch','dinner'],            diet:['non-veg','halal'],                  effortMins:30, tags:['comfort','protein','spicy'] },
-  { id:'avial',             name:'Avial',              emoji:'🥥', cuisine:'kerala',        mealType:['lunch','dinner'],            diet:['veg','vegan','eggetarian'],         effortMins:30, tags:['healthy','mild','festive'] },
+  { id:'avial',             name:'Avial',              emoji:'🥥', cuisine:'kerala',        mealType:['lunch','dinner'],            diet:['veg','vegan','eggetarian'],         effortMins:30, tags:['healthy','mild','festive','crowd-friendly'] },
   { id:'fish_curry_kerala', name:'Kerala Fish Curry',  emoji:'🐠', cuisine:'kerala',        mealType:['dinner','lunch'],            diet:['non-veg','halal'],                  effortMins:30, tags:['heavy','spicy','protein','comfort'] },
-  { id:'sarson_saag',       name:'Sarson da Saag',     emoji:'🥬', cuisine:'punjabi',       mealType:['lunch','dinner'],            diet:['veg'],                              effortMins:30, tags:['healthy','heavy','winter','festive'] },
+  { id:'sarson_saag',       name:'Sarson da Saag',     emoji:'🥬', cuisine:'punjabi',       mealType:['lunch','dinner'],            diet:['veg'],                              effortMins:30, tags:['healthy','heavy','winter','festive','crowd-friendly'] },
   { id:'palak_dal',         name:'Palak Dal',          emoji:'🥬', cuisine:'any',           mealType:['lunch','dinner'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:25, tags:['healthy','protein','light','spicy'] },
-  { id:'moong_soup',        name:'Moong Dal Soup',     emoji:'🥣', cuisine:'any',           mealType:['dinner','lunch'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['light','healthy','protein','mild'] },
+  { id:'moong_soup',        name:'Moong Dal Soup',     emoji:'🥣', cuisine:'any',           mealType:['dinner','lunch'],            diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['light','healthy','protein','mild','safe'] },
   // Snack
   { id:'samosa',            name:'Samosa',             emoji:'🥟', cuisine:'any',           mealType:['snack'],                     diet:['veg','vegan','jain','eggetarian'],  effortMins:30, tags:['popular','comfort','spicy','heavy'] },
   { id:'pakora',            name:'Onion Pakora',       emoji:'🧅', cuisine:'any',           mealType:['snack'],                     diet:['veg','vegan','jain','eggetarian'],  effortMins:20, tags:['popular','monsoon','comfort','spicy'] },
   { id:'vada',              name:'Medu Vada',          emoji:'🍩', cuisine:'tamil_nadu',    mealType:['breakfast','snack'],         diet:['veg','vegan','eggetarian'],         effortMins:25, tags:['popular','crispy','protein'] },
-  { id:'bread_pakora',      name:'Bread Pakora',       emoji:'🥪', cuisine:'any',           mealType:['snack','breakfast'],         diet:['veg','eggetarian'],                 effortMins:15, tags:['quick','popular','comfort','monsoon'] },
+  { id:'bread_pakora',      name:'Bread Pakora',       emoji:'🥪', cuisine:'any',           mealType:['snack','breakfast'],         diet:['veg','eggetarian'],                 effortMins:15, tags:['quick','popular','comfort','monsoon','safe'] },
   { id:'bhel_puri',         name:'Bhel Puri',          emoji:'🥗', cuisine:'maharashtrian', mealType:['snack'],                     diet:['veg','vegan','jain'],               effortMins:10, tags:['quick','light','popular'] },
-  { id:'sprouts_salad',     name:'Sprouts Salad',      emoji:'🥗', cuisine:'any',           mealType:['snack','breakfast'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:10, tags:['quick','healthy','light','protein'] },
+  { id:'sprouts_salad',     name:'Sprouts Salad',      emoji:'🥗', cuisine:'any',           mealType:['snack','breakfast'],         diet:['veg','vegan','jain','eggetarian'],  effortMins:10, tags:['quick','healthy','light','protein','safe'] },
   // Leftover
   { id:'fried_rice',        name:'Fried Rice',         emoji:'🍳', cuisine:'any',           mealType:['lunch','dinner'],            diet:['non-veg','veg','eggetarian'],       effortMins:15, tags:['quick','leftover','comfort'] },
-  { id:'chapati_rolls',     name:'Chapati Rolls',      emoji:'🌯', cuisine:'any',           mealType:['lunch','snack'],             diet:['veg','non-veg'],                    effortMins:10, tags:['quick','leftover','light'] },
+  { id:'chapati_rolls',     name:'Chapati Rolls',      emoji:'🌯', cuisine:'any',           mealType:['lunch','snack'],             diet:['veg','non-veg'],                    effortMins:10, tags:['quick','leftover','light','safe'] },
   { id:'dal_paratha',       name:'Dal Paratha',        emoji:'🫓', cuisine:'any',           mealType:['breakfast','lunch'],         diet:['veg'],                              effortMins:20, tags:['leftover','comfort','protein'] },
 ];
 
@@ -256,7 +268,7 @@ function scoreMeal(meal, ctx) {
     targetMealType, effortBias, timePressureFlag,
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
-    continuityRecentCuisines, activeEvent,
+    continuityRecentCuisines, activeEvent, journeyTagBoosts,
   } = ctx;
 
   const nameLower       = meal.name.toLowerCase().trim();
@@ -266,11 +278,7 @@ function scoreMeal(meal, ctx) {
   if (rejectedSet.has(nameLower)) return null;
   if (forceShift && forceShiftExcludedCuisines.has(mealCuisineNorm)) return null;
   if (forceShift && forceShiftExcludeHeavy && meal.tags.includes('heavy')) return null;
-
-  // Time pressure: hard exclude slow meals
   if (timePressureFlag && meal.effortMins > 30) return null;
-
-  // Strict breakfast gate
   if (targetMealType === 'breakfast' && !meal.mealType.includes('breakfast')) return null;
 
   // ── 1. History match (weight 0.35) ────────────────────────────
@@ -303,17 +311,22 @@ function scoreMeal(meal, ctx) {
   else if (userGoal === 'cook_faster' && meal.effortMins <= 20) preferenceScore += 0.20;
   if (userGoal === 'reduce_waste'  && meal.tags.includes('leftover')) preferenceScore += 0.35;
   if (userGoal === 'try_new_things' && !allCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') preferenceScore += 0.35;
-  if (userSkill === 'beginner' && meal.effortMins <= 20)  preferenceScore += 0.10;
-  if (userSkill === 'advanced' && meal.effortMins >= 30)  preferenceScore += 0.10;
-  // Event intelligence boost
-  const eventBoost = getEventBoost(meal, activeEvent);
-  if (eventBoost > 0) preferenceScore += eventBoost;
+  if (userSkill === 'beginner' && meal.effortMins <= 20) preferenceScore += 0.10;
+  if (userSkill === 'advanced' && meal.effortMins >= 30) preferenceScore += 0.10;
+
+  // Journey tag boosts — each matching tag adds a small boost
+  if (journeyTagBoosts && journeyTagBoosts.length) {
+    const matchCount = journeyTagBoosts.filter(t => meal.tags.includes(t)).length;
+    if (matchCount > 0) preferenceScore += Math.min(0.40, matchCount * 0.12);
+  }
+
+  // Event boost (festival/sports)
+  preferenceScore += getEventBoost(meal, activeEvent);
 
   preferenceScore = Math.min(1, preferenceScore);
 
   // ── 3. Context match (weight 0.20) ────────────────────────────
   let contextScore = 0;
-
   if (meal.mealType.includes(targetMealType)) contextScore += 0.60;
 
   if (effortBias === 'quick') {
@@ -326,7 +339,6 @@ function scoreMeal(meal, ctx) {
     contextScore += 0.10;
   }
 
-  // Time pressure bonus for very quick meals
   if (timePressureFlag && meal.effortMins <= 15) contextScore += 0.20;
 
   const h = new Date().getHours();
@@ -351,7 +363,6 @@ function scoreMeal(meal, ctx) {
     else if (lIdx === 1) learnedScore = Math.min(1, learnedScore + 0.12);
   }
 
-  // Continuity: penalise cuisines cooked in last 3 days (encourage variety)
   if (continuityRecentCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') {
     learnedScore = Math.max(0, learnedScore - 0.15);
   }
@@ -363,12 +374,8 @@ function scoreMeal(meal, ctx) {
 
   const cuisineHist = getSessionCuisineHistory();
   const lastTwo     = cuisineHist.slice(-2);
-  if (lastTwo.length === 2 && lastTwo.every(c => c === mealCuisineNorm)) {
-    varietyFactor = Math.min(varietyFactor, 0.15);
-  }
-  if (!cuisineHist.slice(-5).includes(mealCuisineNorm) && mealCuisineNorm !== 'any') {
-    varietyFactor = Math.min(1, varietyFactor + 0.15);
-  }
+  if (lastTwo.length === 2 && lastTwo.every(c => c === mealCuisineNorm)) varietyFactor = Math.min(varietyFactor, 0.15);
+  if (!cuisineHist.slice(-5).includes(mealCuisineNorm) && mealCuisineNorm !== 'any') varietyFactor = Math.min(1, varietyFactor + 0.15);
 
   const score =
     (historyScore    * 0.35) +
@@ -384,47 +391,62 @@ function scoreMeal(meal, ctx) {
     _effortBias: effortBias, _learnedW: learnedW,
     _learnedCuisines: learnedCuisines, _allCuisines: allCuisines,
     _learnedEffortPref: learnedEffortPref, _timePressure: timePressureFlag,
+    _journeyType: ctx.journeyType,
   };
 }
 
-// ── Why builder ─── natural language, no robotic patterns ─────────
-// Returns { line1, line2, effortLabel, effortMins }
-// line1 → reason  ("This fits your taste")
-// line2 → context ("Quick for this morning")
+// ── Why builder — confident, natural, no robotic phrasing ─────────
+// line1 → the reason    ("You've liked similar meals")
+// line2 → the context   ("Quick for tonight")
+// Both lines must be grammatically correct and free of mixed signals.
 function buildWhyParts(item) {
   const {
     meal, _learnedW, _historyWhyKey,
     _prefIdx, _goal, _targetMealType, _effortBias,
     _learnedCuisines, _allCuisines, _learnedEffortPref, _timePressure,
+    _journeyType,
   } = item;
 
-  const period = ({ breakfast:'this morning', lunch:'for lunch', snack:'right now', dinner:'tonight' })[_targetMealType] || 'right now';
+  const period = ({ breakfast:'this morning', lunch:'for lunch', snack:'right now', dinner:'tonight' })[_targetMealType] || 'today';
 
   // ── Line 1: the reason ──────────────────────────────────────────
   let line1 = '';
 
-  if (_learnedW >= 0.4) {
-    line1 = "You've liked this style before";
+  // Journey-type overrides come first — most specific signal
+  if (_journeyType === 'kids') {
+    line1 = 'Easy, mild, and kid-friendly';
+  } else if (_journeyType === 'hosting' || _journeyType === 'guests') {
+    if (meal.tags.includes('crowd-friendly')) line1 = 'Works well for a group';
+    else line1 = 'A crowd-pleaser';
+  } else if (_journeyType === 'health') {
+    if (meal.tags.includes('protein')) line1 = 'High protein — good for your goal';
+    else line1 = 'Light and nourishing';
+  } else if (_journeyType === 'leftover') {
+    line1 = 'Uses what you already have';
+  } else if (_journeyType === 'religious' || _journeyType === 'festival') {
+    line1 = 'Traditional and fitting for today';
+  } else if (_learnedW >= 0.4) {
+    line1 = "Works well for you";
   } else if (_historyWhyKey === 'liked_cuisine' && meal.cuisine !== 'any') {
     line1 = "You've liked similar meals";
   } else if (_prefIdx === 0 && meal.cuisine !== 'any') {
-    line1 = capCuisine(meal.cuisine) + ' is your favourite — great choice';
+    line1 = capCuisine(meal.cuisine) + ' is your go-to — great pick';
   } else if (_prefIdx === 1 && meal.cuisine !== 'any') {
     line1 = 'This fits your taste';
   } else if (_learnedCuisines && _learnedCuisines.length > 0 && _learnedCuisines.map(normC).includes(normC(meal.cuisine)) && _prefIdx < 0) {
-    line1 = "You've been cooking " + capCuisine(meal.cuisine) + ' lately';
+    line1 = "You've been enjoying " + capCuisine(meal.cuisine) + ' lately';
   } else if (_goal === 'eat_healthier' && (meal.tags.includes('healthy') || meal.tags.includes('light'))) {
     line1 = 'Supports your healthy eating goal';
   } else if (_goal === 'cook_faster' && meal.effortMins <= 15) {
-    line1 = 'Ready fast — matches your goal';
+    line1 = 'Ready fast — fits your goal';
   } else if (_goal === 'reduce_waste' && meal.tags.includes('leftover')) {
-    line1 = 'Uses what you have';
+    line1 = 'Great for using up what you have';
   } else if (_goal === 'try_new_things' && !(_allCuisines || []).includes(normC(meal.cuisine)) && meal.cuisine !== 'any') {
-    line1 = 'Something different for you';
+    line1 = 'Something a little different';
   } else if (meal.tags.includes('popular')) {
     line1 = 'A favourite across India';
   } else if (meal.tags.includes('comfort')) {
-    line1 = 'A classic comfort dish';
+    line1 = 'A reliable comfort dish';
   } else if (meal.tags.includes('healthy')) {
     line1 = 'A wholesome choice';
   } else {
@@ -435,7 +457,7 @@ function buildWhyParts(item) {
   let line2 = '';
 
   if (_timePressure && meal.effortMins <= 15) {
-    line2 = meal.effortMins + ' min — quick for ' + period;
+    line2 = meal.effortMins + ' min — ready fast';
   } else if (_effortBias === 'quick' && meal.effortMins <= 15) {
     line2 = 'Quick for ' + period;
   } else if (_targetMealType === 'breakfast' && meal.effortMins <= 15) {
@@ -445,11 +467,11 @@ function buildWhyParts(item) {
   } else if (_targetMealType === 'snack') {
     line2 = 'Ready in ' + meal.effortMins + ' min';
   } else if (_learnedEffortPref === 'quick' && meal.effortMins <= 15) {
-    line2 = 'Matches your preference for quick meals';
+    line2 = 'Matches how you like to cook';
   } else if (isWeekend() && meal.effortMins >= 30) {
     line2 = 'Worth the effort this weekend';
   } else {
-    line2 = meal.effortMins + ' min · good fit ' + period;
+    line2 = meal.effortMins + ' min — good fit ' + period;
   }
 
   const effortLabel = meal.effortMins <= 15 ? 'Quick' : meal.effortMins <= 25 ? 'Medium effort' : 'Takes a bit longer';
@@ -463,14 +485,13 @@ export function getPersonalisedRecommendations({
   ratings          = {},
   mealHistory      = [],
   overrideMealType = null,
-  journeyContext   = null,   // result of buildJourneyContext() — optional override
+  journeyContext   = null,
 } = {}) {
   const h              = new Date().getHours();
   const targetMealType = (journeyContext && journeyContext.mealType) || overrideMealType || getMealTypeFromHour(h);
   const rejectStreak   = getSessionRejectionStreak();
   const timePressureFlag = (journeyContext && journeyContext.timePressureFlag) || getTimePressureFlag(rejectStreak);
 
-  // Effort bias from journey context or auto-detect
   const effortBias = (() => {
     if (journeyContext && journeyContext.effortPreference) return journeyContext.effortPreference;
     if (timePressureFlag) return 'quick';
@@ -504,21 +525,21 @@ export function getPersonalisedRecommendations({
   const recentlyShownSet = new Set(getRecentlyShown());
   const rejectedSet      = getRejectedMealNames();
 
-  // Session adaptation
   const forceShift = rejectStreak >= 2;
   const forceShiftExcludedCuisines = forceShift
     ? new Set(getSessionCuisineHistory().slice(-3).map(normC))
     : new Set();
   const forceShiftExcludeHeavy = forceShift;
 
-  // Continuity: cuisines cooked in last 3 days (penalise repetition)
   const continuityRecentCuisines = journeyContext
     ? (journeyContext.continuityData?.recentCuisines || []).map(normC)
     : [];
 
-  // Active event from journey context or auto-detect
   const activeEvent = (journeyContext && journeyContext.activeEvent)
     || getActiveEvent({ region: (profile && profile.country) || 'IN' });
+
+  const journeyTagBoosts = (journeyContext && journeyContext.journeyTagBoosts) || [];
+  const journeyType      = (journeyContext && journeyContext.journeyType) || 'default';
 
   const ctx = {
     userDietIds, userCuisines, userGoal, userSkill,
@@ -526,17 +547,15 @@ export function getPersonalisedRecommendations({
     targetMealType, effortBias, timePressureFlag,
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
-    continuityRecentCuisines, activeEvent,
+    continuityRecentCuisines, activeEvent, journeyTagBoosts, journeyType,
   };
 
   const compatible = MEAL_CATALOGUE.filter(m => isDietaryCompatible(m, userDietIds));
   const scored     = compatible.map(m => scoreMeal(m, ctx)).filter(Boolean);
   scored.sort((a, b) => b.score - a.score);
 
-  // Primary dominance
   if (scored.length > 0) scored[0].score = Math.min(1, scored[0].score * 1.2);
 
-  // Pick top 3 with variety
   const results      = [];
   const usedCuisines = new Set();
 
@@ -544,7 +563,7 @@ export function getPersonalisedRecommendations({
     if (results.length === 3) break;
     const c = normC(candidate.meal.cuisine);
     if (results.length === 0) { results.push(candidate); usedCuisines.add(c); continue; }
-    const primary    = results[0];
+    const primary     = results[0];
     const diffCuisine = !usedCuisines.has(c) || c === 'any';
     const diffEffort  = Math.abs(candidate.meal.effortMins - primary.meal.effortMins) >= 10;
     if (diffCuisine || diffEffort || scored.length < 6) {
@@ -559,12 +578,13 @@ export function getPersonalisedRecommendations({
   if (results.length > 0) appendSessionCuisine(normC(results[0].meal.cuisine));
 
   return results.slice(0, 3).map((item, i) => ({
-    meal:  item.meal,
-    score: Math.round(item.score * 100) / 100,
-    why:   buildWhyParts(item),
-    role:  i === 0 ? 'primary' : 'alternate',
+    meal:         item.meal,
+    score:        Math.round(item.score * 100) / 100,
+    why:          buildWhyParts(item),
+    role:         i === 0 ? 'primary' : 'alternate',
     timePressure: timePressureFlag,
     activeEvent,
+    contextLabel: getMealContextLabel(item.meal, journeyType),
     generateContext: {
       dish:     item.meal.name,
       cuisine:  item.meal.cuisine !== 'any' ? item.meal.cuisine : undefined,
@@ -575,7 +595,6 @@ export function getPersonalisedRecommendations({
   }));
 }
 
-// ── Context accessor ──────────────────────────────────────────────
 export function recommendationToContext(rec) {
   if (!rec || !rec.meal) return { surpriseMode: true };
   return {

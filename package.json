@@ -1,6 +1,6 @@
 {
   "name": "jiff",
-  "version": "1.22.58",
+  "version": "1.22.59",
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
@@ -12,11 +12,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "CI=false react-scripts build",
-    "test": "react-scripts test",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report"
+    "test": "react-scripts test"
   },
   "browserslist": {
     "production": [
@@ -34,6 +30,6 @@
     "acorn": "^8.16.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   }
 }
