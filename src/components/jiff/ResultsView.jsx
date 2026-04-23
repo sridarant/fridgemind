@@ -1,5 +1,7 @@
 // src/components/jiff/ResultsView.jsx
 // Results grid: filter pills, meal cards, feedback actions, order strip, reset
+// Leftover mode: groups cards into Quick Fix (≤15 min) and Creative Twist
+// Hosting mode: groups cards into Starter / Main / Side / Dessert sections
 
 import { useState } from 'react';
 import { MealCard } from '../meal/MealCard.jsx';
@@ -16,8 +18,6 @@ const MEAL_TYPE_OPTIONS = [
   { id: 'snack',     label: 'Snacks',     emoji: '🍎' },
 ];
 
-// Derive a lightweight meal object for feedbackService from the full meal shape
-// (generated meals may not have the catalogue's id/effortMins — we do best-effort)
 function toFeedbackMeal(meal) {
   return {
     id:         meal.id || meal.name?.toLowerCase().replace(/\s+/g, '_') || 'unknown',
@@ -25,6 +25,72 @@ function toFeedbackMeal(meal) {
     cuisine:    meal.cuisine    || 'any',
     effortMins: meal.effortMins || (meal.time ? parseInt(meal.time) : 30),
   };
+}
+
+// ── Leftover grouping helpers ─────────────────────────────────────
+function parseMins(timeStr) {
+  if (!timeStr) return 30;
+  const n = parseInt(timeStr);
+  return isNaN(n) ? 30 : n;
+}
+
+function isLeftoverContext(tileContext) {
+  return !!(tileContext?.label?.toLowerCase().includes('leftover') ||
+            tileContext?.label?.toLowerCase().includes('rescue'));
+}
+
+function isHostingContext(tileContext) {
+  return !!(tileContext?.label?.toLowerCase().includes('host') ||
+            tileContext?.label?.toLowerCase().includes('guest'));
+}
+
+// ── Section label ─────────────────────────────────────────────────
+const SL = ({ emoji, title, sub, color = '#FF4500' }) => (
+  <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:20, marginBottom:10 }}>
+    <span style={{ fontSize:18 }}>{emoji}</span>
+    <div>
+      <div style={{ fontSize:12, fontWeight:700, color, letterSpacing:'0.3px' }}>{title}</div>
+      {sub && <div style={{ fontSize:10, color:'#7C6A5E', marginTop:1 }}>{sub}</div>}
+    </div>
+  </div>
+);
+
+// ── Course labels for hosting ─────────────────────────────────────
+// Tries to infer course from meal name / description, falls back to position
+const COURSE_KEYWORDS = {
+  starter:  ['salad','chaat','papdi','pakora','samosa','soup','tikka','kebab','bruschetta','chutney','dip','appetizer','starter'],
+  dessert:  ['halwa','kheer','gulab','ladoo','barfi','ice cream','dessert','sweet','pudding','cake','peda','rasgulla','jalebi','payasam'],
+  side:     ['raita','pickle','papad','chutney','bread','roti','naan','rice','dal','lentil','side'],
+};
+
+function inferCourse(meal, index, total) {
+  const text = ((meal.name || '') + ' ' + (meal.description || '')).toLowerCase();
+  for (const [course, keywords] of Object.entries(COURSE_KEYWORDS)) {
+    if (keywords.some(k => text.includes(k))) return course;
+  }
+  // Positional fallback: 1st → starter, last → dessert, mid → main/side
+  if (index === 0) return 'starter';
+  if (index === total - 1) return 'dessert';
+  if (index === Math.floor(total / 2)) return 'side';
+  return 'main';
+}
+
+const COURSE_CONFIG = {
+  starter: { emoji:'🥗', title:'Starter',  color:'#1D9E75' },
+  main:    { emoji:'🍛', title:'Main',      color:'#FF4500' },
+  side:    { emoji:'🫙', title:'Side',      color:'#D97706' },
+  dessert: { emoji:'🍮', title:'Dessert',   color:'#7C3AED' },
+};
+
+// ── Effort tag ────────────────────────────────────────────────────
+function EffortTag({ meal }) {
+  const mins = parseMins(meal.time);
+  const isQuick = mins <= 15;
+  return (
+    <div style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 9px', borderRadius:20, fontSize:10, fontWeight:600, marginBottom:6, background:isQuick?'rgba(29,158,117,0.09)':'rgba(217,119,6,0.09)', color:isQuick?'#065F46':'#92400E', border:'1px solid '+(isQuick?'rgba(29,158,117,0.22)':'rgba(217,119,6,0.22)') }}>
+      {'⏱ '}{meal.time || '30 min'}{isQuick ? ' · Quick' : ' · Medium effort'}
+    </div>
+  );
 }
 
 export default function ResultsView({
@@ -36,7 +102,6 @@ export default function ResultsView({
   stapleSuggestion, onDismissStapleSuggestion, onAddStaple,
   handleSurprise, onRate, reset, navigate, t,
 }) {
-  // Track which meals have been explicitly dismissed ("Not for me")
   const [dismissed, setDismissed] = useState(new Set());
 
   const handleRate = onRate || ((meal, stars) => {
@@ -46,36 +111,78 @@ export default function ResultsView({
     if (user) updateRating({ userId: user.id, mealName: meal.name, rating: stars });
   });
 
-  // Wire ratings into the feedback loop:
-  // ≥4 stars = accepted/completed signal; ≤2 stars = rejected signal
   const handleRateWithFeedback = (meal, stars) => {
     handleRate(meal, stars);
     const fbMeal = toFeedbackMeal(meal);
-    if (stars >= 4) {
-      logFeedback({ meal: fbMeal, action: 'accepted', userId: user ? user.id : null });
-    } else if (stars <= 2) {
-      logFeedback({ meal: fbMeal, action: 'rejected', userId: user ? user.id : null });
-    }
+    if (stars >= 4)       logFeedback({ meal: fbMeal, action: 'accepted', userId: user ? user.id : null });
+    else if (stars <= 2)  logFeedback({ meal: fbMeal, action: 'rejected', userId: user ? user.id : null });
   };
 
-  // "Not for me" — dismiss card + log rejection
   const handleNotForMe = (meal) => {
     const key = mealKey(meal);
     setDismissed(prev => new Set([...prev, key]));
     logFeedback({ meal: toFeedbackMeal(meal), action: 'rejected', userId: user ? user.id : null });
   };
 
-  // "Cook this" — log accepted and trigger surprise for more of the same
   const handleCookThis = (meal) => {
     logFeedback({ meal: toFeedbackMeal(meal), action: 'accepted', userId: user ? user.id : null });
     handleSurprise && handleSurprise();
   };
 
-  const topRated = Object.entries(ratings).filter(([, r]) => r >= 4).map(([k]) => k);
+  const topRated    = Object.entries(ratings).filter(([, r]) => r >= 4).map(([k]) => k);
   const visibleMeals = meals.filter(m => !dismissed.has(mealKey(m)));
+
+  const isLeftover = isLeftoverContext(tileContext);
+  const isHosting  = isHostingContext(tileContext);
+
+  // ── Leftover groups ────────────────────────────────────────────
+  const leftoverGroups = isLeftover ? (() => {
+    const quick    = visibleMeals.filter(m => parseMins(m.time) <= 15);
+    const creative = visibleMeals.filter(m => parseMins(m.time) > 15);
+    // If all meals are quick or all are creative, split by position
+    if (quick.length === 0 && creative.length === 0) return { quick: visibleMeals, creative: [] };
+    if (quick.length === 0) return { quick: creative.slice(0, 2), creative: creative.slice(2) };
+    return { quick, creative };
+  })() : null;
+
+  // ── Hosting course groups ──────────────────────────────────────
+  const hostingGroups = isHosting ? (() => {
+    const groups = { starter:[], main:[], side:[], dessert:[] };
+    visibleMeals.forEach((meal, i) => {
+      const course = inferCourse(meal, i, visibleMeals.length);
+      groups[course].push(meal);
+    });
+    // Ensure at least main has meals if grouping left everything in one bucket
+    if (groups.main.length === 0 && groups.starter.length > 1) {
+      groups.main.push(...groups.starter.splice(1));
+    }
+    return groups;
+  })() : null;
+
+  // ── Meal card renderer ─────────────────────────────────────────
+  const renderMealCard = (meal, i) => (
+    <div key={mealKey(meal) + i} style={{ position:'relative' }}>
+      {isLeftover && <EffortTag meal={meal} />}
+      <MealCard
+        meal={meal} index={i} isFav={isFav(meal)}
+        onToggleFav={(m) => { toggleFavourite(m); logFeedback({ meal: toFeedbackMeal(m), action: 'saved', userId: user ? user.id : null }); }}
+        fridgeIngredients={ingredients} defaultServings={defaultServings}
+        animDelay={i * 0.06} country={country}
+        rating={ratings[mealKey(meal)] || 0}
+        onRate={stars => handleRateWithFeedback(meal, stars)}
+      />
+      {(ratings[mealKey(meal)] || 0) === 0 && (
+        <button onClick={() => handleNotForMe(meal)} title="Not for me"
+          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'rgba(255,255,255,0.92)', border:'1px solid rgba(28,10,0,0.10)', borderRadius:20, padding:'3px 8px', fontSize:10, color:'#7C6A5E', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", lineHeight:1.4, backdropFilter:'blur(4px)' }}>
+          {'✕ Not for me'}
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="results-wrap">
+
       {/* Pantry learning nudge */}
       {stapleSuggestion?.items?.length > 0 && !stapleSuggestion.shown && (
         <div style={{ background:'rgba(29,158,117,0.06)', border:'1px solid rgba(29,158,117,0.2)', borderRadius:12, padding:'10px 14px', marginBottom:12, display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
@@ -83,12 +190,8 @@ export default function ResultsView({
             {'🌿 You often add '}{stapleSuggestion.items.join(' and ')}{' — save it to your weekly staples?'}
           </span>
           <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-            <button onClick={() => onAddStaple?.(stapleSuggestion.items)} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, background:'#1D9E75', color:'white', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>
-              {'+ Add'}
-            </button>
-            <button onClick={() => onDismissStapleSuggestion?.()} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, background:'none', color:'#7C6A5E', border:'1px solid rgba(28,10,0,0.1)', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-              {'Dismiss'}
-            </button>
+            <button onClick={() => onAddStaple?.(stapleSuggestion.items)} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, background:'#1D9E75', color:'white', border:'none', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>{'+ Add'}</button>
+            <button onClick={() => onDismissStapleSuggestion?.()} style={{ fontSize:11, padding:'4px 10px', borderRadius:8, background:'none', color:'#7C6A5E', border:'1px solid rgba(28,10,0,0.1)', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>{'Dismiss'}</button>
           </div>
         </div>
       )}
@@ -116,7 +219,11 @@ export default function ResultsView({
 
       <div className="results-header">
         <div className="results-title">
-          {tileContext?.label?.includes('Leftover') ? '♻️ Rescued! Here\'s what to make.' : 'Jiffed. ⚡ Here\'s your menu.'}
+          {isHosting
+            ? '🎉 Full Meal Plan for your guests'
+            : isLeftover
+            ? '♻️ Rescued! Here\'s what to make.'
+            : 'Jiffed. ⚡ Here\'s your menu.'}
         </div>
         <div className="results-sub">
           {'Tap ♥ to save · expand for full recipe + timers · adjust servings inside'}
@@ -173,43 +280,58 @@ export default function ResultsView({
         </div>
       )}
 
-      {/* Meals grid — with per-card "Not for me" dismiss */}
-      <div className="meals-grid">
-        {visibleMeals.map((meal, i) => (
-          <div key={mealKey(meal) + i} style={{ position:'relative' }}>
-            <MealCard
-              meal={meal}
-              index={i}
-              isFav={isFav(meal)}
-              onToggleFav={(m) => {
-                toggleFavourite(m);
-                // Treat save as positive feedback
-                logFeedback({ meal: toFeedbackMeal(m), action: 'saved', userId: user ? user.id : null });
-              }}
-              fridgeIngredients={ingredients}
-              defaultServings={defaultServings}
-              animDelay={i * 0.06}
-              country={country}
-              rating={ratings[mealKey(meal)] || 0}
-              onRate={stars => handleRateWithFeedback(meal, stars)}
-            />
-            {/* "Not for me" dismiss — shown only before rating */}
-            {(ratings[mealKey(meal)] || 0) === 0 && (
-              <button
-                onClick={() => handleNotForMe(meal)}
-                title="Not for me"
-                style={{ position:'absolute', top:10, right:10, zIndex:10, background:'rgba(255,255,255,0.92)', border:'1px solid rgba(28,10,0,0.10)', borderRadius:20, padding:'3px 8px', fontSize:10, color:'#7C6A5E', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", lineHeight:1.4, backdropFilter:'blur(4px)' }}>
-                {'✕ Not for me'}
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* ── LEFTOVER MODE: Quick Fix + Creative Twist ─────────── */}
+      {isLeftover && leftoverGroups && (
+        <>
+          {leftoverGroups.quick.length > 0 && (
+            <>
+              <SL emoji="⚡" title="Quick Fix" sub="Ready in 15 minutes or less" color="#1D9E75" />
+              <div className="meals-grid">
+                {leftoverGroups.quick.map((meal, i) => renderMealCard(meal, i))}
+              </div>
+            </>
+          )}
+          {leftoverGroups.creative.length > 0 && (
+            <>
+              <SL emoji="✨" title="Creative Twist" sub="A little more effort, worth it" color="#7C3AED" />
+              <div className="meals-grid">
+                {leftoverGroups.creative.map((meal, i) => renderMealCard(meal, i + leftoverGroups.quick.length))}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
-      {/* Smart recommendations — post-rating "More like this" */}
+      {/* ── HOSTING MODE: Starter / Main / Side / Dessert ────── */}
+      {isHosting && hostingGroups && (
+        <>
+          {(['starter','main','side','dessert']).map(course => {
+            const courseMeals = hostingGroups[course];
+            if (!courseMeals || courseMeals.length === 0) return null;
+            const cfg = COURSE_CONFIG[course];
+            return (
+              <div key={course}>
+                <SL emoji={cfg.emoji} title={cfg.title} color={cfg.color} />
+                <div className="meals-grid">
+                  {courseMeals.map((meal, i) => renderMealCard(meal, i))}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* ── DEFAULT MODE: standard grid ───────────────────────── */}
+      {!isLeftover && !isHosting && (
+        <div className="meals-grid">
+          {visibleMeals.map((meal, i) => renderMealCard(meal, i))}
+        </div>
+      )}
+
+      {/* Smart recommendations — post-rating */}
       {topRated.length >= 1 && (() => {
-        const topMeal     = meals.find(m => (ratings[mealKey(m)] || 0) >= 4 && m.cuisine);
-        const topCuisine  = topMeal?.cuisine;
+        const topMeal    = meals.find(m => (ratings[mealKey(m)] || 0) >= 4 && m.cuisine);
+        const topCuisine = topMeal?.cuisine;
         const cuisineLabel = topCuisine
           ? topCuisine.replace(/_/g,' ').split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ')
           : null;
