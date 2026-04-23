@@ -1,13 +1,17 @@
 // src/services/recommendationService.js
-// Decision engine — scores meals and returns 1 primary + 2 alternates.
+// Unified decision engine for all journey entry types.
 //
-// Scoring formula:
+// All journeys call getPersonalisedRecommendations(context) via buildJourneyContext().
+// No UI-level filtering. No duplicate logic per entry.
+//
+// Scoring:
 //   score = (historyMatch * 0.35) + (preferenceMatch * 0.25) +
 //           (contextMatch * 0.20) + (learnedBehaviour * 0.15) +
 //           (varietyFactor * 0.05)
 //
-// Primary dominance: primaryScore *= 1.2 (ensures clear gap from alternates)
-// Session adaptation: 2 consecutive rejections force cuisine + effort shift
+// Primary dominance:  primaryScore *= 1.2
+// Time pressure:      boost ≤15 min meals when flag active
+// Session adaptation: streak ≥2 → force cuisine + effort shift
 // Repetition control: same meal blocked 3 sessions; same cuisine capped at 2 consecutive
 
 import { parseFoodTypeIds } from '../lib/dietary.js';
@@ -16,12 +20,12 @@ import {
   getRejectedMealNames,
   getLearnedCuisinePreferences,
   getLearnedEffortPreference,
+  getHouseholdPatterns,
 } from './feedbackService.js';
 
-// ── Session state (in-memory, reset on page reload) ──────────────
-const SESSION_KEY_REJECTED_ROW  = 'jiff-session-reject-streak';
-const SESSION_KEY_LAST_CUISINES = 'jiff-session-cuisine-history';
-const SESSION_KEY_SHOWN_MEALS   = 'jiff-session-shown';
+// ── Session state ─────────────────────────────────────────────────
+const SK_REJECT  = 'jiff-session-reject-streak';
+const SK_CUISINE = 'jiff-session-cuisine-history';
 
 function sessionGet(key) {
   try { return JSON.parse(sessionStorage.getItem(key) || 'null'); } catch { return null; }
@@ -30,32 +34,29 @@ function sessionSet(key, val) {
   try { sessionStorage.setItem(key, JSON.stringify(val)); } catch {}
 }
 
-// Track consecutive rejections this session (for forced shift)
 export function recordSessionRejection() {
-  const n = (sessionGet(SESSION_KEY_REJECTED_ROW) || 0) + 1;
-  sessionSet(SESSION_KEY_REJECTED_ROW, n);
+  const n = (sessionGet(SK_REJECT) || 0) + 1;
+  sessionSet(SK_REJECT, n);
   return n;
 }
 export function clearSessionRejectionStreak() {
-  sessionSet(SESSION_KEY_REJECTED_ROW, 0);
+  sessionSet(SK_REJECT, 0);
 }
 function getSessionRejectionStreak() {
-  return sessionGet(SESSION_KEY_REJECTED_ROW) || 0;
+  return sessionGet(SK_REJECT) || 0;
 }
-
-// Track last cuisines shown this session for consecutive limit
 function getSessionCuisineHistory() {
-  return sessionGet(SESSION_KEY_LAST_CUISINES) || [];
+  return sessionGet(SK_CUISINE) || [];
 }
 function appendSessionCuisine(cuisine) {
   const hist = getSessionCuisineHistory();
   hist.push(cuisine);
-  sessionSet(SESSION_KEY_LAST_CUISINES, hist.slice(-6));
+  sessionSet(SK_CUISINE, hist.slice(-6));
 }
 
-// Session shown meals (for 3-session repetition block — stored in localStorage with session TTL)
+// ── Shown-meal store (3-day rolling window) ───────────────────────
 const SHOWN_KEY = 'jiff-recently-shown';
-const SHOWN_TTL = 3 * 24 * 60 * 60 * 1000; // 3 session-equivalents ≈ 3 days
+const SHOWN_TTL = 3 * 24 * 60 * 60 * 1000;
 
 export function getRecentlyShown() {
   try {
@@ -68,17 +69,68 @@ export function getRecentlyShown() {
 
 export function markAsShown(mealNames = []) {
   try {
-    const now   = Date.now();
-    const prev  = JSON.parse(localStorage.getItem(SHOWN_KEY) || '[]').filter(e => (now - (e.ts || 0)) < SHOWN_TTL);
+    const now  = Date.now();
+    const prev = JSON.parse(localStorage.getItem(SHOWN_KEY) || '[]').filter(e => (now - (e.ts || 0)) < SHOWN_TTL);
     const names = new Set(prev.map(e => e.name));
     mealNames.forEach(n => { if (n) names.add(n.toLowerCase()); });
-    const next  = [...names].slice(0, 21).map(name => ({ name, ts: now })); // 3 sessions × 7 meals
-    localStorage.setItem(SHOWN_KEY, JSON.stringify(next));
+    localStorage.setItem(SHOWN_KEY, JSON.stringify([...names].slice(0, 21).map(name => ({ name, ts: now }))));
   } catch {}
 }
 
 export function clearRecentlyShown() {
   try { localStorage.removeItem(SHOWN_KEY); } catch {}
+}
+
+// ── Time pressure detection ───────────────────────────────────────
+export function getTimePressureFlag(rejectStreak = 0) {
+  const h = new Date().getHours();
+  // Late evening, morning rush, or user has rejected 2+ times
+  if (rejectStreak >= 2) return true;
+  if (h >= 21 || (h >= 7 && h < 9)) return true;  // morning rush / late night
+  return false;
+}
+
+// ── Journey context builder ───────────────────────────────────────
+// All entry points call this to normalise into a unified context object.
+// { mood, ingredients, mealType, effortPreference, continuityData, timePressureFlag }
+export function buildJourneyContext({
+  journeyType  = 'default',  // default|mood|ingredient|surprise|weekly|continuity
+  mood         = null,
+  ingredients  = [],
+  mealTypeOverride = null,
+  profile      = null,
+  mealHistory  = [],
+  rejectStreak = 0,
+} = {}) {
+  const h = new Date().getHours();
+  const autoMealType = mealTypeOverride || getMealTypeFromHour(h);
+
+  // Continuity data: what was cooked recently (last 3 days)
+  const cutoff3d = Date.now() - 3 * 86400000;
+  const recent   = (mealHistory || [])
+    .filter(m => new Date(m.generated_at || m.created_at || 0).getTime() > cutoff3d)
+    .slice(0, 5);
+  const recentCuisines = [...new Set(recent.map(m => m.cuisine).filter(Boolean))];
+  const recentMeals    = recent.map(m => m.meal_name || m.meal?.name).filter(Boolean);
+
+  const timePressureFlag = getTimePressureFlag(rejectStreak);
+
+  // Effort preference: time pressure or morning/evening → prefer quick
+  let effortPreference = 'any';
+  if (timePressureFlag) effortPreference = 'quick';
+  else if (autoMealType === 'breakfast') effortPreference = 'quick';
+  else if (isWeekend()) effortPreference = 'any';
+  else if (autoMealType === 'dinner') effortPreference = 'moderate';
+
+  return {
+    journeyType,
+    mood,
+    ingredients,
+    mealType:          autoMealType,
+    effortPreference,
+    continuityData:    { recentCuisines, recentMeals },
+    timePressureFlag,
+  };
 }
 
 // ── Meal catalogue ────────────────────────────────────────────────
@@ -136,7 +188,7 @@ const MEAL_CATALOGUE = [
   { id:'dal_paratha',       name:'Dal Paratha',        emoji:'🫓', cuisine:'any',           mealType:['breakfast','lunch'],         diet:['veg'],                              effortMins:20, tags:['leftover','comfort','protein'] },
 ];
 
-// ── Time utilities ────────────────────────────────────────────────
+// ── Utilities ─────────────────────────────────────────────────────
 function getMealTypeFromHour(h) {
   if (h >= 5  && h < 11) return 'breakfast';
   if (h >= 11 && h < 16) return 'lunch';
@@ -149,18 +201,6 @@ function isWeekend() {
   return d === 0 || d === 6;
 }
 
-function getEffortBias(targetMealType) {
-  const h = new Date().getHours();
-  // Weekday dinner → bias quick
-  if (targetMealType === 'dinner' && !isWeekend() && h >= 17 && h < 21) return 'quick';
-  // Weekend → allow elaborate
-  if (isWeekend()) return 'any';
-  // Breakfast → quick
-  if (targetMealType === 'breakfast') return 'quick';
-  return 'moderate';
-}
-
-// ── Dietary filter ────────────────────────────────────────────────
 function isDietaryCompatible(meal, userDietIds) {
   if (!userDietIds || !userDietIds.length) return true;
   if (userDietIds.includes('non-veg')) return true;
@@ -172,7 +212,6 @@ function isDietaryCompatible(meal, userDietIds) {
   return userDietIds.some(d => meal.diet.includes(d));
 }
 
-// ── History recent set ────────────────────────────────────────────
 function buildRecentHistorySet(mealHistory, windowDays = 7) {
   const cutoff = Date.now() - windowDays * 86400000;
   const names  = new Set();
@@ -189,18 +228,19 @@ function buildRecentHistorySet(mealHistory, windowDays = 7) {
 function normC(raw) { return (raw || '').toLowerCase().replace(/[^a-z_]/g, ''); }
 
 function capCuisine(id) {
-  return (id || '').replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (!id || id === 'any') return '';
+  return id.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
 // ── Score a single meal ───────────────────────────────────────────
 function scoreMeal(meal, ctx) {
   const {
     userDietIds, userCuisines, userGoal, userSkill,
-    ratings, mealHistory,
-    recentHistorySet, recentlyShownSet, rejectedSet,
-    targetMealType, effortBias,
+    ratings, mealHistory, recentHistorySet, recentlyShownSet, rejectedSet,
+    targetMealType, effortBias, timePressureFlag,
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
+    continuityRecentCuisines,
   } = ctx;
 
   const nameLower       = meal.name.toLowerCase().trim();
@@ -211,10 +251,16 @@ function scoreMeal(meal, ctx) {
   if (forceShift && forceShiftExcludedCuisines.has(mealCuisineNorm)) return null;
   if (forceShift && forceShiftExcludeHeavy && meal.tags.includes('heavy')) return null;
 
-  // ── 1. History match (0–1, weight 0.35) ──────────────────────
-  let historyScore     = 0;
-  let historyHighRate  = 0;
-  let historyWhyKey    = null;
+  // Time pressure: hard exclude slow meals
+  if (timePressureFlag && meal.effortMins > 30) return null;
+
+  // Strict breakfast gate
+  if (targetMealType === 'breakfast' && !meal.mealType.includes('breakfast')) return null;
+
+  // ── 1. History match (weight 0.35) ────────────────────────────
+  let historyScore    = 0;
+  let historyHighRate = 0;
+  let historyWhyKey   = null;
 
   (mealHistory || []).slice(0, 30).forEach(h => {
     const hCuisine = normC(h.cuisine);
@@ -226,9 +272,9 @@ function scoreMeal(meal, ctx) {
     }
   });
 
-  // ── 2. Preference match (0–1, weight 0.25) ───────────────────
-  const allCuisines = [...new Set([...userCuisines.map(normC), ...learnedCuisines.map(normC)])];
-  const prefIdx     = allCuisines.indexOf(mealCuisineNorm);
+  // ── 2. Preference match (weight 0.25) ─────────────────────────
+  const allCuisines   = [...new Set([...userCuisines.map(normC), ...learnedCuisines.map(normC)])];
+  const prefIdx       = allCuisines.indexOf(mealCuisineNorm);
   let preferenceScore = 0;
 
   if (prefIdx === 0)      preferenceScore += 0.75;
@@ -245,26 +291,23 @@ function scoreMeal(meal, ctx) {
   if (userSkill === 'advanced' && meal.effortMins >= 30)  preferenceScore += 0.10;
   preferenceScore = Math.min(1, preferenceScore);
 
-  // ── 3. Context match (0–1, weight 0.20) ──────────────────────
+  // ── 3. Context match (weight 0.20) ────────────────────────────
   let contextScore = 0;
 
-  // Strict meal-type gate: breakfast → only breakfast meals
-  if (targetMealType === 'breakfast') {
-    if (!meal.mealType.includes('breakfast')) return null; // strict filter
-  } else {
-    if (meal.mealType.includes(targetMealType)) contextScore += 0.60;
-  }
+  if (meal.mealType.includes(targetMealType)) contextScore += 0.60;
 
-  // Effort bias (weekday dinner quick, etc.)
   if (effortBias === 'quick') {
-    if (meal.effortMins <= 15)       contextScore += 0.30;
-    else if (meal.effortMins <= 20)  contextScore += 0.15;
-    else if (meal.effortMins > 30)   contextScore -= 0.15;
+    if (meal.effortMins <= 15)      contextScore += 0.30;
+    else if (meal.effortMins <= 20) contextScore += 0.15;
+    else if (meal.effortMins > 30)  contextScore -= 0.15;
   } else if (effortBias === 'moderate') {
-    if (meal.effortMins <= 25)       contextScore += 0.20;
-  } else { // any (weekend)
+    if (meal.effortMins <= 25)      contextScore += 0.20;
+  } else {
     contextScore += 0.10;
   }
+
+  // Time pressure bonus for very quick meals
+  if (timePressureFlag && meal.effortMins <= 15) contextScore += 0.20;
 
   const h = new Date().getHours();
   if (h >= 19 && h < 23 && meal.tags.includes('light'))  contextScore += 0.10;
@@ -272,17 +315,15 @@ function scoreMeal(meal, ctx) {
 
   contextScore = Math.min(1, Math.max(0, contextScore));
 
-  // ── 4. Learned behaviour (0–1, weight 0.15) ──────────────────
+  // ── 4. Learned behaviour (weight 0.15) ────────────────────────
   let learnedScore = 0;
-  const learnedW   = learnedWeights[meal.id] || 0; // in [-1, +1]
-  learnedScore     = (learnedW + 1) / 2;           // map to [0, 1]
+  const learnedW   = learnedWeights[meal.id] || 0;
+  learnedScore     = (learnedW + 1) / 2;
 
-  // Effort preference from accepted history
   if (learnedEffortPref === 'quick'    && meal.effortMins <= 15) learnedScore = Math.min(1, learnedScore + 0.30);
   if (learnedEffortPref === 'moderate' && meal.effortMins <= 25 && meal.effortMins > 15) learnedScore = Math.min(1, learnedScore + 0.20);
   if (learnedEffortPref === 'involved' && meal.effortMins > 25) learnedScore = Math.min(1, learnedScore + 0.20);
 
-  // Learned cuisine (from behaviour, not just profile)
   if (learnedCuisines.length > 0) {
     const lnorm = learnedCuisines.map(normC);
     const lIdx  = lnorm.indexOf(mealCuisineNorm);
@@ -290,24 +331,25 @@ function scoreMeal(meal, ctx) {
     else if (lIdx === 1) learnedScore = Math.min(1, learnedScore + 0.12);
   }
 
-  // ── 5. Variety factor (0–1, weight 0.05) ─────────────────────
+  // Continuity: penalise cuisines cooked in last 3 days (encourage variety)
+  if (continuityRecentCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') {
+    learnedScore = Math.max(0, learnedScore - 0.15);
+  }
+
+  // ── 5. Variety factor (weight 0.05) ───────────────────────────
   let varietyFactor = 1.0;
-  if (recentlyShownSet.has(nameLower))      varietyFactor = 0.02; // blocked 3 sessions
+  if (recentlyShownSet.has(nameLower))      varietyFactor = 0.02;
   else if (recentHistorySet.has(nameLower)) varietyFactor = 0.25;
 
-  // Same cuisine consecutive cap: if shown 2+ times consecutively this session → penalise
   const cuisineHist = getSessionCuisineHistory();
   const lastTwo     = cuisineHist.slice(-2);
   if (lastTwo.length === 2 && lastTwo.every(c => c === mealCuisineNorm)) {
     varietyFactor = Math.min(varietyFactor, 0.15);
   }
-
-  // Boost under-used cuisines (not in last 5 session history)
   if (!cuisineHist.slice(-5).includes(mealCuisineNorm) && mealCuisineNorm !== 'any') {
     varietyFactor = Math.min(1, varietyFactor + 0.15);
   }
 
-  // ── Composite ─────────────────────────────────────────────────
   const score =
     (historyScore    * 0.35) +
     (preferenceScore * 0.25) +
@@ -321,92 +363,78 @@ function scoreMeal(meal, ctx) {
     _prefIdx: prefIdx, _goal: userGoal, _targetMealType: targetMealType,
     _effortBias: effortBias, _learnedW: learnedW,
     _learnedCuisines: learnedCuisines, _allCuisines: allCuisines,
-    _learnedEffortPref: learnedEffortPref,
+    _learnedEffortPref: learnedEffortPref, _timePressure: timePressureFlag,
   };
 }
 
-// ── Why builder ────────────────────────────────────────────────────
-// Returns { headline, bullet2, effortLabel, effortMins }
+// ── Why builder ─── natural language, no robotic patterns ─────────
+// Returns { line1, line2, effortLabel, effortMins }
+// line1 → reason  ("This fits your taste")
+// line2 → context ("Quick for this morning")
 function buildWhyParts(item) {
   const {
-    meal, _learnedW, _historyWhyKey, _historyHighRate,
+    meal, _learnedW, _historyWhyKey,
     _prefIdx, _goal, _targetMealType, _effortBias,
-    _learnedCuisines, _allCuisines, _learnedEffortPref,
+    _learnedCuisines, _allCuisines, _learnedEffortPref, _timePressure,
   } = item;
 
-  // Collect all true signals with weights
-  const signals = [];
-
-  if (_learnedW >= 0.4)  signals.push({ w:100, t:"You keep coming back to this style" });
-  else if (_learnedW > 0.15) signals.push({ w:80, t:"Fits your recent cooking pattern" });
-
-  if (_historyWhyKey === 'liked_cuisine') {
-    const rStr = _historyHighRate === 5 ? '5-star' : 'highly rated';
-    signals.push({ w:90, t:'You ' + rStr + ' similar ' + capCuisine(meal.cuisine) + ' meals' });
-  }
-
-  if (_prefIdx === 0 && meal.cuisine !== 'any') signals.push({ w:75, t:capCuisine(meal.cuisine) + ' is your top cuisine' });
-  else if (_prefIdx === 1 && meal.cuisine !== 'any') signals.push({ w:55, t:capCuisine(meal.cuisine) + ' is in your top preferences' });
-
-  if (_learnedCuisines && _learnedCuisines.length > 0) {
-    const lnorm = _learnedCuisines.map(normC);
-    if (lnorm.includes(normC(meal.cuisine)) && _prefIdx < 0) {
-      signals.push({ w:70, t:"You've been cooking " + capCuisine(meal.cuisine) + ' a lot lately' });
-    }
-  }
-
-  if (_goal === 'eat_healthier' && (meal.tags.includes('healthy') || meal.tags.includes('light'))) {
-    signals.push({ w:65, t:'Fits your healthy eating goal' });
-  }
-  if (_goal === 'cook_faster' && meal.effortMins <= 15) {
-    signals.push({ w:65, t:'Under 15 min — matches your quick-cook goal' });
-  }
-  if (_goal === 'reduce_waste' && meal.tags.includes('leftover')) {
-    signals.push({ w:65, t:'Perfect for using up what you have' });
-  }
-  if (_goal === 'try_new_things' && !(_allCuisines || []).includes(normC(meal.cuisine)) && meal.cuisine !== 'any') {
-    signals.push({ w:60, t:'Something different — ' + capCuisine(meal.cuisine) });
-  }
-
-  // Context signals
   const period = ({ breakfast:'this morning', lunch:'for lunch', snack:'right now', dinner:'tonight' })[_targetMealType] || 'right now';
-  if (_effortBias === 'quick' && meal.effortMins <= 15) {
-    signals.push({ w:55, t:'Quick for ' + period });
-  } else if (_targetMealType === 'dinner' && meal.effortMins <= 20) {
-    signals.push({ w:50, t:'Easy to make tonight' });
+
+  // ── Line 1: the reason ──────────────────────────────────────────
+  let line1 = '';
+
+  if (_learnedW >= 0.4) {
+    line1 = "You've liked this style before";
+  } else if (_historyWhyKey === 'liked_cuisine' && meal.cuisine !== 'any') {
+    line1 = "You've liked similar meals";
+  } else if (_prefIdx === 0 && meal.cuisine !== 'any') {
+    line1 = capCuisine(meal.cuisine) + ' is your favourite — great choice';
+  } else if (_prefIdx === 1 && meal.cuisine !== 'any') {
+    line1 = 'This fits your taste';
+  } else if (_learnedCuisines && _learnedCuisines.length > 0 && _learnedCuisines.map(normC).includes(normC(meal.cuisine)) && _prefIdx < 0) {
+    line1 = "You've been cooking " + capCuisine(meal.cuisine) + ' lately';
+  } else if (_goal === 'eat_healthier' && (meal.tags.includes('healthy') || meal.tags.includes('light'))) {
+    line1 = 'Supports your healthy eating goal';
+  } else if (_goal === 'cook_faster' && meal.effortMins <= 15) {
+    line1 = 'Ready fast — matches your goal';
+  } else if (_goal === 'reduce_waste' && meal.tags.includes('leftover')) {
+    line1 = 'Uses what you have';
+  } else if (_goal === 'try_new_things' && !(_allCuisines || []).includes(normC(meal.cuisine)) && meal.cuisine !== 'any') {
+    line1 = 'Something different for you';
+  } else if (meal.tags.includes('popular')) {
+    line1 = 'A favourite across India';
+  } else if (meal.tags.includes('comfort')) {
+    line1 = 'A classic comfort dish';
+  } else if (meal.tags.includes('healthy')) {
+    line1 = 'A wholesome choice';
+  } else {
+    line1 = 'Looks good for today';
+  }
+
+  // ── Line 2: the context ─────────────────────────────────────────
+  let line2 = '';
+
+  if (_timePressure && meal.effortMins <= 15) {
+    line2 = meal.effortMins + ' min — quick for ' + period;
+  } else if (_effortBias === 'quick' && meal.effortMins <= 15) {
+    line2 = 'Quick for ' + period;
   } else if (_targetMealType === 'breakfast' && meal.effortMins <= 15) {
-    signals.push({ w:50, t:'Quick and light for the morning' });
+    line2 = 'Light and quick this morning';
+  } else if (_targetMealType === 'dinner' && meal.effortMins <= 20) {
+    line2 = 'Easy to make tonight';
+  } else if (_targetMealType === 'snack') {
+    line2 = 'Ready in ' + meal.effortMins + ' min';
+  } else if (_learnedEffortPref === 'quick' && meal.effortMins <= 15) {
+    line2 = 'Matches your preference for quick meals';
+  } else if (isWeekend() && meal.effortMins >= 30) {
+    line2 = 'Worth the effort this weekend';
   } else {
-    signals.push({ w:35, t:'Good fit ' + period });
+    line2 = meal.effortMins + ' min · good fit ' + period;
   }
-
-  if (_learnedEffortPref === 'quick' && meal.effortMins <= 15) signals.push({ w:45, t:'Matches your preference for quick meals' });
-  if (meal.tags.includes('popular'))  signals.push({ w:28, t:'Consistently popular across India' });
-  if (meal.tags.includes('healthy') && !signals.some(s => s.t.includes('healthy'))) signals.push({ w:26, t:'A nourishing choice' });
-  if (meal.tags.includes('comfort') && !signals.some(s => s.t.includes('comfort'))) signals.push({ w:24, t:'A comforting classic' });
-
-  signals.sort((a, b) => b.w - a.w);
-
-  const s0 = signals[0];
-  const s1 = signals.find(s => s !== s0);
-
-  // Build confident headline combining two signals with a bullet separator
-  let headline = '';
-  if (s0 && s1 && s0.w >= 55 && s1.w >= 40) {
-    headline = s0.t + ' • ' + s1.t;
-  } else if (s0) {
-    headline = s0.t;
-  } else {
-    headline = 'Good match ' + period;
-  }
-
-  // Second supporting point (a remaining signal not used in headline)
-  const usedTexts = new Set(headline.split(' • '));
-  const bullet2   = signals.find(s => !usedTexts.has(s.t) && s.w >= 25);
 
   const effortLabel = meal.effortMins <= 15 ? 'Quick' : meal.effortMins <= 25 ? 'Medium effort' : 'Takes a bit longer';
 
-  return { headline, bullet2: bullet2 ? bullet2.t : null, effortLabel, effortMins: meal.effortMins };
+  return { line1, line2, effortLabel, effortMins: meal.effortMins };
 }
 
 // ── Main export ───────────────────────────────────────────────────
@@ -415,18 +443,30 @@ export function getPersonalisedRecommendations({
   ratings          = {},
   mealHistory      = [],
   overrideMealType = null,
+  journeyContext   = null,   // result of buildJourneyContext() — optional override
 } = {}) {
   const h              = new Date().getHours();
-  const targetMealType = overrideMealType || getMealTypeFromHour(h);
-  const effortBias     = getEffortBias(targetMealType);
+  const targetMealType = (journeyContext && journeyContext.mealType) || overrideMealType || getMealTypeFromHour(h);
+  const rejectStreak   = getSessionRejectionStreak();
+  const timePressureFlag = (journeyContext && journeyContext.timePressureFlag) || getTimePressureFlag(rejectStreak);
 
-  const rawFoodType   = (profile && profile.food_type) || [];
-  const userDietIds   = parseFoodTypeIds(rawFoodType);
-  const userCuisines  = (profile && profile.preferred_cuisines) || [];
-  const userGoal      = (profile && profile.active_goal)        || '';
-  const userSkill     = (profile && profile.skill_level)        || 'home_cook';
+  // Effort bias from journey context or auto-detect
+  const effortBias = (() => {
+    if (journeyContext && journeyContext.effortPreference) return journeyContext.effortPreference;
+    if (timePressureFlag) return 'quick';
+    if (targetMealType === 'breakfast') return 'quick';
+    if (isWeekend()) return 'any';
+    if (targetMealType === 'dinner') return 'moderate';
+    return 'any';
+  })();
 
-  const behaviourData  = (profile && profile.behaviour_data)    || {};
+  const rawFoodType  = (profile && profile.food_type) || [];
+  const userDietIds  = parseFoodTypeIds(rawFoodType);
+  const userCuisines = (profile && profile.preferred_cuisines) || [];
+  const userGoal     = (profile && profile.active_goal)        || '';
+  const userSkill    = (profile && profile.skill_level)        || 'home_cook';
+
+  const behaviourData  = (profile && profile.behaviour_data)   || {};
   const behaviourMerge = typeof behaviourData === 'string'
     ? (() => { try { return JSON.parse(behaviourData); } catch { return {}; } })()
     : behaviourData;
@@ -444,31 +484,35 @@ export function getPersonalisedRecommendations({
   const recentlyShownSet = new Set(getRecentlyShown());
   const rejectedSet      = getRejectedMealNames();
 
-  // Session adaptation: 2+ consecutive rejections → force shift
-  const rejectStreak = getSessionRejectionStreak();
-  const forceShift   = rejectStreak >= 2;
+  // Session adaptation
+  const forceShift = rejectStreak >= 2;
   const forceShiftExcludedCuisines = forceShift
     ? new Set(getSessionCuisineHistory().slice(-3).map(normC))
     : new Set();
   const forceShiftExcludeHeavy = forceShift;
 
+  // Continuity: cuisines cooked in last 3 days (penalise repetition)
+  const continuityRecentCuisines = journeyContext
+    ? (journeyContext.continuityData?.recentCuisines || []).map(normC)
+    : [];
+
   const ctx = {
     userDietIds, userCuisines, userGoal, userSkill,
-    ratings, mealHistory,
-    recentHistorySet, recentlyShownSet, rejectedSet,
-    targetMealType, effortBias,
+    ratings, mealHistory, recentHistorySet, recentlyShownSet, rejectedSet,
+    targetMealType, effortBias, timePressureFlag,
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
+    continuityRecentCuisines,
   };
 
   const compatible = MEAL_CATALOGUE.filter(m => isDietaryCompatible(m, userDietIds));
   const scored     = compatible.map(m => scoreMeal(m, ctx)).filter(Boolean);
   scored.sort((a, b) => b.score - a.score);
 
-  // Apply primary dominance: top item gets ×1.2 boost (widens gap)
+  // Primary dominance
   if (scored.length > 0) scored[0].score = Math.min(1, scored[0].score * 1.2);
 
-  // Pick top 3 with cuisine variety for alternates
+  // Pick top 3 with variety
   const results      = [];
   const usedCuisines = new Set();
 
@@ -476,21 +520,18 @@ export function getPersonalisedRecommendations({
     if (results.length === 3) break;
     const c = normC(candidate.meal.cuisine);
     if (results.length === 0) { results.push(candidate); usedCuisines.add(c); continue; }
-    // Alternates must differ in cuisine OR effort from primary
-    const primary     = results[0];
+    const primary    = results[0];
     const diffCuisine = !usedCuisines.has(c) || c === 'any';
     const diffEffort  = Math.abs(candidate.meal.effortMins - primary.meal.effortMins) >= 10;
     if (diffCuisine || diffEffort || scored.length < 6) {
       results.push(candidate); usedCuisines.add(c);
     }
   }
-  // Fallback fill
   for (const candidate of scored) {
     if (results.length >= 3) break;
     if (!results.some(r => r.meal.id === candidate.meal.id)) results.push(candidate);
   }
 
-  // Record primary cuisine in session history
   if (results.length > 0) appendSessionCuisine(normC(results[0].meal.cuisine));
 
   return results.slice(0, 3).map((item, i) => ({
@@ -498,6 +539,7 @@ export function getPersonalisedRecommendations({
     score: Math.round(item.score * 100) / 100,
     why:   buildWhyParts(item),
     role:  i === 0 ? 'primary' : 'alternate',
+    timePressure: timePressureFlag,
     generateContext: {
       dish:     item.meal.name,
       cuisine:  item.meal.cuisine !== 'any' ? item.meal.cuisine : undefined,
@@ -508,7 +550,7 @@ export function getPersonalisedRecommendations({
   }));
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
+// ── Context accessor ──────────────────────────────────────────────
 export function recommendationToContext(rec) {
   if (!rec || !rec.meal) return { surpriseMode: true };
   return {

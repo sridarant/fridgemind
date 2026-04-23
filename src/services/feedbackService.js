@@ -4,9 +4,12 @@
 //
 // Actions: accepted | swapped | completed | rejected | saved
 //
-// Two storage layers:
-//   1. localStorage — instant, no network
-//   2. Supabase recommendation_log — persistent, async fire-and-forget
+// Storage layers:
+//   1. localStorage weights (instant)
+//   2. Supabase recommendation_log (persistent, async)
+//
+// Pattern memory: tracks cuisine trends, effort trends, veg/non-veg ratio.
+// All patterns fed back into scoring via getHouseholdPatterns().
 
 import { recordSessionRejection, clearSessionRejectionStreak } from './recommendationService.js';
 
@@ -15,6 +18,7 @@ const ADMIN = '/api/admin';
 const FB_KEY       = 'jiff-feedback-weights';
 const REJECTED_KEY = 'jiff-rejected-meals';
 const PREF_KEY     = 'jiff-learned-prefs';
+const PATTERN_KEY  = 'jiff-household-patterns';
 
 const SCORE_DELTA = {
   accepted:  +0.25,
@@ -92,6 +96,30 @@ export function getLearnedEffortPreference() {
   return 'moderate';
 }
 
+// ── Household patterns (passive memory) ───────────────────────────
+// Tracks: cuisine trends, effort trends, veg/non-veg ratio, quick vs elaborate.
+// Used in scoring via getHouseholdPatterns().
+function loadPatterns() {
+  try { return JSON.parse(localStorage.getItem(PATTERN_KEY) || '{"vegCount":0,"nonVegCount":0,"totalCooks":0,"cuisineTrend":{},"effortTrend":{}}'); }
+  catch { return { vegCount:0, nonVegCount:0, totalCooks:0, cuisineTrend:{}, effortTrend:{} }; }
+}
+function savePatterns(p) {
+  try { localStorage.setItem(PATTERN_KEY, JSON.stringify(p)); } catch {}
+}
+
+export function getHouseholdPatterns() {
+  const p = loadPatterns();
+  const total = p.totalCooks || 1;
+  return {
+    vegRatio:   (p.vegCount    || 0) / total,
+    nonVegRatio:(p.nonVegCount || 0) / total,
+    topCuisines: Object.entries(p.cuisineTrend || {})
+      .sort((a,b) => b[1] - a[1]).slice(0, 3).map(([id]) => id),
+    effortTrend: p.effortTrend || {},
+    totalCooks:  total,
+  };
+}
+
 // ── Core: logFeedback ─────────────────────────────────────────────
 export function logFeedback({ meal, action, userId = null, position = null }) {
   if (!meal || !action) return;
@@ -112,7 +140,7 @@ export function logFeedback({ meal, action, userId = null, position = null }) {
   };
   saveWeights(weights);
 
-  // 2. Rejected set + session streak tracking
+  // 2. Rejected set + session streak
   if (action === 'rejected') {
     const rejected = loadRejected();
     rejected[mealName] = Date.now();
@@ -135,9 +163,33 @@ export function logFeedback({ meal, action, userId = null, position = null }) {
     else if (em <= 25) prefs.efforts.moderate = (prefs.efforts.moderate || 0) + 1;
     else               prefs.efforts.involved = (prefs.efforts.involved || 0) + 1;
     saveLearnedPrefs(prefs);
+
+    // 4. Household pattern memory
+    const patterns = loadPatterns();
+    patterns.totalCooks = (patterns.totalCooks || 0) + 1;
+
+    // Veg/non-veg ratio
+    const isVeg = meal.diet
+      ? (Array.isArray(meal.diet) ? meal.diet : [meal.diet]).some(d => d === 'veg' || d === 'vegan' || d === 'jain')
+      : false;
+    if (isVeg) patterns.vegCount = (patterns.vegCount || 0) + 1;
+    else       patterns.nonVegCount = (patterns.nonVegCount || 0) + 1;
+
+    // Cuisine trend (weighted towards recent — decay older counts)
+    if (meal.cuisine && meal.cuisine !== 'any') {
+      patterns.cuisineTrend = patterns.cuisineTrend || {};
+      patterns.cuisineTrend[meal.cuisine] = (patterns.cuisineTrend[meal.cuisine] || 0) + 1;
+    }
+
+    // Effort trend
+    const effortBucket = em <= 15 ? 'quick' : em <= 25 ? 'moderate' : 'involved';
+    patterns.effortTrend = patterns.effortTrend || {};
+    patterns.effortTrend[effortBucket] = (patterns.effortTrend[effortBucket] || 0) + 1;
+
+    savePatterns(patterns);
   }
 
-  // 4. Supabase async
+  // 5. Supabase async
   _persistToSupabase({ mealId, mealName, action, userId, position, cuisine: meal.cuisine });
 }
 
@@ -164,8 +216,9 @@ export async function fetchRecommendationLog(userId, { limit = 100 } = {}) {
 
 export async function syncBehaviourToProfile(userId) {
   if (!userId) return;
-  const prefs   = loadLearnedPrefs();
-  const weights = loadWeights();
+  const prefs    = loadLearnedPrefs();
+  const weights  = loadWeights();
+  const patterns = loadPatterns();
   try {
     await fetch(`${ADMIN}?action=update-behaviour`, {
       method: 'POST',
@@ -173,10 +226,11 @@ export async function syncBehaviourToProfile(userId) {
       body: JSON.stringify({
         userId,
         behaviourData: {
-          learnedCuisines: prefs.cuisines  || {},
-          learnedEfforts:  prefs.efforts   || {},
-          mealWeights:     weights,
-          syncedAt:        new Date().toISOString(),
+          learnedCuisines:  prefs.cuisines    || {},
+          learnedEfforts:   prefs.efforts     || {},
+          mealWeights:      weights,
+          householdPatterns: patterns,
+          syncedAt:         new Date().toISOString(),
         },
       }),
     });
@@ -188,5 +242,6 @@ export function clearFeedbackData() {
     localStorage.removeItem(FB_KEY);
     localStorage.removeItem(REJECTED_KEY);
     localStorage.removeItem(PREF_KEY);
+    localStorage.removeItem(PATTERN_KEY);
   } catch {}
 }

@@ -1,20 +1,21 @@
 // src/components/common/JourneyTiles.jsx
-// Adaptive decision assistant — decision-first, rejection-aware, session-adaptive.
+// Unified adaptive decision assistant — all journeys route through one engine.
 //
-// LAYOUT (strict top → bottom):
-//   §1  Greeting + streak badge
-//   §2  One inline retention nudge (dismissible)
-//   §3  PRIMARY card (dominates — meal, time, why, CTA)
-//   §4  ALTERNATES — 2 compact rows (tap → promoted to primary)
-//   §5  "Not feeling this?" row (mood / fridge / surprise)
-//   §6  Context tile (festival / sports / weather) — below fold
-//   §7  ChallengeTracker (merged challenge + 7-day dots) — below fold
-//   §8  Weekly planner suggestions — below fold
+// LAYOUT (top → bottom):
+//   §1  Greeting + week badge
+//   §2  Decision framing text ("This should work for today")
+//   §3  ONE retention nudge (inline, dismissible)
+//   §4  PRIMARY card (dominates screen — meal, time, why, CTA)
+//   §5  ALTERNATES — 2 compact rows (tap → promoted to primary / swap)
+//   §6  "Change direction" row (mood / fridge / surprise)
+//   §7  Context tile — below fold
+//   §8  ChallengeTracker — below fold
+//   §9  Weekly planner — below fold
 //
-// Rejection loop: reject → re-score immediately → new primary rendered in-place.
-// Swap: tap alternate → that card becomes primary, old primary logged as swapped.
-// Analytics: primary_shown / accepted / rejected / swapped — all fired, no duplicates.
-// Trust layer: confidence label + Good choice toast + Trying something different signal.
+// Rejection loop: reject → re-score in-place → new primary, no reload.
+// Swap: alternate tap → becomes primary, old primary logged as swapped.
+// Trust: "This should work for today" framing / "Got it — switching it up" / "Nice — I'll keep this in mind 👍".
+// Time pressure: detected automatically, shown as "Short on time?" label.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate }          from 'react-router-dom';
@@ -24,13 +25,10 @@ import GoalSheet                from './GoalSheet.jsx';
 import RetentionNudges, { ChallengeTracker } from './RetentionNudges.jsx';
 import { getUpcomingFestival, getActiveSportsEvent, getDayOfWeekContext } from '../../lib/festival.js';
 import { getUserContext }       from '../../lib/weather.js';
-import { getFeaturedTile, getScoredForYouCards } from './journeyTileEngines.js';
+import { getFeaturedTile }      from './journeyTileEngines.js';
 import { logFeedback, syncBehaviourToProfile }   from '../../services/feedbackService.js';
-import { markAsShown, getPersonalisedRecommendations, recommendationToContext } from '../../services/recommendationService.js';
-import {
-  trackPrimaryShown, trackRecommendationAccepted,
-  trackRecommendationRejected, trackRecommendationSwapped,
-} from '../../lib/analytics.js';
+import { markAsShown, getPersonalisedRecommendations, recommendationToContext, buildJourneyContext, getTimePressureFlag } from '../../services/recommendationService.js';
+import { trackPrimaryShown, trackRecommendationAccepted, trackRecommendationRejected, trackRecommendationSwapped } from '../../lib/analytics.js';
 
 const C = {
   jiff:'#FF4500', jiffDark:'#CC3700', ink:'#1C0A00',
@@ -48,9 +46,11 @@ function SL({ children, mt }) {
   );
 }
 
-// ── §3 Primary card ────────────────────────────────────────────────
-// why = { headline, bullet2, effortLabel, effortMins }
-function PrimaryCard({ emoji, label, effortMins, why, confidenceLabel, onCook, onNotForMe, animKey }) {
+// ── §4 Primary card ────────────────────────────────────────────────
+// why = { line1, line2, effortLabel, effortMins }
+// line1 = reason ("You've liked similar meals")
+// line2 = context ("Quick for tonight")
+function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLabel, onCook, onNotForMe, animKey }) {
   const [hov, setHov] = useState(false);
   const isQuick = effortMins <= 15;
 
@@ -62,27 +62,32 @@ function PrimaryCard({ emoji, label, effortMins, why, confidenceLabel, onCook, o
         style={{
           background:   hov ? C.softOrangeMid : C.softOrange,
           border:       '1.5px solid ' + (hov ? 'rgba(255,69,0,0.28)' : 'rgba(255,69,0,0.16)'),
-          borderRadius: 20,
-          padding:      '18px 18px 16px',
+          borderRadius: 20, padding: '18px 18px 16px',
           transition:   'all 0.13s',
           boxShadow:    hov ? '0 6px 24px rgba(255,69,0,0.11)' : '0 2px 10px rgba(28,10,0,0.05)',
           position:     'relative',
         }}>
 
-        {/* Top row: confidence label + dismiss */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:13 }}>
-          <span style={{ fontSize:9, fontWeight:700, color:C.jiff, background:'rgba(255,69,0,0.09)', border:'1px solid rgba(255,69,0,0.20)', borderRadius:6, padding:'2px 8px', letterSpacing:'1px' }}>
-            {confidenceLabel || 'BEST MATCH TODAY'}
-          </span>
+        {/* Top row: confidence label + time pressure + dismiss */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:13, gap:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <span style={{ fontSize:9, fontWeight:700, color:C.jiff, background:'rgba(255,69,0,0.09)', border:'1px solid rgba(255,69,0,0.20)', borderRadius:6, padding:'2px 8px', letterSpacing:'1px' }}>
+              {confidenceLabel || 'BEST MATCH TODAY'}
+            </span>
+            {timePressure && (
+              <span style={{ fontSize:9, fontWeight:600, color:'#1D9E75', background:'rgba(29,158,117,0.09)', border:'1px solid rgba(29,158,117,0.22)', borderRadius:6, padding:'2px 7px', letterSpacing:'0.5px' }}>
+                {'SHORT ON TIME?'}
+              </span>
+            )}
+          </div>
           <button
             onClick={onNotForMe}
-            title="Not this"
-            style={{ background:'none', border:'1px solid rgba(28,10,0,0.10)', cursor:'pointer', color:C.muted, fontSize:11, padding:'2px 8px', lineHeight:1.4, borderRadius:6, fontFamily:"'DM Sans',sans-serif" }}>
+            style={{ background:'none', border:'1px solid rgba(28,10,0,0.10)', cursor:'pointer', color:C.muted, fontSize:11, padding:'2px 8px', lineHeight:1.4, borderRadius:6, fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
             {'Not this'}
           </button>
         </div>
 
-        {/* Identity — clickable */}
+        {/* Identity */}
         <div style={{ display:'flex', alignItems:'flex-start', gap:13, marginBottom:13, cursor:'pointer' }} onClick={onCook}>
           <span style={{ fontSize:40, lineHeight:1, flexShrink:0 }}>{emoji}</span>
           <div style={{ flex:1, minWidth:0 }}>
@@ -100,15 +105,15 @@ function PrimaryCard({ emoji, label, effortMins, why, confidenceLabel, onCook, o
           </div>
         </div>
 
-        {/* Why block */}
-        {why && why.headline && (
+        {/* Why block — line1 (reason) + line2 (context) */}
+        {why && why.line1 && (
           <div style={{ borderTop:'1px solid rgba(255,69,0,0.11)', paddingTop:11, marginBottom:13 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.ink, lineHeight:1.5 }}>
-              {'✦ '}{why.headline}
+            <div style={{ fontSize:12, fontWeight:600, color:C.ink, lineHeight:1.5 }}>
+              {'✔ '}{why.line1}
             </div>
-            {why.bullet2 && (
+            {why.line2 && (
               <div style={{ fontSize:11, color:C.muted, fontWeight:400, lineHeight:1.45, marginTop:3 }}>
-                {'· '}{why.bullet2}
+                {why.line2}
               </div>
             )}
           </div>
@@ -126,12 +131,11 @@ function PrimaryCard({ emoji, label, effortMins, why, confidenceLabel, onCook, o
   );
 }
 
-// ── §4 Alternate row ───────────────────────────────────────────────
-// Tap → becomes new primary (swap behaviour).
+// ── §5 Alternate row ───────────────────────────────────────────────
 function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
-  const whyText = why && why.headline ? why.headline.split(' • ')[0] : null;
+  const whyText = why && why.line1 ? why.line1 : null;
   return (
     <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 13px', background:'white', border:'1px solid '+C.border, borderRadius:12, marginBottom:8, animation:'fadeUp 0.2s ease' }}>
       <span style={{ fontSize:22, flexShrink:0 }}>{emoji}</span>
@@ -155,19 +159,18 @@ function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
   );
 }
 
-// ── §5 "Not feeling this?" intent row ─────────────────────────────
-// Replaces the old explore chips above fold.
-function IntentRow({ onMood, onFridge, onSurprise }) {
+// ── §6 "Change direction" row ──────────────────────────────────────
+function ChangeDirectionRow({ onMood, onFridge, onSurprise }) {
   return (
     <div style={{ marginBottom:20 }}>
       <div style={{ fontSize:11, color:C.muted, fontWeight:400, marginBottom:8, textAlign:'center' }}>
-        {'Not feeling this?'}
+        {'Change direction'}
       </div>
       <div style={{ display:'flex', gap:8 }}>
         {[
-          { label:'Match my mood', emoji:'😊', onClick: onMood },
+          { label:'Match my mood',   emoji:'😊', onClick: onMood },
           { label:'Use what I have', emoji:'🧊', onClick: onFridge },
-          { label:'Surprise me',    emoji:'✨', onClick: onSurprise },
+          { label:'Surprise me',     emoji:'✨', onClick: onSurprise },
         ].map(btn => (
           <button key={btn.label} onClick={btn.onClick}
             style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'10px 6px', borderRadius:12, border:'1px solid '+C.border, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s' }}
@@ -182,7 +185,7 @@ function IntentRow({ onMood, onFridge, onSurprise }) {
   );
 }
 
-// ── §6 Context tile (festival / sports / weather) ─────────────────
+// ── §7 Context tile (festival / sports / weather) ─────────────────
 function ContextTile({ emoji, label, sub, color, bg, border, badge, onClick }) {
   const [hov, setHov] = useState(false);
   return (
@@ -200,52 +203,65 @@ function ContextTile({ emoji, label, sub, color, bg, border, badge, onClick }) {
   );
 }
 
-// ── §8 Weekly planner suggestions (MVP2) ──────────────────────────
-// Simple list, 3–4 smart suggestions for the week ahead.
-// Tap → triggers recommendation for that slot.
-function WeeklyPlanner({ profile, onGenerateDirect }) {
-  const dow   = new Date().getDay(); // 0=Sun
+// ── §9 Weekly planner (MVP2) ──────────────────────────────────────
+function WeeklyPlanner({ onGenerateDirect }) {
   const today = new Date();
-
-  // Build 4 slots: today through next few meaningful days
   const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const SLOTS = [
-    { offsetDays:0, label:'Today',      mealType:'dinner',    tag:'quick',   description:'Quick dinner' },
-    { offsetDays:2, label:'',           mealType:'lunch',     tag:'healthy', description:'Light lunch' },
-    { offsetDays:4, label:'',           mealType:'dinner',    tag:'comfort', description:'Comfort meal' },
-    { offsetDays:6, label:'Weekend',    mealType:'dinner',    tag:'special', description:'Something special' },
+  const h     = today.getHours();
+
+  const slots = [
+    {
+      offsetDays:  0,
+      label:       'Today',
+      mealType:    h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 19 ? 'snack' : 'dinner',
+      description: h < 11 ? 'Quick breakfast' : h < 16 ? 'Light lunch' : h < 19 ? 'Quick snack' : 'Quick dinner',
+      context:     { surpriseMode:false },
+    },
+    {
+      offsetDays:  2,
+      label:       '',
+      mealType:    'lunch',
+      description: 'Lighter midweek meal',
+      context:     { goal:'eat_healthier', mealType:'lunch' },
+    },
+    {
+      offsetDays:  4,
+      label:       '',
+      mealType:    'dinner',
+      description: 'Comfort dinner',
+      context:     { mealType:'dinner' },
+    },
+    {
+      offsetDays:  6,
+      label:       'Weekend',
+      mealType:    'dinner',
+      description: 'Something special',
+      context:     { hosting:true, servings:4, mealType:'dinner' },
+    },
   ].map(slot => {
-    const d      = new Date(today);
+    const d        = new Date(today);
     d.setDate(today.getDate() + slot.offsetDays);
     const dayLabel = slot.label || DAYS[d.getDay()];
-    const h = new Date().getHours();
-    // Adjust today's mealType to current time
-    if (slot.offsetDays === 0) {
-      slot.mealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 19 ? 'snack' : 'dinner';
-      slot.description = h < 11 ? 'Quick breakfast' : h < 16 ? 'Light lunch' : h < 19 ? 'Quick snack' : 'Quick dinner';
-    }
     return { ...slot, dayLabel };
   });
 
-  const SLOT_EMOJI = {
-    breakfast:'🌅', lunch:'☀️', snack:'🍎', dinner:'🌙',
-  };
+  const MEAL_EMOJI = { breakfast:'🌅', lunch:'☀️', snack:'🍎', dinner:'🌙' };
 
   return (
     <div style={{ marginBottom:16 }}>
       <div style={{ background:'white', border:'1px solid '+C.border, borderRadius:16, overflow:'hidden' }}>
-        <div style={{ padding:'13px 16px', borderBottom:'1px solid rgba(28,10,0,0.05)' }}>
+        <div style={{ padding:'12px 16px', borderBottom:'1px solid rgba(28,10,0,0.05)' }}>
           <div style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:600 }}>
             {'This week looks like'}
           </div>
         </div>
-        {SLOTS.map((slot, i) => (
+        {slots.map((slot, i) => (
           <button key={i}
-            onClick={() => onGenerateDirect && onGenerateDirect({ mealType: slot.mealType, [slot.tag === 'healthy' ? 'goal' : slot.tag === 'special' ? 'hosting' : 'surpriseMode']: slot.tag === 'quick' ? undefined : slot.tag === 'healthy' ? 'eat_healthier' : slot.tag === 'special' ? true : true })}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'11px 16px', background:'white', border:'none', borderBottom: i < SLOTS.length - 1 ? '1px solid rgba(28,10,0,0.04)' : 'none', cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans',sans-serif", transition:'background 0.1s' }}
+            onClick={() => onGenerateDirect && onGenerateDirect({ mealType: slot.mealType, ...slot.context })}
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'11px 16px', background:'white', border:'none', borderBottom: i < slots.length - 1 ? '1px solid rgba(28,10,0,0.04)' : 'none', cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans',sans-serif", transition:'background 0.1s' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,69,0,0.03)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'white'; }}>
-            <span style={{ fontSize:16, flexShrink:0 }}>{SLOT_EMOJI[slot.mealType] || '🍽️'}</span>
+            <span style={{ fontSize:16, flexShrink:0 }}>{MEAL_EMOJI[slot.mealType] || '🍽️'}</span>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12, fontWeight:600, color:C.ink }}>{slot.dayLabel}</div>
               <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>{slot.description}</div>
@@ -262,7 +278,8 @@ function WeeklyPlanner({ profile, onGenerateDirect }) {
 function Toast({ message, visible }) {
   return (
     <div style={{
-      position:'fixed', bottom:90, left:'50%', transform:'translateX(-50%) translateY(' + (visible ? 0 : 20) + 'px)',
+      position:'fixed', bottom:90, left:'50%',
+      transform:'translateX(-50%) translateY(' + (visible ? 0 : 20) + 'px)',
       background:'#1C0A00', color:'white', borderRadius:24, padding:'9px 20px',
       fontSize:13, fontWeight:600, whiteSpace:'nowrap',
       opacity: visible ? 1 : 0, transition:'all 0.22s ease',
@@ -290,11 +307,11 @@ export function JourneyTiles({
   const [showGoal,  setShowGoal]  = useState(false);
   const [weather,   setWeather]   = useState(null);
   const [toast,     setToast]     = useState({ visible:false, message:'' });
-  const [adaptMsg,  setAdaptMsg]  = useState(null); // "Trying something different…"
+  const [adaptMsg,  setAdaptMsg]  = useState(null);
 
-  // Live recommendation state — replaced in-place on rejection/swap
-  const [cards,          setCards]          = useState(null); // null = loading
-  const [primaryAnimKey, setPrimaryAnimKey] = useState(0);   // triggers re-animation
+  // Live recommendation state — updated in-place
+  const [cards,          setCards]          = useState(null);
+  const [primaryAnimKey, setPrimaryAnimKey] = useState(0);
 
   const acceptedPrimaryRef = useRef(false);
   const feedbackCountRef   = useRef(0);
@@ -305,24 +322,30 @@ export function JourneyTiles({
   const sports   = getActiveSportsEvent();
   const dayCtx   = getDayOfWeekContext();
 
-  // ── Load recommendations ─────────────────────────────────────────
-  // Also called after each rejection to get fresh cards in-place.
-  const loadCards = useCallback(() => {
-    const recs = getPersonalisedRecommendations({ profile, ratings, mealHistory });
+  // ── Load recommendations — all journeys call this ─────────────
+  const loadCards = useCallback((journeyCtx = null) => {
+    const jCtx = journeyCtx || buildJourneyContext({
+      journeyType:  'default',
+      profile,
+      mealHistory,
+    });
+    const recs = getPersonalisedRecommendations({ profile, ratings, mealHistory, journeyContext: jCtx });
     const mapped = recs.map(rec => ({
-      meal:       rec.meal,
-      emoji:      rec.meal.emoji,
-      label:      rec.meal.name,
-      cuisine:    rec.meal.cuisine,
-      effortMins: rec.meal.effortMins,
-      tags:       rec.meal.tags,
-      why:        rec.why,
-      role:       rec.role,
-      score:      rec.score,
-      context:    recommendationToContext(rec),
+      meal:        rec.meal,
+      emoji:       rec.meal.emoji,
+      label:       rec.meal.name,
+      cuisine:     rec.meal.cuisine,
+      effortMins:  rec.meal.effortMins,
+      tags:        rec.meal.tags,
+      why:         rec.why,
+      role:        rec.role,
+      score:       rec.score,
+      timePressure: rec.timePressure || false,
+      context:     recommendationToContext(rec),
     }));
     setCards(mapped);
     setPrimaryAnimKey(k => k + 1);
+    shownTrackedRef.current = false;
     return mapped;
   }, [profile, ratings, mealHistory]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -330,12 +353,9 @@ export function JourneyTiles({
     getUserContext().then(ctx => setWeather(ctx ? (ctx.weather || null) : null)).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initial load
   useEffect(() => {
     const mapped = loadCards();
-    if (mapped.length > 0) {
-      markAsShown(mapped.map(c => c.label));
-    }
+    if (mapped.length > 0) markAsShown(mapped.map(c => c.label));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track primary_shown once per card set
@@ -356,7 +376,7 @@ export function JourneyTiles({
     }
   };
 
-  const showToast = (msg, ms = 2000) => {
+  const showToast = (msg, ms = 2200) => {
     setToast({ visible:true, message:msg });
     setTimeout(() => setToast({ visible:false, message:msg }), ms);
   };
@@ -368,7 +388,7 @@ export function JourneyTiles({
     return name ? base + ', ' + name : base;
   };
 
-  const readyLine = () => {
+  const framingText = () => {
     const h = new Date().getHours();
     if (h >= 5  && h < 11) return 'Ready for breakfast?';
     if (h >= 11 && h < 16) return 'Ready for lunch?';
@@ -398,6 +418,10 @@ export function JourneyTiles({
   const primaryCard = cards ? cards.find(c => c.role === 'primary') : null;
   const alternates  = cards ? cards.filter(c => c.role === 'alternate') : [];
 
+  const hasSignal = ratingCount >= 1 ||
+    (profile && (profile.preferred_cuisines || []).length > 0) ||
+    (profile && profile.active_goal);
+
   // Confidence label — dynamic
   const confidenceLabel = (() => {
     if (ratingCount >= 5) return 'PICKED FOR YOU';
@@ -406,7 +430,7 @@ export function JourneyTiles({
     return 'SUGGESTED FOR YOU';
   })();
 
-  // Weekly challenge header badge
+  // Weekly cook count for badge
   const weekCookCount = (() => {
     if (!Array.isArray(mealHistory)) return 0;
     const weekAgo = Date.now() - 7 * 86400000;
@@ -430,88 +454,88 @@ export function JourneyTiles({
       trackRecommendationSwapped({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
     }
 
-    showToast('Good choice 👍');
+    showToast("Nice — I'll keep this in mind 👍");
     setAdaptMsg(null);
     onGenerateDirect && onGenerateDirect(card.context);
   };
 
-  // ── Reject primary — re-score in-place ───────────────────────────
+  // ── Reject primary → re-score in-place ───────────────────────────
   const handleNotForMe = (card, position) => {
     logFeedback({ meal: card.meal, action: 'rejected', userId: user ? user.id : null, position });
     syncBehaviour();
     trackRecommendationRejected({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
 
-    // Read updated rejection streak after logFeedback incremented it
-    const streak = (() => {
-      try { return parseInt(sessionStorage.getItem('jiff-session-reject-streak') || '0'); } catch { return 0; } })();
+    // Read updated streak (logFeedback already incremented it)
+    const streak = (() => { try { return parseInt(sessionStorage.getItem('jiff-session-reject-streak') || '0'); } catch { return 0; } })();
 
     if (streak >= 2 && !adaptMsg) {
-      setAdaptMsg('Trying something different…');
+      setAdaptMsg('Got it — switching it up');
       setTimeout(() => setAdaptMsg(null), 3000);
     }
 
-    // Show adaptation message then re-score — no page reload
-    shownTrackedRef.current = false; // allow re-tracking for new primary
+    // Re-score immediately — no reload
     const newCards = loadCards();
     markAsShown(newCards.map(c => c.label));
   };
 
-  // ── Swap: alternate → new primary ────────────────────────────────
+  // ── Swap: alternate → primary ─────────────────────────────────────
   const handleSwap = (altCard, altPosition) => {
-    // Log primary as swapped (rejected in favour of alternate)
     if (primaryCard) {
       logFeedback({ meal: primaryCard.meal, action: 'swapped', userId: user ? user.id : null, position: 0 });
       trackRecommendationSwapped({ mealId: primaryCard.meal?.id || primaryCard.label, mealName: primaryCard.label, cuisine: primaryCard.cuisine, position: 0 });
     }
-    // Log alternate as accepted
     logFeedback({ meal: altCard.meal, action: 'accepted', userId: user ? user.id : null, position: altPosition });
     trackRecommendationAccepted({ mealId: altCard.meal?.id || altCard.label, mealName: altCard.label, cuisine: altCard.cuisine, position: altPosition });
     syncBehaviour();
-    showToast('Good choice 👍');
+    showToast("Nice — I'll keep this in mind 👍");
     setAdaptMsg(null);
     onGenerateDirect && onGenerateDirect(altCard.context);
   };
 
-  const decisionLabel = (() => {
-    if (ratingCount >= 3) return 'Based on what you love';
-    if (ratingCount >= 1) return 'Because you liked that last one';
-    if (profile && (profile.preferred_cuisines || []).length > 0) return 'From your cuisines';
-    return 'Picked for you';
-  })();
-
-  const hasSignal = ratingCount >= 1 ||
-    (profile && (profile.preferred_cuisines || []).length > 0) ||
-    (profile && profile.active_goal);
+  // Mood entry: builds mood journey context then re-scores
+  const handleMoodEntry = (mood, moodContext) => {
+    setShowMood(false);
+    if (mood && moodContext) {
+      const jCtx = buildJourneyContext({ journeyType:'mood', mood: mood.id, profile, mealHistory });
+      const newCards = loadCards(jCtx);
+      markAsShown(newCards.map(c => c.label));
+    }
+    onGenerateDirect && onGenerateDirect({ mood: mood?.id, moodContext });
+  };
 
   return (
     <div style={{ maxWidth:680, margin:'0 auto', padding:'14px 16px 100px', fontFamily:"'DM Sans',sans-serif" }}>
 
-      {/* §1 GREETING + streak + weekly badge */}
-      <div style={{ marginBottom:4 }}>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8 }}>
-          <div>
-            <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(19px,5vw,24px)', fontWeight:900, color:C.ink, margin:0, lineHeight:1.2 }}>
-              {greet()} ⚡
-            </h2>
-            <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginTop:3 }}>
-              {readyLine()}
-            </div>
+      {/* §1 GREETING + week badge */}
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
+        <div>
+          <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(19px,5vw,24px)', fontWeight:900, color:C.ink, margin:0, lineHeight:1.2 }}>
+            {greet()} ⚡
+          </h2>
+          <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginTop:3 }}>
+            {framingText()}
           </div>
-          {/* Weekly progress badge */}
-          {weekCookCount > 0 && (
-            <div style={{ flexShrink:0, marginTop:2, display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'3px 10px', fontSize:11, color:'#CC3700', fontWeight:700, whiteSpace:'nowrap' }}>
-              {'🔥 '}{weekCookCount}{'/7 this week'}
+          {streak >= 2 && weekCookCount === 0 && (
+            <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:5, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'2px 10px', fontSize:10, color:'#CC3700', fontWeight:600 }}>
+              {'🔥 '}{streak}{'-day streak!'}
             </div>
           )}
         </div>
-        {streak >= 2 && weekCookCount === 0 && (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:6, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'2px 10px', fontSize:10, color:'#CC3700', fontWeight:600 }}>
-            {'🔥 '}{streak}{'-day streak!'}
+        {weekCookCount > 0 && (
+          <div style={{ flexShrink:0, marginTop:2, display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'3px 10px', fontSize:11, color:'#CC3700', fontWeight:700, whiteSpace:'nowrap' }}>
+            {'🔥 '}{weekCookCount}{'/7 this week'}
           </div>
         )}
       </div>
 
-      {/* §2 NUDGE */}
+      {/* §2 Decision framing text — above primary card */}
+      {hasSignal && primaryCard && (
+        <div style={{ fontSize:12, color:C.muted, fontWeight:400, marginBottom:10, marginTop:8 }}>
+          {'This should work for today'}
+        </div>
+      )}
+
+      {/* §3 NUDGE — one at a time */}
       <RetentionNudges
         welcomeBack={welcomeBack}
         weeklyDigest={weeklyDigest}
@@ -531,24 +555,21 @@ export function JourneyTiles({
         </div>
       )}
 
-      {/* §3 PRIMARY */}
+      {/* §4 PRIMARY */}
       {hasSignal && primaryCard ? (
-        <>
-          <SL mt={14}>{decisionLabel}</SL>
-          <PrimaryCard
-            animKey={primaryAnimKey}
-            emoji={primaryCard.emoji}
-            label={primaryCard.label}
-            effortMins={primaryCard.effortMins}
-            why={primaryCard.why}
-            confidenceLabel={confidenceLabel}
-            onCook={() => handleCook(primaryCard, 0)}
-            onNotForMe={() => handleNotForMe(primaryCard, 0)}
-          />
-        </>
+        <PrimaryCard
+          animKey={primaryAnimKey}
+          emoji={primaryCard.emoji}
+          label={primaryCard.label}
+          effortMins={primaryCard.effortMins}
+          why={primaryCard.why}
+          timePressure={primaryCard.timePressure}
+          confidenceLabel={confidenceLabel}
+          onCook={() => handleCook(primaryCard, 0)}
+          onNotForMe={() => handleNotForMe(primaryCard, 0)}
+        />
       ) : (
-        /* Fallback: fridge CTA as hero when no personalisation data */
-        <div style={{ marginBottom:14, marginTop:14 }}>
+        <div style={{ marginBottom:14, marginTop:8 }}>
           <button onClick={onSelectFridge}
             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'20px 18px', borderRadius:18, background:'rgba(255,69,0,0.055)', border:'1.5px solid rgba(255,69,0,0.16)', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}>
             <span style={{ fontSize:36 }}>🧊</span>
@@ -561,7 +582,7 @@ export function JourneyTiles({
         </div>
       )}
 
-      {/* §4 ALTERNATES */}
+      {/* §5 ALTERNATES */}
       {alternates.length > 0 && (
         <div style={{ marginBottom:14 }}>
           <SL>{'Or try instead'}</SL>
@@ -579,14 +600,14 @@ export function JourneyTiles({
         </div>
       )}
 
-      {/* §5 "NOT FEELING THIS?" intent row */}
-      <IntentRow
+      {/* §6 CHANGE DIRECTION */}
+      <ChangeDirectionRow
         onMood={()     => setShowMood(true)}
         onFridge={()   => onSelectFridge && onSelectFridge()}
         onSurprise={() => onGenerateDirect && onGenerateDirect({ surpriseMode:true })}
       />
 
-      {/* §6 CONTEXT TILE */}
+      {/* §7 CONTEXT TILE */}
       {!featured.isFridge && (
         <ContextTile
           emoji={featured.emoji} label={featured.label} sub={featured.sub}
@@ -595,11 +616,11 @@ export function JourneyTiles({
         />
       )}
 
-      {/* §7 CHALLENGE + 7-DAY TRACKER */}
+      {/* §8 CHALLENGE + 7-DAY TRACKER */}
       <ChallengeTracker challenge={challenge} mealHistory={mealHistory} />
 
-      {/* §8 WEEKLY PLANNER (MVP2) */}
-      <WeeklyPlanner profile={profile} onGenerateDirect={onGenerateDirect} />
+      {/* §9 WEEKLY PLANNER */}
+      <WeeklyPlanner onGenerateDirect={onGenerateDirect} />
 
       {/* Post-action toast */}
       <Toast message={toast.message} visible={toast.visible} />
@@ -607,7 +628,7 @@ export function JourneyTiles({
       {/* Modals */}
       {showMood && (
         <MoodSelector
-          onSelect={({ mood, context }) => { setShowMood(false); onGenerateDirect && onGenerateDirect({ mood: mood.id, moodContext: context }); }}
+          onSelect={({ mood, context }) => handleMoodEntry(mood, context)}
           onClose={() => setShowMood(false)}
         />
       )}
