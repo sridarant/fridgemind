@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/common/PageHeader';
 import { useAuth } from '../contexts/AuthContext';
@@ -124,6 +124,22 @@ export default function History() {
   const cuisines   = [...new Set(history.map(h => h.cuisine).filter(c => c && c !== 'any'))];
   const streakDays = history.length > 0 ? Math.min(history.length, 7) : 0;
 
+  // Behaviour insight — "You've been cooking quick meals lately"
+  const behaviorInsight = useMemo(() => {
+    if (history.length < 3) return null;
+    const recent = history.slice(0, 5);
+    const quickCount  = recent.filter(h => (h.meal?.effortMins || h.effort_mins || 30) <= 15).length;
+    const lightCount  = recent.filter(h => (h.meal?.tags || []).includes('light')).length;
+    const topCuisine  = cuisines[0];
+    if (quickCount >= 3) return 'You've been cooking quick meals lately';
+    if (lightCount >= 3) return 'You've been choosing lighter meals recently';
+    if (topCuisine && recent.filter(h => h.cuisine === topCuisine).length >= 3) {
+      const label = topCuisine.replace(/_/g,' ').replace(/\w/g, c => c.toUpperCase());
+      return 'You've been making a lot of ' + label + ' dishes';
+    }
+    return null;
+  }, [history, cuisines]);
+
   return (
     <div style={s.page}>
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
@@ -135,6 +151,13 @@ export default function History() {
         <div style={s.sub}>Every meal you've generated — tap any to see the recipes again or cook them with different serving sizes.</div>
 
         {/* Stats row */}
+        {/* Behaviour insight */}
+        {behaviorInsight && (
+          <div style={{ margin:'0 0 16px', padding:'10px 14px', borderRadius:11, background:'rgba(29,158,117,0.06)', border:'1px solid rgba(29,158,117,0.18)', fontSize:12, color:'#065F46', fontWeight:500 }}>
+            {'💡 '}{behaviorInsight}
+          </div>
+        )}
+
         {history.length > 0 && (
           <div style={{display:'flex', gap:10, marginBottom:24, flexWrap:'wrap'}}>
             <div style={s.stat}><div style={s.statN}>{history.length}</div><div style={s.statL}>sessions</div></div>
@@ -200,7 +223,7 @@ export default function History() {
           const isOpen   = expanded === entry.id;
 
           return (
-            <div key={entry.id} style={s.card}>
+            <div key={entry.id} style={{ ...s.card, cursor:'pointer' }} onClick={() => navigate('/app', { state: { generateContext: { dish: Array.isArray(entry.meal) ? entry.meal[0]?.name : entry.meal?.name, cuisine: entry.cuisine, mealType: entry.meal_type } } })}>
               {/* Card header */}
               <div style={s.cardHdr} onClick={() => setExpanded(isOpen ? null : entry.id)}>
                 <div style={{width:36, height:36, borderRadius:10, background:color.bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0}}>

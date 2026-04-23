@@ -35,6 +35,7 @@ const LittleChefs = lazy(() => import('./pages/LittleChefs'));
 const KidsLunchbox= lazy(() => import('./pages/KidsLunchbox'));
 const KidsDishes  = lazy(() => import('./pages/KidsDishes'));
 const SacredKitchen = lazy(() => import('./pages/SacredKitchen'));
+const Settings      = lazy(() => import('./pages/Settings'));
 
 // ── Loading fallback ──────────────────────────────────────────────
 const PageLoader = () => (
@@ -74,6 +75,7 @@ function AppShell() {
           <Route path="/little-chefs/lunchbox" element={<KidsLunchbox />} />
           <Route path="/little-chefs/dishes"   element={<KidsDishes />} />
           <Route path="/sacred"              element={<SacredKitchen />} />
+          <Route path="/settings"           element={<Settings />} />
         </Routes>
       </Suspense>
       {showNav && <BottomNav />}

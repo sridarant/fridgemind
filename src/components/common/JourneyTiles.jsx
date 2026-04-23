@@ -1,32 +1,30 @@
 // src/components/common/JourneyTiles.jsx
-// Unified adaptive decision assistant — all journeys route through one engine.
+// Unified adaptive decision assistant.
 //
 // LAYOUT (top → bottom):
-//   §1  Greeting + week badge
-//   §2  Decision framing text ("This should work for today")
+//   §1  Greeting + week badge + event banner (if active)
+//   §2  Decision framing text
 //   §3  ONE retention nudge (inline, dismissible)
-//   §4  PRIMARY card (dominates screen — meal, time, why, CTA)
-//   §5  ALTERNATES — 2 compact rows (tap → promoted to primary / swap)
-//   §6  "Change direction" row (mood / fridge / surprise)
+//   §4  PRIMARY card (dominates screen)
+//   §5  ALTERNATES — 2 compact rows (tap → swap)
+//   §6  "Change direction" row — 6 intent options
 //   §7  Context tile — below fold
 //   §8  ChallengeTracker — below fold
 //   §9  Weekly planner — below fold
 //
-// Rejection loop: reject → re-score in-place → new primary, no reload.
-// Swap: alternate tap → becomes primary, old primary logged as swapped.
-// Trust: "This should work for today" framing / "Got it — switching it up" / "Nice — I'll keep this in mind 👍".
-// Time pressure: detected automatically, shown as "Short on time?" label.
+// All 6 change-direction options call buildJourneyContext + getPersonalisedRecommendations.
+// No separate flows. Rejection re-scores in-place.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate }          from 'react-router-dom';
-import MoodSelector             from './MoodSelector.jsx';
-import OrderInSheet             from './OrderInSheet.jsx';
-import GoalSheet                from './GoalSheet.jsx';
+import { useNavigate } from 'react-router-dom';
+import MoodSelector   from './MoodSelector.jsx';
+import OrderInSheet   from './OrderInSheet.jsx';
+import GoalSheet      from './GoalSheet.jsx';
 import RetentionNudges, { ChallengeTracker } from './RetentionNudges.jsx';
 import { getUpcomingFestival, getActiveSportsEvent, getDayOfWeekContext } from '../../lib/festival.js';
-import { getUserContext }       from '../../lib/weather.js';
-import { getFeaturedTile }      from './journeyTileEngines.js';
-import { logFeedback, syncBehaviourToProfile }   from '../../services/feedbackService.js';
+import { getUserContext } from '../../lib/weather.js';
+import { getFeaturedTile } from './journeyTileEngines.js';
+import { logFeedback, syncBehaviourToProfile } from '../../services/feedbackService.js';
 import { markAsShown, getPersonalisedRecommendations, recommendationToContext, buildJourneyContext, getTimePressureFlag } from '../../services/recommendationService.js';
 import { trackPrimaryShown, trackRecommendationAccepted, trackRecommendationRejected, trackRecommendationSwapped } from '../../lib/analytics.js';
 
@@ -37,7 +35,6 @@ const C = {
   softOrange:'rgba(255,69,0,0.055)', softOrangeMid:'rgba(255,69,0,0.09)',
 };
 
-// ── Section label ─────────────────────────────────────────────────
 function SL({ children, mt }) {
   return (
     <div style={{ fontSize:10, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:600, marginBottom:9, marginTop:mt || 4 }}>
@@ -47,9 +44,6 @@ function SL({ children, mt }) {
 }
 
 // ── §4 Primary card ────────────────────────────────────────────────
-// why = { line1, line2, effortLabel, effortMins }
-// line1 = reason ("You've liked similar meals")
-// line2 = context ("Quick for tonight")
 function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLabel, onCook, onNotForMe, animKey }) {
   const [hov, setHov] = useState(false);
   const isQuick = effortMins <= 15;
@@ -59,30 +53,22 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
       <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}`}</style>
       <div
         onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-        style={{
-          background:   hov ? C.softOrangeMid : C.softOrange,
-          border:       '1.5px solid ' + (hov ? 'rgba(255,69,0,0.28)' : 'rgba(255,69,0,0.16)'),
-          borderRadius: 20, padding: '18px 18px 16px',
-          transition:   'all 0.13s',
-          boxShadow:    hov ? '0 6px 24px rgba(255,69,0,0.11)' : '0 2px 10px rgba(28,10,0,0.05)',
-          position:     'relative',
-        }}>
+        style={{ background:hov?C.softOrangeMid:C.softOrange, border:'1.5px solid '+(hov?'rgba(255,69,0,0.28)':'rgba(255,69,0,0.16)'), borderRadius:20, padding:'18px 18px 16px', transition:'all 0.13s', boxShadow:hov?'0 6px 24px rgba(255,69,0,0.11)':'0 2px 10px rgba(28,10,0,0.05)', position:'relative' }}>
 
-        {/* Top row: confidence label + time pressure + dismiss */}
+        {/* Top row */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:13, gap:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
             <span style={{ fontSize:9, fontWeight:700, color:C.jiff, background:'rgba(255,69,0,0.09)', border:'1px solid rgba(255,69,0,0.20)', borderRadius:6, padding:'2px 8px', letterSpacing:'1px' }}>
               {confidenceLabel || 'BEST MATCH TODAY'}
             </span>
             {timePressure && (
-              <span style={{ fontSize:9, fontWeight:600, color:'#1D9E75', background:'rgba(29,158,117,0.09)', border:'1px solid rgba(29,158,117,0.22)', borderRadius:6, padding:'2px 7px', letterSpacing:'0.5px' }}>
+              <span style={{ fontSize:9, fontWeight:600, color:'#1D9E75', background:'rgba(29,158,117,0.09)', border:'1px solid rgba(29,158,117,0.22)', borderRadius:6, padding:'2px 7px' }}>
                 {'SHORT ON TIME?'}
               </span>
             )}
           </div>
-          <button
-            onClick={onNotForMe}
-            style={{ background:'none', border:'1px solid rgba(28,10,0,0.10)', cursor:'pointer', color:C.muted, fontSize:11, padding:'2px 8px', lineHeight:1.4, borderRadius:6, fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
+          <button onClick={onNotForMe}
+            style={{ background:'none', border:'1px solid rgba(28,10,0,0.10)', cursor:'pointer', color:C.muted, fontSize:11, padding:'2px 8px', lineHeight:1.4, borderRadius:6, fontFamily:"'DM Sans',sans-serif" }}>
             {'Not this'}
           </button>
         </div>
@@ -91,9 +77,7 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
         <div style={{ display:'flex', alignItems:'flex-start', gap:13, marginBottom:13, cursor:'pointer' }} onClick={onCook}>
           <span style={{ fontSize:40, lineHeight:1, flexShrink:0 }}>{emoji}</span>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontFamily:"'Fraunces',serif", fontSize:21, fontWeight:900, color:C.ink, lineHeight:1.15, marginBottom:7 }}>
-              {label}
-            </div>
+            <div style={{ fontFamily:"'Fraunces',serif", fontSize:21, fontWeight:900, color:C.ink, lineHeight:1.15, marginBottom:7 }}>{label}</div>
             <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
               <span style={{ fontSize:11, fontWeight:700, color:isQuick?'#1D9E75':C.jiff, background:isQuick?'rgba(29,158,117,0.09)':'rgba(255,69,0,0.08)', border:'1px solid '+(isQuick?'rgba(29,158,117,0.22)':'rgba(255,69,0,0.20)'), borderRadius:20, padding:'3px 10px' }}>
                 {'⏱ '}{effortMins}{' min'}
@@ -105,17 +89,11 @@ function PrimaryCard({ emoji, label, effortMins, why, timePressure, confidenceLa
           </div>
         </div>
 
-        {/* Why block — line1 (reason) + line2 (context) */}
+        {/* Why */}
         {why && why.line1 && (
           <div style={{ borderTop:'1px solid rgba(255,69,0,0.11)', paddingTop:11, marginBottom:13 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.ink, lineHeight:1.5 }}>
-              {'✔ '}{why.line1}
-            </div>
-            {why.line2 && (
-              <div style={{ fontSize:11, color:C.muted, fontWeight:400, lineHeight:1.45, marginTop:3 }}>
-                {why.line2}
-              </div>
-            )}
+            <div style={{ fontSize:12, fontWeight:600, color:C.ink, lineHeight:1.5 }}>{'✔ '}{why.line1}</div>
+            {why.line2 && <div style={{ fontSize:11, color:C.muted, fontWeight:400, lineHeight:1.45, marginTop:3 }}>{why.line2}</div>}
           </div>
         )}
 
@@ -141,7 +119,7 @@ function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
       <span style={{ fontSize:22, flexShrink:0 }}>{emoji}</span>
       <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={onSwap}>
         <div style={{ fontSize:13, fontWeight:600, color:C.ink, lineHeight:1.3 }}>{label}</div>
-        <div style={{ fontSize:10, color:C.muted, marginTop:2, lineHeight:1.35, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+        <div style={{ fontSize:10, color:C.muted, marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
           {effortMins + ' min'}{whyText ? ' · ' + whyText : ''}
         </div>
       </div>
@@ -150,7 +128,7 @@ function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
           style={{ padding:'6px 12px', borderRadius:8, border:'1px solid rgba(255,69,0,0.22)', background:'rgba(255,69,0,0.04)', color:C.jiff, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
           {'Try this →'}
         </button>
-        <button onClick={() => { setDismissed(true); onNotForMe && onNotForMe(); }} title="Not for me"
+        <button onClick={() => { setDismissed(true); onNotForMe && onNotForMe(); }}
           style={{ padding:'6px 8px', borderRadius:8, border:'1px solid rgba(28,10,0,0.08)', background:'white', color:C.muted, fontSize:11, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
           {'✕'}
         </button>
@@ -159,25 +137,31 @@ function AlternateRow({ emoji, label, effortMins, why, onSwap, onNotForMe }) {
   );
 }
 
-// ── §6 "Change direction" row ──────────────────────────────────────
-function ChangeDirectionRow({ onMood, onFridge, onSurprise }) {
+// ── §6 "Change direction" row — 6 intent options ──────────────────
+// All 6 options call the same engine via buildJourneyContext.
+function ChangeDirectionRow({ onOption }) {
+  const options = [
+    { key:'mood',     label:'Match my mood',   emoji:'😊' },
+    { key:'fridge',   label:'Use what I have', emoji:'🧊' },
+    { key:'surprise', label:'Surprise me',     emoji:'✨' },
+    { key:'kids',     label:'Pack for kids',   emoji:'🎒' },
+    { key:'leftover', label:'Use leftovers',   emoji:'♻️' },
+    { key:'hosting',  label:'Guests coming',   emoji:'🎉' },
+  ];
+
   return (
     <div style={{ marginBottom:20 }}>
-      <div style={{ fontSize:11, color:C.muted, fontWeight:400, marginBottom:8, textAlign:'center' }}>
+      <div style={{ fontSize:11, color:C.muted, fontWeight:400, marginBottom:10, textAlign:'center' }}>
         {'Change direction'}
       </div>
-      <div style={{ display:'flex', gap:8 }}>
-        {[
-          { label:'Match my mood',   emoji:'😊', onClick: onMood },
-          { label:'Use what I have', emoji:'🧊', onClick: onFridge },
-          { label:'Surprise me',     emoji:'✨', onClick: onSurprise },
-        ].map(btn => (
-          <button key={btn.label} onClick={btn.onClick}
-            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'10px 6px', borderRadius:12, border:'1px solid '+C.border, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s' }}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+        {options.map(opt => (
+          <button key={opt.key} onClick={() => onOption(opt.key)}
+            style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'9px 6px', borderRadius:12, border:'1px solid '+C.border, background:'white', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.12s' }}
             onMouseEnter={e => { e.currentTarget.style.background='rgba(28,10,0,0.03)'; e.currentTarget.style.borderColor=C.borderMid; }}
             onMouseLeave={e => { e.currentTarget.style.background='white'; e.currentTarget.style.borderColor=C.border; }}>
-            <span style={{ fontSize:18 }}>{btn.emoji}</span>
-            <span style={{ fontSize:10, fontWeight:600, color:C.muted, letterSpacing:'0.3px', textAlign:'center', lineHeight:1.3 }}>{btn.label}</span>
+            <span style={{ fontSize:16 }}>{opt.emoji}</span>
+            <span style={{ fontSize:10, fontWeight:600, color:C.muted, textAlign:'center', lineHeight:1.3 }}>{opt.label}</span>
           </button>
         ))}
       </div>
@@ -185,7 +169,7 @@ function ChangeDirectionRow({ onMood, onFridge, onSurprise }) {
   );
 }
 
-// ── §7 Context tile (festival / sports / weather) ─────────────────
+// ── §7 Context tile ────────────────────────────────────────────────
 function ContextTile({ emoji, label, sub, color, bg, border, badge, onClick }) {
   const [hov, setHov] = useState(false);
   return (
@@ -203,46 +187,21 @@ function ContextTile({ emoji, label, sub, color, bg, border, badge, onClick }) {
   );
 }
 
-// ── §9 Weekly planner (MVP2) ──────────────────────────────────────
+// ── §9 Weekly planner ──────────────────────────────────────────────
 function WeeklyPlanner({ onGenerateDirect }) {
   const today = new Date();
   const DAYS  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const h     = today.getHours();
 
   const slots = [
-    {
-      offsetDays:  0,
-      label:       'Today',
-      mealType:    h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 19 ? 'snack' : 'dinner',
-      description: h < 11 ? 'Quick breakfast' : h < 16 ? 'Light lunch' : h < 19 ? 'Quick snack' : 'Quick dinner',
-      context:     { surpriseMode:false },
-    },
-    {
-      offsetDays:  2,
-      label:       '',
-      mealType:    'lunch',
-      description: 'Lighter midweek meal',
-      context:     { goal:'eat_healthier', mealType:'lunch' },
-    },
-    {
-      offsetDays:  4,
-      label:       '',
-      mealType:    'dinner',
-      description: 'Comfort dinner',
-      context:     { mealType:'dinner' },
-    },
-    {
-      offsetDays:  6,
-      label:       'Weekend',
-      mealType:    'dinner',
-      description: 'Something special',
-      context:     { hosting:true, servings:4, mealType:'dinner' },
-    },
+    { offsetDays:0,  label:'Today',   mealType: h<11?'breakfast':h<16?'lunch':h<19?'snack':'dinner', description: h<11?'Quick breakfast':h<16?'Light lunch':h<19?'Quick snack':'Quick dinner', context:{} },
+    { offsetDays:2,  label:'',        mealType:'lunch',  description:'Lighter midweek meal', context:{ goal:'eat_healthier' } },
+    { offsetDays:4,  label:'',        mealType:'dinner', description:'Comfort dinner',       context:{} },
+    { offsetDays:6,  label:'Weekend', mealType:'dinner', description:'Something special',    context:{ hosting:true, servings:4 } },
   ].map(slot => {
-    const d        = new Date(today);
+    const d = new Date(today);
     d.setDate(today.getDate() + slot.offsetDays);
-    const dayLabel = slot.label || DAYS[d.getDay()];
-    return { ...slot, dayLabel };
+    return { ...slot, dayLabel: slot.label || DAYS[d.getDay()] };
   });
 
   const MEAL_EMOJI = { breakfast:'🌅', lunch:'☀️', snack:'🍎', dinner:'🌙' };
@@ -257,11 +216,11 @@ function WeeklyPlanner({ onGenerateDirect }) {
         </div>
         {slots.map((slot, i) => (
           <button key={i}
-            onClick={() => onGenerateDirect && onGenerateDirect({ mealType: slot.mealType, ...slot.context })}
-            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'11px 16px', background:'white', border:'none', borderBottom: i < slots.length - 1 ? '1px solid rgba(28,10,0,0.04)' : 'none', cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans',sans-serif", transition:'background 0.1s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,69,0,0.03)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'white'; }}>
-            <span style={{ fontSize:16, flexShrink:0 }}>{MEAL_EMOJI[slot.mealType] || '🍽️'}</span>
+            onClick={() => onGenerateDirect && onGenerateDirect({ mealType:slot.mealType, ...slot.context })}
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'11px 16px', background:'white', border:'none', borderBottom:i<slots.length-1?'1px solid rgba(28,10,0,0.04)':'none', cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans',sans-serif", transition:'background 0.1s' }}
+            onMouseEnter={e => { e.currentTarget.style.background='rgba(255,69,0,0.03)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background='white'; }}>
+            <span style={{ fontSize:16, flexShrink:0 }}>{MEAL_EMOJI[slot.mealType]||'🍽️'}</span>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:12, fontWeight:600, color:C.ink }}>{slot.dayLabel}</div>
               <div style={{ fontSize:11, color:C.muted, fontWeight:300 }}>{slot.description}</div>
@@ -277,15 +236,7 @@ function WeeklyPlanner({ onGenerateDirect }) {
 // ── Toast ──────────────────────────────────────────────────────────
 function Toast({ message, visible }) {
   return (
-    <div style={{
-      position:'fixed', bottom:90, left:'50%',
-      transform:'translateX(-50%) translateY(' + (visible ? 0 : 20) + 'px)',
-      background:'#1C0A00', color:'white', borderRadius:24, padding:'9px 20px',
-      fontSize:13, fontWeight:600, whiteSpace:'nowrap',
-      opacity: visible ? 1 : 0, transition:'all 0.22s ease',
-      pointerEvents:'none', zIndex:300, fontFamily:"'DM Sans',sans-serif",
-      boxShadow:'0 4px 18px rgba(28,10,0,0.22)',
-    }}>
+    <div style={{ position:'fixed', bottom:90, left:'50%', transform:'translateX(-50%) translateY('+(visible?0:20)+'px)', background:'#1C0A00', color:'white', borderRadius:24, padding:'9px 20px', fontSize:13, fontWeight:600, whiteSpace:'nowrap', opacity:visible?1:0, transition:'all 0.22s ease', pointerEvents:'none', zIndex:300, fontFamily:"'DM Sans',sans-serif", boxShadow:'0 4px 18px rgba(28,10,0,0.22)' }}>
       {message}
     </div>
   );
@@ -308,8 +259,6 @@ export function JourneyTiles({
   const [weather,   setWeather]   = useState(null);
   const [toast,     setToast]     = useState({ visible:false, message:'' });
   const [adaptMsg,  setAdaptMsg]  = useState(null);
-
-  // Live recommendation state — updated in-place
   const [cards,          setCards]          = useState(null);
   const [primaryAnimKey, setPrimaryAnimKey] = useState(0);
 
@@ -322,26 +271,17 @@ export function JourneyTiles({
   const sports   = getActiveSportsEvent();
   const dayCtx   = getDayOfWeekContext();
 
-  // ── Load recommendations — all journeys call this ─────────────
+  // ── Load recommendations ──────────────────────────────────────────
   const loadCards = useCallback((journeyCtx = null) => {
-    const jCtx = journeyCtx || buildJourneyContext({
-      journeyType:  'default',
-      profile,
-      mealHistory,
-    });
-    const recs = getPersonalisedRecommendations({ profile, ratings, mealHistory, journeyContext: jCtx });
+    const jCtx = journeyCtx || buildJourneyContext({ journeyType:'default', profile, mealHistory });
+    const recs  = getPersonalisedRecommendations({ profile, ratings, mealHistory, journeyContext: jCtx });
     const mapped = recs.map(rec => ({
-      meal:        rec.meal,
-      emoji:       rec.meal.emoji,
-      label:       rec.meal.name,
-      cuisine:     rec.meal.cuisine,
-      effortMins:  rec.meal.effortMins,
-      tags:        rec.meal.tags,
-      why:         rec.why,
-      role:        rec.role,
-      score:       rec.score,
+      meal: rec.meal, emoji: rec.meal.emoji, label: rec.meal.name,
+      cuisine: rec.meal.cuisine, effortMins: rec.meal.effortMins,
+      tags: rec.meal.tags, why: rec.why, role: rec.role, score: rec.score,
       timePressure: rec.timePressure || false,
-      context:     recommendationToContext(rec),
+      activeEvent:  rec.activeEvent  || null,
+      context: recommendationToContext(rec),
     }));
     setCards(mapped);
     setPrimaryAnimKey(k => k + 1);
@@ -358,7 +298,6 @@ export function JourneyTiles({
     if (mapped.length > 0) markAsShown(mapped.map(c => c.label));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Track primary_shown once per card set
   useEffect(() => {
     if (!cards) return;
     const primary = cards.find(c => c.role === 'primary');
@@ -414,7 +353,6 @@ export function JourneyTiles({
   };
 
   const ratingCount = ratings ? Object.keys(ratings).length : 0;
-
   const primaryCard = cards ? cards.find(c => c.role === 'primary') : null;
   const alternates  = cards ? cards.filter(c => c.role === 'alternate') : [];
 
@@ -422,7 +360,6 @@ export function JourneyTiles({
     (profile && (profile.preferred_cuisines || []).length > 0) ||
     (profile && profile.active_goal);
 
-  // Confidence label — dynamic
   const confidenceLabel = (() => {
     if (ratingCount >= 5) return 'PICKED FOR YOU';
     if (ratingCount >= 2) return 'BEST MATCH TODAY';
@@ -430,7 +367,6 @@ export function JourneyTiles({
     return 'SUGGESTED FOR YOU';
   })();
 
-  // Weekly cook count for badge
   const weekCookCount = (() => {
     if (!Array.isArray(mealHistory)) return 0;
     const weekAgo = Date.now() - 7 * 86400000;
@@ -440,45 +376,40 @@ export function JourneyTiles({
     }).length;
   })();
 
+  // Active event from primary card (already computed in engine)
+  const activeEvent = primaryCard && primaryCard.activeEvent ? primaryCard.activeEvent : null;
+
   // ── Cook this ────────────────────────────────────────────────────
   const handleCook = (card, position) => {
     const action = (position > 0 && acceptedPrimaryRef.current) ? 'swapped' : 'accepted';
     if (position === 0) acceptedPrimaryRef.current = true;
-
     logFeedback({ meal: card.meal, action, userId: user ? user.id : null, position });
     syncBehaviour();
-
     if (action === 'accepted') {
       trackRecommendationAccepted({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
     } else {
       trackRecommendationSwapped({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
     }
-
     showToast("Nice — I'll keep this in mind 👍");
     setAdaptMsg(null);
     onGenerateDirect && onGenerateDirect(card.context);
   };
 
-  // ── Reject primary → re-score in-place ───────────────────────────
+  // ── Reject → re-score in-place ───────────────────────────────────
   const handleNotForMe = (card, position) => {
     logFeedback({ meal: card.meal, action: 'rejected', userId: user ? user.id : null, position });
     syncBehaviour();
     trackRecommendationRejected({ mealId: card.meal?.id || card.label, mealName: card.label, cuisine: card.cuisine, position });
-
-    // Read updated streak (logFeedback already incremented it)
     const streak = (() => { try { return parseInt(sessionStorage.getItem('jiff-session-reject-streak') || '0'); } catch { return 0; } })();
-
     if (streak >= 2 && !adaptMsg) {
       setAdaptMsg('Got it — switching it up');
       setTimeout(() => setAdaptMsg(null), 3000);
     }
-
-    // Re-score immediately — no reload
     const newCards = loadCards();
     markAsShown(newCards.map(c => c.label));
   };
 
-  // ── Swap: alternate → primary ─────────────────────────────────────
+  // ── Swap alternate → primary ──────────────────────────────────────
   const handleSwap = (altCard, altPosition) => {
     if (primaryCard) {
       logFeedback({ meal: primaryCard.meal, action: 'swapped', userId: user ? user.id : null, position: 0 });
@@ -492,10 +423,45 @@ export function JourneyTiles({
     onGenerateDirect && onGenerateDirect(altCard.context);
   };
 
-  // Mood entry: builds mood journey context then re-scores
+  // ── 6 change-direction options → all call same engine ────────────
+  const handleChangeDirection = (optionKey) => {
+    let journeyCtx;
+    switch (optionKey) {
+      case 'mood':
+        setShowMood(true);
+        return;
+      case 'fridge':
+        onSelectFridge && onSelectFridge();
+        return;
+      case 'surprise':
+        journeyCtx = buildJourneyContext({ journeyType:'surprise', profile, mealHistory });
+        onGenerateDirect && onGenerateDirect({ surpriseMode:true });
+        break;
+      case 'kids':
+        journeyCtx = buildJourneyContext({ journeyType:'kids', profile, mealHistory });
+        onGenerateDirect && onGenerateDirect({ mealType:'lunch', kidsMode:true });
+        break;
+      case 'leftover':
+        journeyCtx = buildJourneyContext({ journeyType:'leftover', profile, mealHistory });
+        onLeftoverRescue && onLeftoverRescue();
+        break;
+      case 'hosting':
+        journeyCtx = buildJourneyContext({ journeyType:'hosting', profile, mealHistory });
+        onGenerateDirect && onGenerateDirect({ hosting:true, servings:8, mealType:'dinner' });
+        break;
+      default:
+        journeyCtx = buildJourneyContext({ journeyType:'default', profile, mealHistory });
+    }
+    // Re-score locally for immediate visual feedback if not navigating away
+    if (journeyCtx && optionKey !== 'surprise' && optionKey !== 'fridge') {
+      const newCards = loadCards(journeyCtx);
+      markAsShown(newCards.map(c => c.label));
+    }
+  };
+
   const handleMoodEntry = (mood, moodContext) => {
     setShowMood(false);
-    if (mood && moodContext) {
+    if (mood) {
       const jCtx = buildJourneyContext({ journeyType:'mood', mood: mood.id, profile, mealHistory });
       const newCards = loadCards(jCtx);
       markAsShown(newCards.map(c => c.label));
@@ -506,15 +472,13 @@ export function JourneyTiles({
   return (
     <div style={{ maxWidth:680, margin:'0 auto', padding:'14px 16px 100px', fontFamily:"'DM Sans',sans-serif" }}>
 
-      {/* §1 GREETING + week badge */}
+      {/* §1 GREETING + badge */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
         <div>
           <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(19px,5vw,24px)', fontWeight:900, color:C.ink, margin:0, lineHeight:1.2 }}>
             {greet()} ⚡
           </h2>
-          <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginTop:3 }}>
-            {framingText()}
-          </div>
+          <div style={{ fontSize:13, color:C.muted, fontWeight:300, marginTop:3 }}>{framingText()}</div>
           {streak >= 2 && weekCookCount === 0 && (
             <div style={{ display:'inline-flex', alignItems:'center', gap:4, marginTop:5, background:'rgba(255,69,0,0.07)', border:'1px solid rgba(255,69,0,0.18)', borderRadius:20, padding:'2px 10px', fontSize:10, color:'#CC3700', fontWeight:600 }}>
               {'🔥 '}{streak}{'-day streak!'}
@@ -528,23 +492,27 @@ export function JourneyTiles({
         )}
       </div>
 
-      {/* §2 Decision framing text — above primary card */}
+      {/* Event banner — only when active and has a message */}
+      {activeEvent && activeEvent.message && (
+        <div style={{ marginTop:8, marginBottom:4, padding:'7px 13px', borderRadius:10, background:'rgba(29,78,216,0.06)', border:'1px solid rgba(29,78,216,0.18)', fontSize:12, color:'#1E40AF', fontWeight:500, display:'flex', alignItems:'center', gap:8 }}>
+          <span>{activeEvent.emoji}</span>
+          <span>{activeEvent.message}</span>
+        </div>
+      )}
+
+      {/* §2 Decision framing */}
       {hasSignal && primaryCard && (
         <div style={{ fontSize:12, color:C.muted, fontWeight:400, marginBottom:10, marginTop:8 }}>
           {'This should work for today'}
         </div>
       )}
 
-      {/* §3 NUDGE — one at a time */}
+      {/* §3 NUDGE */}
       <RetentionNudges
-        welcomeBack={welcomeBack}
-        weeklyDigest={weeklyDigest}
-        milestone={milestone}
-        didYouCookNudge={didYouCookNudge}
-        upgradeNudge={upgradeNudge}
-        onDismissUpgrade={onDismissUpgrade}
-        onConfirmCooked={onConfirmCooked}
-        onDismissNudge={onDismissNudge}
+        welcomeBack={welcomeBack} weeklyDigest={weeklyDigest}
+        milestone={milestone} didYouCookNudge={didYouCookNudge}
+        upgradeNudge={upgradeNudge} onDismissUpgrade={onDismissUpgrade}
+        onConfirmCooked={onConfirmCooked} onDismissNudge={onDismissNudge}
         lastFavCuisine={lastFavCuisine}
       />
 
@@ -559,10 +527,8 @@ export function JourneyTiles({
       {hasSignal && primaryCard ? (
         <PrimaryCard
           animKey={primaryAnimKey}
-          emoji={primaryCard.emoji}
-          label={primaryCard.label}
-          effortMins={primaryCard.effortMins}
-          why={primaryCard.why}
+          emoji={primaryCard.emoji} label={primaryCard.label}
+          effortMins={primaryCard.effortMins} why={primaryCard.why}
           timePressure={primaryCard.timePressure}
           confidenceLabel={confidenceLabel}
           onCook={() => handleCook(primaryCard, 0)}
@@ -587,12 +553,8 @@ export function JourneyTiles({
         <div style={{ marginBottom:14 }}>
           <SL>{'Or try instead'}</SL>
           {alternates.map((card, i) => (
-            <AlternateRow
-              key={card.label + i}
-              emoji={card.emoji}
-              label={card.label}
-              effortMins={card.effortMins}
-              why={card.why}
+            <AlternateRow key={card.label + i}
+              emoji={card.emoji} label={card.label} effortMins={card.effortMins} why={card.why}
               onSwap={() => handleSwap(card, i + 1)}
               onNotForMe={() => handleNotForMe(card, i + 1)}
             />
@@ -600,12 +562,8 @@ export function JourneyTiles({
         </div>
       )}
 
-      {/* §6 CHANGE DIRECTION */}
-      <ChangeDirectionRow
-        onMood={()     => setShowMood(true)}
-        onFridge={()   => onSelectFridge && onSelectFridge()}
-        onSurprise={() => onGenerateDirect && onGenerateDirect({ surpriseMode:true })}
-      />
+      {/* §6 CHANGE DIRECTION — 6 options, 3×2 grid */}
+      <ChangeDirectionRow onOption={handleChangeDirection} />
 
       {/* §7 CONTEXT TILE */}
       {!featured.isFridge && (
@@ -616,13 +574,12 @@ export function JourneyTiles({
         />
       )}
 
-      {/* §8 CHALLENGE + 7-DAY TRACKER */}
+      {/* §8 CHALLENGE + TRACKER */}
       <ChallengeTracker challenge={challenge} mealHistory={mealHistory} />
 
       {/* §9 WEEKLY PLANNER */}
       <WeeklyPlanner onGenerateDirect={onGenerateDirect} />
 
-      {/* Post-action toast */}
       <Toast message={toast.message} visible={toast.visible} />
 
       {/* Modals */}

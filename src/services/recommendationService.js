@@ -15,6 +15,7 @@
 // Repetition control: same meal blocked 3 sessions; same cuisine capped at 2 consecutive
 
 import { parseFoodTypeIds } from '../lib/dietary.js';
+import { getActiveEvent, getEventBoost } from '../lib/eventIntelligence.js';
 import {
   getAllLearnedWeights,
   getRejectedMealNames,
@@ -94,7 +95,7 @@ export function getTimePressureFlag(rejectStreak = 0) {
 // All entry points call this to normalise into a unified context object.
 // { mood, ingredients, mealType, effortPreference, continuityData, timePressureFlag }
 export function buildJourneyContext({
-  journeyType  = 'default',  // default|mood|ingredient|surprise|weekly|continuity
+  journeyType  = 'default',  // default|mood|ingredient|surprise|weekly|continuity|kids|leftover|hosting
   mood         = null,
   ingredients  = [],
   mealTypeOverride = null,
@@ -122,6 +123,20 @@ export function buildJourneyContext({
   else if (isWeekend()) effortPreference = 'any';
   else if (autoMealType === 'dinner') effortPreference = 'moderate';
 
+  // Detect active event for context
+  const activeEvent = getActiveEvent({ region: (profile && profile.country) || 'IN' });
+
+  // Journey-type overrides
+  if (journeyType === 'kids') {
+    effortPreference = 'quick';  // kids meals → quick, mild
+  }
+  if (journeyType === 'leftover') {
+    effortPreference = 'quick';  // leftovers → minimal effort
+  }
+  if (journeyType === 'hosting') {
+    effortPreference = 'any';    // guests → allow elaborate
+  }
+
   return {
     journeyType,
     mood,
@@ -130,6 +145,7 @@ export function buildJourneyContext({
     effortPreference,
     continuityData:    { recentCuisines, recentMeals },
     timePressureFlag,
+    activeEvent,
   };
 }
 
@@ -240,7 +256,7 @@ function scoreMeal(meal, ctx) {
     targetMealType, effortBias, timePressureFlag,
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
-    continuityRecentCuisines,
+    continuityRecentCuisines, activeEvent,
   } = ctx;
 
   const nameLower       = meal.name.toLowerCase().trim();
@@ -289,6 +305,10 @@ function scoreMeal(meal, ctx) {
   if (userGoal === 'try_new_things' && !allCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') preferenceScore += 0.35;
   if (userSkill === 'beginner' && meal.effortMins <= 20)  preferenceScore += 0.10;
   if (userSkill === 'advanced' && meal.effortMins >= 30)  preferenceScore += 0.10;
+  // Event intelligence boost
+  const eventBoost = getEventBoost(meal, activeEvent);
+  if (eventBoost > 0) preferenceScore += eventBoost;
+
   preferenceScore = Math.min(1, preferenceScore);
 
   // ── 3. Context match (weight 0.20) ────────────────────────────
@@ -496,13 +516,17 @@ export function getPersonalisedRecommendations({
     ? (journeyContext.continuityData?.recentCuisines || []).map(normC)
     : [];
 
+  // Active event from journey context or auto-detect
+  const activeEvent = (journeyContext && journeyContext.activeEvent)
+    || getActiveEvent({ region: (profile && profile.country) || 'IN' });
+
   const ctx = {
     userDietIds, userCuisines, userGoal, userSkill,
     ratings, mealHistory, recentHistorySet, recentlyShownSet, rejectedSet,
     targetMealType, effortBias, timePressureFlag,
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
-    continuityRecentCuisines,
+    continuityRecentCuisines, activeEvent,
   };
 
   const compatible = MEAL_CATALOGUE.filter(m => isDietaryCompatible(m, userDietIds));
@@ -540,6 +564,7 @@ export function getPersonalisedRecommendations({
     why:   buildWhyParts(item),
     role:  i === 0 ? 'primary' : 'alternate',
     timePressure: timePressureFlag,
+    activeEvent,
     generateContext: {
       dish:     item.meal.name,
       cuisine:  item.meal.cuisine !== 'any' ? item.meal.cuisine : undefined,
