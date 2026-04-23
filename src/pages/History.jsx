@@ -131,11 +131,11 @@ export default function History() {
     const quickCount  = recent.filter(h => (h.meal?.effortMins || h.effort_mins || 30) <= 15).length;
     const lightCount  = recent.filter(h => (h.meal?.tags || []).includes('light')).length;
     const topCuisine  = cuisines[0];
-    if (quickCount >= 3) return 'You've been cooking quick meals lately';
-    if (lightCount >= 3) return 'You've been choosing lighter meals recently';
+    if (quickCount >= 3) return "You've been cooking quick meals lately";
+    if (lightCount >= 3) return "You've been choosing lighter meals recently";
     if (topCuisine && recent.filter(h => h.cuisine === topCuisine).length >= 3) {
       const label = topCuisine.replace(/_/g,' ').replace(/\w/g, c => c.toUpperCase());
-      return 'You've been making a lot of ' + label + ' dishes';
+      return "You've been making a lot of " + label + " dishes";
     }
     return null;
   }, [history, cuisines]);
