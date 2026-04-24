@@ -160,22 +160,24 @@ export default function ResultsView({
   })() : null;
 
   // ── Meal card renderer ─────────────────────────────────────────
+  // "Not for me" rendered BELOW card (not as absolute overlay) to keep fav clickable
   const renderMealCard = (meal, i) => (
-    <div key={mealKey(meal) + i} style={{ position:'relative' }}>
+    <div key={mealKey(meal) + i}>
       {isLeftover && <EffortTag meal={meal} />}
       <MealCard
-        meal={meal} index={i} isFav={isFav(meal)}
-        onToggleFav={(m) => { toggleFavourite(m); logFeedback({ meal: toFeedbackMeal(m), action: 'saved', userId: user ? user.id : null }); }}
-        fridgeIngredients={ingredients} defaultServings={defaultServings}
-        animDelay={i * 0.06} country={country}
+        meal={meal} isFav={isFav(meal)}
+        onToggleFav={(m) => { toggleFavourite(m || meal); logFeedback({ meal: toFeedbackMeal(m || meal), action: 'saved', userId: user ? user.id : null }); }}
+        defaultServings={defaultServings}
         rating={ratings[mealKey(meal)] || 0}
         onRate={stars => handleRateWithFeedback(meal, stars)}
       />
-      {(ratings[mealKey(meal)] || 0) === 0 && (
-        <button onClick={() => handleNotForMe(meal)} title="Not for me"
-          style={{ position:'absolute', bottom:10, left:12, zIndex:10, background:'rgba(255,255,255,0.92)', border:'1px solid rgba(28,10,0,0.10)', borderRadius:20, padding:'3px 8px', fontSize:10, color:'#7C6A5E', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", lineHeight:1.4, backdropFilter:'blur(4px)' }}>
-          {'✕ Not for me'}
-        </button>
+      {(ratings[mealKey(meal)] || 0) === 0 && !dismissed.has(mealKey(meal)) && (
+        <div style={{ textAlign:'right', marginTop:-6, marginBottom:8, paddingRight:4 }}>
+          <button onClick={() => handleNotForMe(meal)}
+            style={{ background:'none', border:'none', cursor:'pointer', fontSize:11, color:'#B0A09A', fontFamily:"'DM Sans',sans-serif", padding:'2px 4px', lineHeight:1.4, touchAction:'manipulation' }}>
+            {'Not for me'}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -205,7 +205,7 @@ const MealCardInner = function MealCard({
               </div>
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, flexShrink:0 }}>
-              <button onClick={e => { e.stopPropagation(); onToggleFav?.(); }}
+              <button onClick={e => { e.stopPropagation(); console.log('fav clicked', meal.name); onToggleFav?.(meal); }}
                 style={{ background:'none', border:'none', cursor:'pointer', padding:2 }}>
                 <IconHeart filled={isFav} />
               </button>

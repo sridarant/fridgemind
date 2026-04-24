@@ -139,7 +139,7 @@ const styles = `
     .nutr-grid{grid-template-columns:repeat(2,1fr);}
     .auth-card{padding:22px 18px;}
     /* Prevent horizontal overflow */
-    .filter-pills{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+    .filter-pills{flex-wrap:wrap;gap:6px;}
     .meal-meta{flex-wrap:wrap;gap:6px;}
     /* Gates */
     .gate-plans{grid-template-columns:1fr;}
