@@ -72,8 +72,6 @@ const SPORTS_EVENTS = [
     messageBefore: null,
     messageDuring: 'Weekend brunch time?',
   },
-  /*
-  {
 ];
 
 // ── Check festival active ─────────────────────────────────────────
