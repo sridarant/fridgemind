@@ -118,7 +118,7 @@ const en = {
   favs_close:      'Close ×',
 
   // Reset
-  reset_btn:       '← Start over',
+  reset_btn:       '← Try something else',
 
   // Auth prompt
   auth_title:      'Save your favourites across all devices',
@@ -140,7 +140,7 @@ const en = {
 
   // Error
   error_title:     'Something went wrong',
-  error_retry:     '← Start over',
+  error_retry:     '← Try something else',
   error_connection:'Connection error. Please try again.',
   error_generate:  'Could not generate suggestions. Please try again.',
   // App sections
@@ -203,7 +203,7 @@ const en = {
   auth_send:          'Send link',
   results_title:      'Here are your meals',
   error_title_app:    'Something went wrong',
-  error_retry:        '← Start over',
+  error_retry:        '← Try something else',
   servings_label:     'Servings',
   add_ingredient:     'Add at least one ingredient',
 

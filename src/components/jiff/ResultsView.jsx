@@ -378,7 +378,7 @@ export default function ResultsView({
       )}
 
       <div className="reset-wrap">
-        <button className="reset-btn" onClick={reset}>{'← Start over'}</button>
+        <button className="reset-btn" onClick={reset}>{'← Try something else'}</button>
       </div>
     </div>
   );

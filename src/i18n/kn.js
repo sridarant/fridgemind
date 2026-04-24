@@ -54,7 +54,7 @@ const kn = {
   error_connection: 'ಸಂಪರ್ಕ ದೋಷ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.', error_generate: 'ಸಲಹೆಗಳನ್ನು ರಚಿಸಲಾಗಲಿಲ್ಲ.',
 
   // ── New keys (auto-synced from en.js — translate to kn)
-  error_retry: '← Start over',
+  error_retry: '← Try something else',
   error_generate: 'Could not generate suggestions. Please try again.',
   profile_nav: 'Profile',
   back_to_cuisines: '← All cuisines',
@@ -142,7 +142,7 @@ const kn = {
   favs_none: 'No saved recipes yet',  // auto-synced
   favs_empty_title: 'Nothing saved yet',  // auto-synced
   favs_empty_sub: 'Tap ♥ on any recipe card to save it here.',  // auto-synced
-  reset_btn: '← Start over',  // auto-synced
+  reset_btn: '← Try something else',  // auto-synced
   auth_sub: 'Sign in to sync recipes, pantry & preferences',  // auto-synced
   auth_email_ph: 'or email',  // auto-synced
   auth_email_go: 'Go',  // auto-synced

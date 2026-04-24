@@ -182,7 +182,7 @@ const bn = {
   auth_send:          'Send link',
   results_title:      'Here are your meals',
   error_title_app:    'Something went wrong',
-  error_retry:        '← Start over',
+  error_retry:        '← Try something else',
   servings_label:     'Servings',
   add_ingredient:     'Add at least one ingredient',
 

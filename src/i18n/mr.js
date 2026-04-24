@@ -54,7 +54,7 @@ const mr = {
   error_connection: 'कनेक्शन त्रुटी. पुन्हा प्रयत्न करा.', error_generate: 'सूचना तयार करता आल्या नाहीत.',
 
   // ── New keys (auto-synced from en.js — translate to mr)
-  error_retry: '← Start over',
+  error_retry: '← Try something else',
   error_generate: 'Could not generate suggestions. Please try again.',
   profile_nav: 'Profile',
   back_to_cuisines: '← All cuisines',
@@ -142,7 +142,7 @@ const mr = {
   favs_none: 'No saved recipes yet',  // auto-synced
   favs_empty_title: 'Nothing saved yet',  // auto-synced
   favs_empty_sub: 'Tap ♥ on any recipe card to save it here.',  // auto-synced
-  reset_btn: '← Start over',  // auto-synced
+  reset_btn: '← Try something else',  // auto-synced
   auth_sub: 'Sign in to sync recipes, pantry & preferences',  // auto-synced
   auth_email_ph: 'or email',  // auto-synced
   auth_email_go: 'Go',  // auto-synced
