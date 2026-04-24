@@ -1,29 +1,42 @@
 // src/lib/notificationService.js
-// Lightweight notification system — browser PWA + localStorage scheduling.
-// Rules: max 1 notification per day, respects user preference, no spam.
-// Priority: event-based > continuity > time-based.
+// Browser notification scheduling: breakfast 8 AM · lunch 1 PM · dinner 7 PM
+// Rules: respects per-meal-type user preference, max 1 per window per day.
+// Schedules all three windows once per session via setTimeout.
 
-const NOTIF_KEY      = 'jiff-notif-lastSent';
-const NOTIF_PREF_KEY = 'jiff-notif-enabled';
-const MS_PER_DAY     = 86400000;
+const PREF_KEY     = 'jiff-notif-enabled';
+const SENT_KEY     = 'jiff-notif-sent';   // JSON object: { breakfast, lunch, dinner } → date strings
+const MS_PER_DAY   = 86400000;
 
+// ── Preferences ───────────────────────────────────────────────────
 export function isNotificationsEnabled() {
-  try { return localStorage.getItem(NOTIF_PREF_KEY) !== 'false'; } catch { return true; }
+  try { return localStorage.getItem(PREF_KEY) !== 'false'; } catch { return true; }
 }
 export function setNotificationsEnabled(val) {
-  try { localStorage.setItem(NOTIF_PREF_KEY, val ? 'true' : 'false'); } catch {}
+  try { localStorage.setItem(PREF_KEY, val ? 'true' : 'false'); } catch {}
 }
 
-function getLastSent() {
-  try { return parseInt(localStorage.getItem(NOTIF_KEY) || '0'); } catch { return 0; }
-}
-function markSent() {
-  try { localStorage.setItem(NOTIF_KEY, Date.now().toString()); } catch {}
-}
-function canSendToday() {
-  return (Date.now() - getLastSent()) > MS_PER_DAY;
+function getMealPref(meal) {
+  try { return localStorage.getItem('jiff-notif-' + meal) !== 'false'; } catch { return true; }
 }
 
+// ── Sent-today tracking (per window, not global) ──────────────────
+function sentToday(window) {
+  try {
+    const d = JSON.parse(localStorage.getItem(SENT_KEY) || '{}');
+    if (!d[window]) return false;
+    return (Date.now() - new Date(d[window]).getTime()) < MS_PER_DAY;
+  } catch { return false; }
+}
+
+function markSent(window) {
+  try {
+    const d = JSON.parse(localStorage.getItem(SENT_KEY) || '{}');
+    d[window] = new Date().toISOString();
+    localStorage.setItem(SENT_KEY, JSON.stringify(d));
+  } catch {}
+}
+
+// ── Permission ────────────────────────────────────────────────────
 export async function requestPermission() {
   if (!('Notification' in window)) return 'unsupported';
   if (Notification.permission === 'granted') return 'granted';
@@ -31,85 +44,82 @@ export async function requestPermission() {
   return Notification.requestPermission();
 }
 
-export async function sendNotification({ title, body, tag = 'jiff', icon = '/logo192.png' } = {}) {
-  if (!isNotificationsEnabled()) return false;
-  if (!canSendToday()) return false;
-  if (!('Notification' in window)) return false;
-  if (Notification.permission !== 'granted') return false;
+// ── Send one notification ─────────────────────────────────────────
+async function send(window, payload) {
+  if (!isNotificationsEnabled())              return false;
+  if (!getMealPref(window))                   return false;
+  if (sentToday(window))                      return false;
+  if (!('Notification' in window))            return false;
+  if (Notification.permission !== 'granted')  return false;
   try {
-    new Notification(title, { body, tag, icon, silent: false });
-    markSent();
+    new Notification(payload.title, {
+      body: payload.body,
+      tag:  'jiff-' + window,
+      icon: '/logo192.png',
+      silent: false,
+    });
+    markSent(window);
     return true;
   } catch { return false; }
 }
 
-// ── Context-aware payload builder ─────────────────────────────────
-// Priority: 1. event-based  2. continuity  3. time-based
-// Returns null if nothing suitable (→ no notification sent)
-export function buildNotificationPayload({ mealHistory = [], activeEvent = null } = {}) {
-  const h = new Date().getHours();
-
-  // 1. Event-based — highest priority
-  if (activeEvent) {
-    if (activeEvent.type === 'festival') {
-      return { title: 'Jiff ' + activeEvent.emoji, body: activeEvent.messageDuring || 'Festive ideas ready for you!' };
-    }
-    if (activeEvent.phase === 'before' && activeEvent.messageBefore) {
-      return { title: 'Jiff 🍳', body: activeEvent.messageBefore + ' Snack ideas ready.' };
-    }
-    if (activeEvent.phase === 'during' && activeEvent.messageDuring) {
-      return { title: 'Jiff ' + (activeEvent.emoji || '🍳'), body: activeEvent.messageDuring };
-    }
-  }
-
-  // 2. Continuity — what did they cook recently?
-  const recentCutoff = Date.now() - 2 * MS_PER_DAY;
-  const recentMeals  = (mealHistory || []).filter(m => {
-    const ts = new Date(m.generated_at || m.created_at || 0).getTime();
-    return ts > recentCutoff;
-  });
-  const cookedLight = recentMeals.some(m =>
-    (m.meal?.tags || []).some(t => t === 'light' || t === 'healthy')
+// ── Build context-aware copy ──────────────────────────────────────
+function buildPayload(window, mealHistory = []) {
+  const recent2d = Date.now() - 2 * MS_PER_DAY;
+  const recent = (mealHistory || []).filter(m =>
+    new Date(m.generated_at || m.created_at || 0).getTime() > recent2d
   );
-  const cookedHeavy = recentMeals.some(m =>
-    (m.meal?.tags || []).some(t => t === 'heavy' || t === 'indulgent')
-  );
+  const hadLight = recent.some(m => (m.meal?.tags || []).some(t => t === 'light' || t === 'healthy'));
+  const hadHeavy = recent.some(m => (m.meal?.tags || []).some(t => t === 'heavy' || t === 'indulgent'));
 
-  // 3. Time-based — personalised copy, no generic messages
-  if (h >= 7 && h < 9) {
-    if (cookedLight) return { title: 'Jiff 🌅', body: 'Light yesterday — keeping it going today?' };
-    return { title: 'Jiff 🌅', body: 'Morning — something quick before you head out?' };
+  if (window === 'breakfast') {
+    if (hadLight) return { title: 'Jiff 🌅', body: 'Keeping it light again today?' };
+    return { title: 'Jiff 🌅', body: 'Ready to cook something?' };
   }
-  if (h >= 12 && h < 13) {
-    if (cookedHeavy) return { title: 'Jiff ☀️', body: 'Heavy yesterday — how about something lighter today?' };
-    return { title: 'Jiff ☀️', body: 'Lunch time — I\'ve got something that fits.' };
+  if (window === 'lunch') {
+    if (hadHeavy) return { title: 'Jiff ☀️', body: 'Something lighter for lunch today?' };
+    return { title: 'Jiff ☀️', body: 'Ready to cook something?' };
   }
-  if (h >= 17 && h < 21) {
-    if (cookedLight) return { title: 'Jiff 🌙', body: 'Dinner time? This should work for today.' };
-    if (cookedHeavy) return { title: 'Jiff 🌙', body: 'Something lighter for dinner tonight?' };
-    return { title: 'Jiff 🌙', body: 'Dinner time? This should work for today.' };
+  if (window === 'dinner') {
+    if (hadLight) return { title: 'Jiff 🌙', body: 'Dinner time? This should work for today.' };
+    if (hadHeavy) return { title: 'Jiff 🌙', body: 'Something lighter for dinner tonight?' };
+    return { title: 'Jiff 🌙', body: 'Ready to cook something?' };
   }
-
-  return null; // outside hours → skip
+  return { title: 'Jiff 🍳', body: 'Ready to cook something?' };
 }
 
-// ── Session scheduler ─────────────────────────────────────────────
-// Call once on app load. Schedules a dinner reminder via setTimeout.
-export function scheduleSessionNotifications({ mealHistory = [], activeEvent = null } = {}) {
+// ── Schedule all three windows for the current session ────────────
+// Called once on app load. Uses setTimeout per window.
+// Breakfast 8:00 · Lunch 13:00 · Dinner 19:00
+export function scheduleSessionNotifications({ mealHistory = [] } = {}) {
   if (!isNotificationsEnabled()) return;
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
 
-  const now    = new Date();
-  const h      = now.getHours();
-  const min    = now.getMinutes();
+  const WINDOWS = [
+    { name: 'breakfast', targetH: 8,  targetM: 0  },
+    { name: 'lunch',     targetH: 13, targetM: 0  },
+    { name: 'dinner',    targetH: 19, targetM: 0  },
+  ];
 
-  // Schedule at 18:30 if we haven't passed it yet today
-  const targetH = 18, targetM = 30;
-  const msUntil = ((targetH - h) * 60 + (targetM - min)) * 60000;
-  if (msUntil > 0 && msUntil < 12 * 3600000) {
-    setTimeout(() => {
-      const payload = buildNotificationPayload({ mealHistory, activeEvent });
-      if (payload) sendNotification(payload);
-    }, msUntil);
-  }
+  const now = new Date();
+  const h   = now.getHours();
+  const min = now.getMinutes();
+
+  WINDOWS.forEach(({ name, targetH, targetM }) => {
+    const msUntil = ((targetH - h) * 60 + (targetM - min)) * 60000;
+    // Only schedule if target is in the future and within the next 24h
+    if (msUntil > 0 && msUntil < MS_PER_DAY) {
+      setTimeout(() => {
+        const payload = buildPayload(name, mealHistory);
+        send(name, payload);
+      }, msUntil);
+    }
+  });
+}
+
+// Kept for backward compat
+export { buildPayload as buildNotificationPayload };
+export async function sendNotification(payload) {
+  return send('general', payload);
 }

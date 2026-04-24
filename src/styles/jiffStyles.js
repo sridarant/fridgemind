@@ -79,7 +79,7 @@ const styles = `
   .results-title{font-family:'Fraunces',serif;font-size:26px;font-weight:900;color:var(--ink);margin-bottom:4px;letter-spacing:-0.5px;}
   .results-sub{font-size:13px;color:var(--muted);font-weight:300;}
   .filter-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;}
-  .filter-pill{background:white;border:1px solid var(--border-mid);border-radius:20px;padding:3px 11px;font-size:11px;color:var(--muted);}
+  .filter-pill{background:white;border:1px solid var(--border-mid);border-radius:20px;padding:5px 11px;font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;line-height:1.4;}
   .meals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
   .meal-card{background:white;border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);animation:slideUp 0.3s ease both;transition:transform 0.2s,box-shadow 0.2s;}
   .meal-card:not(.expanded){cursor:pointer;}

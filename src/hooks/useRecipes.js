@@ -168,14 +168,33 @@ export function useRecipes({
         ? 'Split suggestions: first 2 under 15 min (label Quick Fix), rest as Creative Twist.'
         : null;
 
+      // Always derive diet from profile so web and mobile use the same preferences
+      const effectiveDiet = (() => {
+        if (!profile) return diet;
+        const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
+        if (!ft) return diet;
+        if (ft === 'veg' || ft === 'vegan' || ft === 'jain' || ft === 'eggetarian') return ft;
+        if (ft === 'non-veg' || ft === 'halal') return ft;
+        return diet;
+      })();
+
       const data  = await generateRecipes({
-        ingredients: tileIngredients, time, diet,
-        cuisine: context.cuisine || cuisine,
+        ingredients: tileIngredients, time,
+        diet: effectiveDiet,
+        cuisine: context.cuisine || (profile?.preferred_cuisines?.[0]) || cuisine,
         mealType: context.mealType || mealType,
         count, country, language: lang,
         servings: context.servings || defaultServings,
         dish: dishHint || context.dish || null,
         moodContext: context.moodContext || null,
+        tasteProfile: profile ? {
+          spice_level:       profile.spice_level,
+          allergies:         profile.allergies,
+          preferred_cuisines:profile.preferred_cuisines,
+          skill_level:       profile.skill_level,
+          active_goal:       profile.active_goal,
+          country:           profile.country,
+        } : null,
       });
 
       if (data.error) {

@@ -210,7 +210,7 @@ export default function Jiff() {
         <div className="error-icon">{'😕'}</div>
         <div className="error-title">{t('error_title_app')}</div>
         <div className="error-msg">{errorMsg}</div>
-        <button className="cta-btn" onClick={reset}>{'← Start over'}</button>
+        <button className="cta-btn" onClick={reset}>{'← Try something else'}</button>
       </div>
     );
 
@@ -371,7 +371,6 @@ export default function Jiff() {
         )}
 
         {/* Fridge input / results / loading — shown when not in journey mode */}
-        )}
 
         {(!journeyMode || !user) && renderView()}
 

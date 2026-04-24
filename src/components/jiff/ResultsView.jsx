@@ -238,16 +238,17 @@ export default function ResultsView({
       </div>
 
       <div className="filter-pills">
-        {mealType !== 'any' && (
-          <span className="filter-pill">{MEAL_TYPE_OPTIONS.find(m => m.id === mealType)?.emoji}{' '}{mealType}</span>
+        {mealType && mealType !== 'any' && (
+          <span className="filter-pill">
+            {(MEAL_TYPE_OPTIONS.find(m => m.id === mealType)?.emoji || '🍽️') + ' ' + mealType}
+          </span>
         )}
-        {cuisine !== 'any' && (
-          <span className="filter-pill">{CUISINE_OPTIONS?.find(c => c.id === cuisine)?.flag}{' '}{cuisine}</span>
+        {cuisine && cuisine !== 'any' && (
+          <span className="filter-pill">{'🍴 ' + cuisine}</span>
         )}
-        <span className="filter-pill">{'⏱ '}{time}</span>
-        {diet !== 'none' && <span className="filter-pill">{'🥗 '}{diet}</span>}
-        <span className="filter-pill">{'👥 '}{defaultServings}{' serving'}{defaultServings !== 1 ? 's' : ''}</span>
-        <span className="filter-pill">{'🥦 '}{ingredients.length}{' ingredient'}{ingredients.length > 1 ? 's' : ''}</span>
+        {time && <span className="filter-pill">{'⏱ ' + time}</span>}
+        {diet && diet !== 'none' && <span className="filter-pill">{'🥗 ' + diet}</span>}
+        <span className="filter-pill">{'👥 ' + defaultServings + (defaultServings !== 1 ? ' servings' : ' serving')}</span>
       </div>
 
       {!isPremium && trialActive && (
@@ -379,9 +380,7 @@ export default function ResultsView({
         </div>
       )}
 
-      <div className="reset-wrap">
-        <button className="reset-btn" onClick={reset}>{'← Try something else'}</button>
-      </div>
+
     </div>
   );
 }
