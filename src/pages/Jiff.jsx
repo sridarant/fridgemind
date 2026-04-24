@@ -335,6 +335,19 @@ export default function Jiff() {
         )}
 
         {/* Decision screen — shown first for all logged-in users */}
+        {/* Profile-incomplete nudge — shown once until preferences set */}
+        {journeyMode && user && view === 'input' && profile && !(profile.preferred_cuisines?.length) && !(profile.food_type?.length) && (
+          <div style={{ margin:'0 12px 8px', padding:'9px 14px', borderRadius:11, background:'rgba(255,69,0,0.05)', border:'1px solid rgba(255,69,0,0.15)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, fontFamily:"'DM Sans',sans-serif" }}>
+            <span style={{ fontSize:12, color:'#7C6A5E', fontWeight:400, lineHeight:1.4, flex:1 }}>
+              {'Set your preferences to get better meal suggestions'}
+            </span>
+            <button onClick={() => navigate('/profile')}
+              style={{ flexShrink:0, padding:'5px 12px', borderRadius:8, background:'#FF4500', color:'white', border:'none', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", whiteSpace:'nowrap' }}>
+              {'Set up →'}
+            </button>
+          </div>
+        )}
+
         {journeyMode && user && view === 'input' && (
           <JourneyTiles
             user={user} profile={profile} season={season} streak={streak}
@@ -358,6 +371,8 @@ export default function Jiff() {
         )}
 
         {/* Fridge input / results / loading — shown when not in journey mode */}
+        )}
+
         {(!journeyMode || !user) && renderView()}
 
       </div>

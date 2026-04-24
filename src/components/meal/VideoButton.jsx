@@ -1,68 +1,50 @@
 // src/components/meal/VideoButton.jsx
-// Inline recipe video — fetches via /api/videos, plays in iframe.
-// States: idle | loading | found | notfound | unconfigured
-//
-// RULES:
-// - If no video available (notfound or unconfigured): hide button entirely
-// - Never redirect the user away from the app
-// - Inline iframe only — no external links
+// No-API YouTube embed using search listType.
+// Builds query: "{mealName} recipe indian", embeds as iframe.
+// Hides if mealName is missing. No external redirects.
 
 import { useState } from 'react';
-import { fetchRecipeVideo } from '../../services/userService';
 
-export function VideoButton({ recipeName, cuisine = '', lang = 'en', compact = false }) {
-  const [state,     setState]    = useState('idle');
-  const [videoData, setVideoData] = useState(null);
+function getYouTubeEmbedUrl(mealName) {
+  if (!mealName) return null;
+  const query = encodeURIComponent(mealName.trim() + ' recipe indian');
+  return 'https://www.youtube.com/embed?listType=search&list=' + query + '&index=0';
+}
 
-  const handleFetch = async () => {
-    if (state !== 'idle') return;
-    setState('loading');
-    try {
-      const video = await fetchRecipeVideo(recipeName, cuisine, lang);
-      if (!video || video.unconfigured) { setState('notfound'); return; }
-      setVideoData(video);
-      setState('found');
-    } catch {
-      setState('notfound');
-    }
-  };
+export function VideoButton({ recipeName, compact = false }) {
+  const [open, setOpen] = useState(false);
 
-  // Idle — show trigger button
-  if (state === 'idle') return (
-    <button onClick={handleFetch}
-      style={{ display:'inline-flex', alignItems:'center', gap:6, padding: compact ? '4px 10px' : '7px 12px', borderRadius:8, border:'1px solid rgba(204,0,0,0.25)', background:'rgba(204,0,0,0.05)', color:'#CC0000', fontSize: compact ? 11 : 12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
-      {'▶ '}{compact ? 'Video' : 'Watch recipe'}
-    </button>
-  );
+  const embedUrl = getYouTubeEmbedUrl(recipeName);
+  if (!embedUrl) return null;
 
-  // Loading
-  if (state === 'loading') return (
-    <span style={{ fontSize:11, color:'#7C6A5E', fontStyle:'italic' }}>{'Finding video…'}</span>
-  );
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        style={{ display:'inline-flex', alignItems:'center', gap:6, padding:compact?'4px 10px':'7px 12px', borderRadius:8, border:'1px solid rgba(204,0,0,0.25)', background:'rgba(204,0,0,0.05)', color:'#CC0000', fontSize:compact?11:12, fontWeight:500, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+        {'▶ '}{compact ? 'Video' : 'Watch recipe'}
+      </button>
+    );
+  }
 
-  // Found — inline iframe, no redirect
-  if (state === 'found' && videoData) return (
-    <div style={{ borderRadius:10, overflow:'hidden', border:'1px solid rgba(204,0,0,0.2)', marginTop:8 }}>
-      <iframe
-        src={videoData.embedUrl}
-        title={videoData.title}
-        width="100%" height="200"
-        frameBorder="0" allowFullScreen
-        style={{ display:'block' }}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-      />
+  return (
+    <div style={{ borderRadius:10, overflow:'hidden', border:'1px solid rgba(204,0,0,0.15)', marginTop:8 }}>
+      <div style={{ position:'relative', paddingBottom:'56.25%', height:0, overflow:'hidden' }}>
+        <iframe
+          src={embedUrl}
+          title={'Recipe video for ' + (recipeName || 'this dish')}
+          width="100%" height="100%"
+          style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', border:'none' }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
       <div style={{ padding:'6px 12px', background:'rgba(204,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-        <span style={{ fontSize:10, color:'#7C6A5E', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'85%' }}>
-          {videoData.title}{videoData.channel ? ' — ' + videoData.channel : ''}
-        </span>
-        <button onClick={() => setState('idle')}
-          style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#7C6A5E', flexShrink:0, marginLeft:6, lineHeight:1 }}>
+        <span style={{ fontSize:10, color:'#7C6A5E' }}>{recipeName}</span>
+        <button onClick={() => setOpen(false)}
+          style={{ background:'none', border:'none', cursor:'pointer', fontSize:13, color:'#7C6A5E', lineHeight:1, padding:0, marginLeft:8 }}>
           {'✕'}
         </button>
       </div>
     </div>
   );
-
-  // notfound or any other state — hide entirely
-  return null;
 }

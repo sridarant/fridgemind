@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth }   from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
-import { fetchHistory } from '../services/historyService';
 import { parseFoodTypeIds } from '../lib/dietary';
 import { INDIAN_PANTRY_DEFAULTS } from '../components/profile/PantryTab';
 import { requestPermission, isNotificationsEnabled, setNotificationsEnabled } from '../lib/notificationService.js';
@@ -252,10 +251,11 @@ export default function Profile() {
   const [pantryInput, setPantryInput] = useState('');
   const [region,      setRegion]      = useState('IN');
   const [notifsOn,    setNotifsOn]    = useState(isNotificationsEnabled());
+  const [notifBreakfast, setNotifBreakfast] = useState(() => { try { return localStorage.getItem('jiff-notif-breakfast') !== 'false'; } catch { return true; } });
+  const [notifLunch,     setNotifLunch]     = useState(() => { try { return localStorage.getItem('jiff-notif-lunch')     !== 'false'; } catch { return true; } });
+  const [notifDinner,    setNotifDinner]    = useState(() => { try { return localStorage.getItem('jiff-notif-dinner')    !== 'false'; } catch { return true; } });
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
-  const [streak,      setStreak]      = useState(0);
-  const [cookCount,   setCookCount]   = useState(0);
 
   // Load from profile
   useEffect(() => {
@@ -269,18 +269,12 @@ export default function Profile() {
     if (profile.allergies?.length)         setAllergies(profile.allergies.join(', '));
     if (profile.preferred_cuisines?.length) setCuisines(profile.preferred_cuisines);
     if (profile.country)                   setRegion(profile.country);
-    if (profile.streak)                    setStreak(profile.streak);
   }, [profile]);
 
   useEffect(() => {
     if (Array.isArray(pantry) && pantry.length > 0) setPantryItems(pantry);
     else setPantryItems([...INDIAN_PANTRY_DEFAULTS]);
   }, [pantry]); // eslint-disable-line
-
-  useEffect(() => {
-    if (!user) return;
-    fetchHistory(user.id).then(h => { if (h.length) setCookCount(h.filter(x => x.rating).length); }).catch(() => {});
-  }, [user]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -300,6 +294,9 @@ export default function Profile() {
       setCountry(region);
       await savePantry(pantryItems);
       setNotificationsEnabled(notifsOn);
+      try { localStorage.setItem('jiff-notif-breakfast', notifBreakfast ? 'true' : 'false'); } catch {}
+      try { localStorage.setItem('jiff-notif-lunch',     notifLunch     ? 'true' : 'false'); } catch {}
+      try { localStorage.setItem('jiff-notif-dinner',    notifDinner    ? 'true' : 'false'); } catch {}
       if (notifsOn) await requestPermission();
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -328,18 +325,6 @@ export default function Profile() {
       </header>
 
       {/* Stats strip */}
-      {user && (streak > 0 || cookCount > 0) && (
-        <div style={{ display:'flex', borderBottom:'1px solid '+C.border, background:'white' }}>
-          {[
-            { emoji:'🔥', value:streak,    label:'day streak', show: streak > 0    },
-            { emoji:'🍳', value:cookCount, label:'cooked',     show: cookCount > 0 },
-          ].filter(s => s.show).map((s, i, arr) => (
-            <div key={i} style={{ flex:1, textAlign:'center', padding:'12px 8px', borderRight:i<arr.length-1?'1px solid '+C.border:'none' }}>
-              <div style={{ fontSize:10, color:C.muted }}>{s.emoji}{' '}{s.value}{' '}{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div style={{ maxWidth:480, margin:'0 auto', padding:'20px 16px' }}>
 
@@ -443,9 +428,16 @@ export default function Profile() {
           <Toggle
             value={notifsOn}
             onChange={async (val) => { setNotifsOn(val); setNotificationsEnabled(val); if (val) await requestPermission(); }}
-            label="Meal reminders"
-            sub="One notification per day at most"
+            label="Enable meal reminders"
+            sub="Master toggle — turn all on or off"
           />
+          {notifsOn && (
+            <div style={{ marginTop:8, paddingLeft:4 }}>
+              <Toggle value={notifBreakfast} onChange={setNotifBreakfast} label="Breakfast reminder" sub="7–9 AM" />
+              <Toggle value={notifLunch}     onChange={setNotifLunch}     label="Lunch reminder"     sub="12–2 PM" />
+              <Toggle value={notifDinner}    onChange={setNotifDinner}    label="Dinner reminder"    sub="6–8 PM" />
+            </div>
+          )}
         </div>
 
       </div>

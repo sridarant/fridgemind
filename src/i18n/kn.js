@@ -142,7 +142,7 @@ const kn = {
   favs_none: 'No saved recipes yet',  // auto-synced
   favs_empty_title: 'Nothing saved yet',  // auto-synced
   favs_empty_sub: 'Tap ♥ on any recipe card to save it here.',  // auto-synced
-  reset_btn: '← Try different ingredients',  // auto-synced
+  reset_btn: '← Start over',  // auto-synced
   auth_sub: 'Sign in to sync recipes, pantry & preferences',  // auto-synced
   auth_email_ph: 'or email',  // auto-synced
   auth_email_go: 'Go',  // auto-synced

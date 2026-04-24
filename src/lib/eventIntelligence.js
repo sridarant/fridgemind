@@ -34,7 +34,7 @@ const SPORTS_EVENTS = [
     tags: ['quick','light','snack','popular'],
     boostWeight: 0.3,
     messageBefore: 'IPL match tonight?',
-    messageDuring: 'Game time — quick snacks?',
+    messageDuring: null,
   },
   {
     id: 'world_cup',
@@ -72,18 +72,8 @@ const SPORTS_EVENTS = [
     messageBefore: null,
     messageDuring: 'Weekend brunch time?',
   },
+  /*
   {
-    id: 'school_morning',
-    name: 'School day',
-    emoji: '🎒',
-    type: 'routine',
-    region: ['IN'],
-    windows: [{ monthStart:6, monthEnd:4, hourStart:6, hourEnd:9, days:[1,2,3,4,5] }],
-    tags: ['quick','light','healthy','protein','safe'],
-    boostWeight: 0.2,
-    messageBefore: null,
-    messageDuring: 'School morning — quick breakfast?',
-  },
 ];
 
 // ── Check festival active ─────────────────────────────────────────

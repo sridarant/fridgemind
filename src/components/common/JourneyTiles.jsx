@@ -180,6 +180,11 @@ function ChangeDirectionRow({ onOption }) {
           </button>
         ))}
       </div>
+      {/* Plan ahead — subtle entry below grid */}
+      <button onClick={() => onOption('plan')}
+        style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:6, padding:'7px 12px', borderRadius:10, border:'1px solid rgba(28,10,0,0.07)', background:'rgba(28,10,0,0.02)', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", fontSize:11, color:'#7C6A5E', fontWeight:400 }}>
+        {'📅 Plan dinner tonight →'}
+      </button>
     </div>
   );
 }
@@ -518,6 +523,10 @@ export function JourneyTiles({
       case 'hosting':
         journeyCtx = buildJourneyContext({ journeyType:'hosting', profile, mealHistory });
         onGenerateDirect && onGenerateDirect({ hosting:true, servings:8, mealType:'dinner' });
+        break;
+      case 'plan':
+        journeyCtx = buildJourneyContext({ journeyType:'default', mealTypeOverride:'dinner', profile, mealHistory });
+        onGenerateDirect && onGenerateDirect({ mealType:'dinner', planAhead:true });
         break;
       default:
         journeyCtx = buildJourneyContext({ journeyType:'default', profile, mealHistory });

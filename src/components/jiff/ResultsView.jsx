@@ -173,7 +173,7 @@ export default function ResultsView({
       />
       {(ratings[mealKey(meal)] || 0) === 0 && (
         <button onClick={() => handleNotForMe(meal)} title="Not for me"
-          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'rgba(255,255,255,0.92)', border:'1px solid rgba(28,10,0,0.10)', borderRadius:20, padding:'3px 8px', fontSize:10, color:'#7C6A5E', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", lineHeight:1.4, backdropFilter:'blur(4px)' }}>
+          style={{ position:'absolute', bottom:10, left:12, zIndex:10, background:'rgba(255,255,255,0.92)', border:'1px solid rgba(28,10,0,0.10)', borderRadius:20, padding:'3px 8px', fontSize:10, color:'#7C6A5E', cursor:'pointer', fontFamily:"'DM Sans',sans-serif", lineHeight:1.4, backdropFilter:'blur(4px)' }}>
           {'✕ Not for me'}
         </button>
       )}
@@ -378,7 +378,7 @@ export default function ResultsView({
       )}
 
       <div className="reset-wrap">
-        <button className="reset-btn" onClick={reset}>{'← Try different ingredients'}</button>
+        <button className="reset-btn" onClick={reset}>{'← Start over'}</button>
       </div>
     </div>
   );

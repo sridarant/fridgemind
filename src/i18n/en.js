@@ -118,7 +118,7 @@ const en = {
   favs_close:      'Close ×',
 
   // Reset
-  reset_btn:       '← Try different ingredients',
+  reset_btn:       '← Start over',
 
   // Auth prompt
   auth_title:      'Save your favourites across all devices',

@@ -1,15 +1,15 @@
 // src/components/common/BottomNav.jsx
 // Fixed bottom navigation bar — mobile first.
 // 4 tabs: Home · Discover · Favourites · Profile
-// Desktop: hidden (top nav used instead via CSS)
+// Plan tab removed — planning entry lives inside JourneyTiles.
 
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const TABS = [
-  { id:'home',    path:'/app',      emoji:'🏠', label:'Home'    },
-  { id:'saved',   path:'/favs',     emoji:'🔖', label:'Saved'   },
-  { id:'plan',    path:'/plan',     emoji:'📅', label:'Plan'    },
-  { id:'profile', path:'/profile',  emoji:'👤', label:'Me'      },
+  { id:'home',    path:'/app',     emoji:'🏠', label:'Home'  },
+  { id:'saved',   path:'/favs',    emoji:'🔖', label:'Saved' },
+  { id:'history', path:'/history', emoji:'🕐', label:'History' },
+  { id:'profile', path:'/profile', emoji:'👤', label:'Me'    },
 ];
 
 export default function BottomNav() {
@@ -18,11 +18,7 @@ export default function BottomNav() {
 
   const activeId = pathname === '/app'                     ? 'home'
                  : pathname === '/favs'                    ? 'saved'
-                 : pathname === '/plan' ||
-                   pathname === '/planner' ||
-                   pathname === '/plans' ||
-                   pathname.startsWith('/little-chefs') ||
-                   pathname === '/sacred'                  ? 'plan'
+                 : pathname === '/history'                 ? 'history'
                  : pathname.startsWith('/profile')         ? 'profile'
                  : null;
 
@@ -58,18 +54,11 @@ export default function BottomNav() {
               transition:     'color 0.15s',
             }}>
             <span style={{ fontSize: 20, lineHeight: 1 }}>{tab.emoji}</span>
-            <span style={{
-              fontSize:   10,
-              fontWeight: active ? 600 : 400,
-              letterSpacing: '0.2px',
-            }}>{tab.label}</span>
+            <span style={{ fontSize: 10, fontWeight: active ? 600 : 400, letterSpacing: '0.2px' }}>
+              {tab.label}
+            </span>
             {active && (
-              <span style={{
-                width: 4, height: 4,
-                borderRadius: '50%',
-                background: '#FF4500',
-                marginTop: 1,
-              }}/>
+              <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#FF4500', marginTop: 1 }} />
             )}
           </button>
         );
