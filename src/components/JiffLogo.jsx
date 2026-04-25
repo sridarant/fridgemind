@@ -1,108 +1,109 @@
-// src/components/JiffLogo.jsx — animated Jiff logo with lightning bolt pulse
+// src/components/JiffLogo.jsx
+// Jiff brand mark — refined Spark Spoon icon + wordmark.
+//
+// Icon anatomy (viewBox 0 0 100 100):
+//   Bowl:   oval cx=50 cy=27 rx=15 ry=10.5 (ratio 1.43:1 — reads oval not circle)
+//   Neck:   bezier taper y=37.5→42, width 12px→3.5px
+//   Handle: straight 3.5px wide, y=42→69 (~57% of stem — spoon dominant zone)
+//   Bolt:   2-angle only — step left at y=69, diagonal to tip (54,85). Clean triangle.
+//   Form:   single continuous closed path, white on #FF4500 square rx=22
 
-const LOGO_STYLES = `
-  @keyframes jiff-bolt-pulse {
-    0%   { transform: scale(1) translateY(0);   opacity: 1; }
-    30%  { transform: scale(1.3) translateY(-2px); opacity: 0.9; }
-    50%  { transform: scale(0.95) translateY(1px);  opacity: 1; }
-    70%  { transform: scale(1.15) translateY(-1px); opacity: 0.95; }
-    100% { transform: scale(1) translateY(0);   opacity: 1; }
+const ICON_PATH = `
+  M50 16
+  C42 16 35 21 35 27
+  C35 33 42 37.5 48.25 37.5
+  C47 38.2 46.5 39.5 46.25 40.8
+  C46 42 46 42 46 42
+  L46 69
+  L41.25 69
+  L54 85
+  L55 85
+  L53 78
+  L54.5 78
+  L50 69
+  L53.75 69
+  L53.75 42
+  C53.75 42 53.75 41 53.5 40.8
+  C53.25 39.5 52.75 38.2 51.75 37.5
+  C58 37.5 65 33 65 27
+  C65 21 58 16 50 16 Z
+`.trim();
+
+const STYLES = `
+  @keyframes jiff-reveal {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
   }
-  @keyframes jiff-text-glow {
-    0%,100% { opacity: 1; }
-    50%      { opacity: 0.85; }
-  }
-  @keyframes jiff-ring-spin {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
+  @keyframes jiff-pulse {
+    0%,100% { transform: scale(1); }
+    50%      { transform: scale(1.04); }
   }
   .jiff-logo-wrap {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     cursor: pointer;
     user-select: none;
+    text-decoration: none;
   }
-  .jiff-bolt-ring {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .jiff-icon-sq {
     flex-shrink: 0;
+    display: block;
+    border-radius: 22%;
+    overflow: hidden;
   }
-  .jiff-ring-svg {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    transform-origin: center;
+  .jiff-icon-sq.spinning svg {
+    animation: jiff-pulse 1.8s ease-in-out infinite;
   }
-  .jiff-ring-svg.spinning {
-    animation: jiff-ring-spin 2s linear infinite;
-  }
-  .jiff-bolt {
-    position: relative;
-    z-index: 1;
-    animation: jiff-bolt-pulse 2.4s ease-in-out infinite;
-    animation-delay: 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-  }
-  .jiff-bolt:hover {
-    animation-duration: 0.6s;
-  }
-  .jiff-logo-name {
+  .jiff-wordmark {
     font-family: 'Fraunces', serif;
     font-weight: 900;
     letter-spacing: -0.5px;
     line-height: 1;
+    color: #1C0A00;
   }
-  .jiff-logo-name .j {
-    color: #FF4500;
-    font-style: italic;
-  }
+  .jiff-wordmark .jiff-j { color: #FF4500; }
 `;
 
 export default function JiffLogo({
-  size = 'md',       // 'sm' | 'md' | 'lg'
-  spinning = false,  // show spinning ring around bolt
+  size    = 'md',
+  spinning = false,
+  showText = true,
   onClick,
-  style = {},
+  style   = {},
 }) {
-  const sizes = {
-    sm: { bolt: 16, font: 16, ring: 24, ringStroke: 1.5 },
-    md: { bolt: 22, font: 22, ring: 32, ringStroke: 1.5 },
-    lg: { bolt: 36, font: 36, ring: 52, ringStroke: 2 },
-  };
-  const sz = sizes[size] || sizes.md;
-  const r = (sz.ring / 2) - sz.ringStroke;
-  const circ = 2 * Math.PI * r;
+  const S = { sm: 28, md: 36, lg: 52 };
+  const sz = S[size] || S.md;
+  const fontSize = sz * 0.62;
 
   return (
     <>
-      <style>{LOGO_STYLES}</style>
-      <div className="jiff-logo-wrap" onClick={onClick} style={style}>
-        <div className="jiff-bolt-ring" style={{ width: sz.ring, height: sz.ring }}>
-          {spinning && (
-            <svg className={'jiff-ring-svg' + (spinning ? ' spinning' : '')}
-              viewBox={`0 0 ${sz.ring} ${sz.ring}`} xmlns="http://www.w3.org/2000/svg">
-              <circle
-                cx={sz.ring / 2} cy={sz.ring / 2} r={r}
-                fill="none"
-                stroke="#FF4500"
-                strokeWidth={sz.ringStroke}
-                strokeDasharray={`${circ * 0.25} ${circ * 0.75}`}
-                strokeLinecap="round"
-                opacity="0.5"
-              />
-            </svg>
-          )}
-          <div className="jiff-bolt" style={{ fontSize: sz.bolt }}>⚡</div>
+      <style>{STYLES}</style>
+      <div
+        className="jiff-logo-wrap"
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        style={style}
+      >
+        <div className={'jiff-icon-sq' + (spinning ? ' spinning' : '')} style={{ width: sz, height: sz }}>
+          <svg
+            width={sz}
+            height={sz}
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-label="Jiff"
+          >
+            <rect width="100" height="100" rx="22" fill="#FF4500"/>
+            <path d={ICON_PATH} fill="white"/>
+          </svg>
         </div>
-        <span className="jiff-logo-name" style={{ fontSize: sz.font, color: '#1C0A00' }}>
-          <span className="j">J</span>iff
-        </span>
+        {showText && (
+          <span className="jiff-wordmark" style={{ fontSize }}>
+            <span className="jiff-j">j</span>iff
+          </span>
+        )}
       </div>
     </>
   );
