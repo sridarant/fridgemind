@@ -588,13 +588,7 @@ export function JourneyTiles({
         )}
       </div>
 
-      {/* Event banner — ONLY when event is truly active in current time window */}
-      {activeEvent && activeEvent.message && (
-        <div style={{ marginTop:8, marginBottom:4, padding:'7px 13px', borderRadius:10, background:activeEvent.type==='festival'?'rgba(220,38,38,0.06)':'rgba(29,78,216,0.06)', border:'1px solid '+(activeEvent.type==='festival'?'rgba(220,38,38,0.18)':'rgba(29,78,216,0.18)'), fontSize:12, color:activeEvent.type==='festival'?'#991B1B':'#1E40AF', fontWeight:500, display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:16 }}>{activeEvent.emoji}</span>
-          <span>{activeEvent.message}</span>
-        </div>
-      )}
+
 
       {/* §2 Continuity nudge — subtle, 1 line above primary */}
       <ContinuityNudge mealHistory={mealHistory} streak={streak} />

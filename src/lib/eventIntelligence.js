@@ -46,7 +46,7 @@ const SPORTS_EVENTS = [
     tags: ['quick','snack','light','popular'],
     boostWeight: 0.3,
     messageBefore: 'Big match today?',
-    messageDuring: 'Match time — something quick?',
+    messageDuring: null,
   },
   {
     id: 'friday_treat',
@@ -58,7 +58,7 @@ const SPORTS_EVENTS = [
     tags: ['indulgent','special','comfort'],
     boostWeight: 0.2,
     messageBefore: null,
-    messageDuring: 'Friday night — treat yourself?',
+    messageDuring: null,
   },
   {
     id: 'weekend_brunch',
@@ -70,7 +70,7 @@ const SPORTS_EVENTS = [
     tags: ['comfort','filling','popular'],
     boostWeight: 0.15,
     messageBefore: null,
-    messageDuring: 'Weekend brunch time?',
+    messageDuring: null,
   },
 ];
 

@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import InAppNotification from '../components/common/InAppNotification.jsx';
 import { useAuth }    from '../contexts/AuthContext';
 import { usePremium } from '../contexts/PremiumContext';
 import { useLocale, getCurrentSeason } from '../contexts/LocaleContext';
@@ -375,6 +376,10 @@ export default function Jiff() {
         {(!journeyMode || !user) && renderView()}
 
       </div>
+      <InAppNotification onCookNow={() => {
+        setJourneyMode(true);
+        navigate('/app');
+      }} />
     </>
   );
 }
