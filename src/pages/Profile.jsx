@@ -1,6 +1,6 @@
 // src/pages/Profile.jsx — "Your Preferences" merged settings screen.
 // Single scrollable page, 5 sections, sticky save. Max-width 480px.
-// Cuisine model: 6 primary groups visible by default, expandable to 9 regional options.
+// Cuisine model: 6 primary groups; sub-cuisines revealed only when a primary is selected.
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,35 +16,48 @@ const C = {
   border:'rgba(28,10,0,0.08)', borderMid:'rgba(28,10,0,0.15)',
 };
 
-// ── Cuisine model (Part 1) ────────────────────────────────────────
-// Primary: 6 visible by default
-// Secondary: 9 regional, expandable
+// ── Cuisine model ─────────────────────────────────────────────────
+// 6 primary groups — labels EXACTLY as specified
 const PRIMARY_CUISINES = [
-  { id:'south_indian',  label:'South Indian', emoji:'🥥' },
-  { id:'north_indian',  label:'North Indian',  emoji:'🌾' },
-  { id:'west_indian',   label:'West Indian',   emoji:'🌶️' },
-  { id:'east_indian',   label:'East Indian',   emoji:'🐟' },
-  { id:'northeast',     label:'North-East Indian',    emoji:'🍃' },
-  { id:'global',        label:'Global',        emoji:'🌍' },
+  { id:'south_indian', label:'South Indian',  emoji:'🥥' },
+  { id:'north_indian', label:'North Indian',  emoji:'🌾' },
+  { id:'west_indian',  label:'Western India', emoji:'🌶️' },
+  { id:'east_indian',  label:'Eastern India', emoji:'🐟' },
+  { id:'northeast',    label:'North-East India', emoji:'🍃' },
+  { id:'global',       label:'Global',        emoji:'🌍' },
 ];
 
-const SECONDARY_CUISINES = [
-  { id:'tamil_nadu',    label:'Tamil Nadu',    primary:'south_indian'  },
-  { id:'kerala',        label:'Kerala',        primary:'south_indian'  },
-  { id:'karnataka',     label:'Karnataka',     primary:'south_indian'  },
-  { id:'andhra',        label:'Andhra',        primary:'south_indian'  },
-  { id:'punjabi',       label:'Punjabi',       primary:'north_indian'  },
-  { id:'gujarati',      label:'Gujarati',      primary:'west_indian'   },
-  { id:'maharashtrian', label:'Maharashtrian', primary:'west_indian'   },
-  { id:'bengali',       label:'Bengali',       primary:'east_indian'   },
-  { id:'rajasthani',    label:'Rajasthani',    primary:'north_indian'  },
-];
+// Sub-cuisines keyed by primary ID — EXACT mapping as specified
+const SUB_CUISINE_MAP = {
+  south_indian: [
+    { id:'tamil_nadu', label:'Tamil Nadu'   },
+    { id:'kerala',     label:'Kerala'       },
+    { id:'karnataka',  label:'Karnataka'    },
+    { id:'andhra',     label:'Andhra'       },
+  ],
+  north_indian: [
+    { id:'punjabi',    label:'Punjabi'      },
+    { id:'rajasthani', label:'Rajasthani'   },
+  ],
+  west_indian: [
+    { id:'gujarati',      label:'Gujarati'     },
+    { id:'maharashtrian', label:'Maharashtrian' },
+  ],
+  east_indian: [
+    { id:'bengali',    label:'Bengali'      },
+  ],
+  northeast: [
+    { id:'assamese',   label:'Assamese'     },
+    { id:'manipuri',   label:'Manipuri'     },
+  ],
+  global: [
+    { id:'italian',    label:'Italian'      },
+    { id:'chinese',    label:'Chinese'      },
+    { id:'mexican',    label:'Mexican'      },
+  ],
+};
 
-// Map stored regional IDs → primary group (for display normalisation)
-function toPrimaryId(id) {
-  const sec = SECONDARY_CUISINES.find(c => c.id === id);
-  return sec ? sec.primary : id;
-}
+const MAX_CUISINES = 4;
 
 const DIET_OPTS = [
   { id:'veg',        label:'Vegetarian', emoji:'🥦' },
@@ -61,16 +74,16 @@ const SPICE_OPTS = [
 ];
 
 const STYLE_OPTS = [
-  { id:'beginner',  label:'Quick',         sub:'Under 20 min' },
-  { id:'home_cook', label:'Balanced',       sub:'20–35 min'    },
-  { id:'advanced',  label:'Enjoy cooking',  sub:'Any time'     },
+  { id:'beginner',  label:'Quick',        sub:'Under 20 min' },
+  { id:'home_cook', label:'Balanced',      sub:'20–35 min'   },
+  { id:'advanced',  label:'Enjoy cooking', sub:'Any time'    },
 ];
 
 const GOAL_OPTS = [
-  { id:'eat_healthier',  label:'Eat healthy',       emoji:'🥗' },
-  { id:'cook_faster',    label:'Save time',          emoji:'⚡' },
-  { id:'family',         label:'Cook for family',    emoji:'👨‍👩‍👧' },
-  { id:'try_new_things', label:'Try something new',  emoji:'🌍' },
+  { id:'eat_healthier',  label:'Eat healthy',      emoji:'🥗' },
+  { id:'cook_faster',    label:'Save time',         emoji:'⚡' },
+  { id:'family',         label:'Cook for family',   emoji:'👨‍👩‍👧' },
+  { id:'try_new_things', label:'Try something new', emoji:'🌍' },
 ];
 
 const LANG_OPTS = [
@@ -165,69 +178,136 @@ function Collapsible({ label, children, defaultOpen = false }) {
   );
 }
 
-// ── Cuisine selector (Part 1) ─────────────────────────────────────
-// Shows 6 primary groups. Expand to see 9 regional options.
-// Stores regional IDs internally; maps to primary for display.
+// ── CuisineSelector ───────────────────────────────────────────────
+// Step 1: user selects a primary group (South Indian, North Indian, etc.)
+// Step 2: sub-cuisines for THAT group appear below — no other sub-cuisines visible
+// Step 3: user picks up to MAX_CUISINES total across all selections
+// Deselecting a primary collapses its sub-cuisines and removes them from selection
 function CuisineSelector({ selected, onChange }) {
-  const [showSecondary, setShowSecondary] = useState(false);
-  const MAX = 4;
+  // Which primary group is currently expanded for sub-cuisine selection
+  // null = none expanded
+  const [expandedPrimary, setExpandedPrimary] = useState(null);
 
   const togglePrimary = (id) => {
-    // Selecting a primary group: store primary ID
-    if (selected.includes(id)) {
-      onChange(selected.filter(c => c !== id));
+    if (expandedPrimary === id) {
+      // Collapse — also deselect the primary and any of its sub-cuisines
+      const subIds = (SUB_CUISINE_MAP[id] || []).map(s => s.id);
+      onChange(selected.filter(c => c !== id && !subIds.includes(c)));
+      setExpandedPrimary(null);
     } else {
-      if (selected.length < MAX) onChange([...selected, id]);
+      // Expand this primary
+      setExpandedPrimary(id);
+      // Add the primary ID to selection if room and not already selected
+      if (!selected.includes(id) && selected.length < MAX_CUISINES) {
+        onChange([...selected, id]);
+      }
     }
   };
 
-  const toggleSecondary = (id) => {
-    if (selected.includes(id)) {
-      onChange(selected.filter(c => c !== id));
+  const toggleSub = (subId, primaryId) => {
+    if (selected.includes(subId)) {
+      // Remove sub — also remove primary if it was only there as a placeholder
+      onChange(selected.filter(c => c !== subId));
     } else {
-      if (selected.length < MAX) onChange([...selected, id]);
+      if (selected.length >= MAX_CUISINES) return;
+      // Replace the parent primary placeholder with the specific sub
+      const withoutParent = selected.filter(c => c !== primaryId);
+      onChange([...withoutParent, subId]);
     }
   };
+
+  const isPrimaryActive = (id) => {
+    const subIds = (SUB_CUISINE_MAP[id] || []).map(s => s.id);
+    return selected.includes(id) || subIds.some(s => selected.includes(s));
+  };
+
+  const totalSelected = selected.length;
 
   return (
     <div>
-      <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>
-        {'Favourite cuisines (pick up to '}{MAX}{')'}
+      {/* Label — EXACT copy as specified */}
+      <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>
+        {'What do you usually enjoy? (pick up to 4)'}
       </div>
 
-      {/* Primary groups */}
-      <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:10 }}>
+      {/* Step 1: primary groups — always visible */}
+      <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:12 }}>
         {PRIMARY_CUISINES.map(opt => {
-          const active   = selected.includes(opt.id);
-          const disabled = !active && selected.length >= MAX;
+          const active   = isPrimaryActive(opt.id);
+          const expanded = expandedPrimary === opt.id;
+          const disabled = !active && totalSelected >= MAX_CUISINES;
           return (
-            <button key={opt.id} onClick={() => !disabled && togglePrimary(opt.id)}
-              style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 13px', borderRadius:20, border:'1.5px solid '+(active?C.jiff:C.border), background:active?'rgba(255,69,0,0.07)':'white', color:active?C.jiff:(disabled?C.border:C.ink), fontSize:12, fontWeight:active?600:400, cursor:disabled?'default':'pointer', fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, transition:'all 0.12s' }}>
+            <button
+              key={opt.id}
+              onClick={() => !disabled && togglePrimary(opt.id)}
+              style={{
+                display:'flex', alignItems:'center', gap:5,
+                padding:'7px 14px', borderRadius:20,
+                border:'1.5px solid '+(active?C.jiff:C.border),
+                background:active?'rgba(255,69,0,0.07)':'white',
+                color:active?C.jiff:(disabled?C.border:C.ink),
+                fontSize:12, fontWeight:active?600:400,
+                cursor:disabled?'default':'pointer',
+                fontFamily:"'DM Sans',sans-serif",
+                opacity:disabled?0.45:1,
+                transition:'all 0.12s',
+              }}>
               <span>{opt.emoji}</span>
               <span>{opt.label}</span>
+              {(SUB_CUISINE_MAP[opt.id] || []).length > 0 && (
+                <span style={{ fontSize:9, color:active?C.jiff:C.muted, transition:'transform 0.15s', display:'inline-block', transform:expanded?'rotate(180deg)':'none' }}>{'▾'}</span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Expand to regional */}
-      <button onClick={() => setShowSecondary(v => !v)}
-        style={{ background:'none', border:'none', cursor:'pointer', fontSize:11, color:C.jiff, fontFamily:"'DM Sans',sans-serif", fontWeight:500, padding:0, marginBottom:showSecondary?10:0 }}>
-        {showSecondary ? '▲ Show less' : '▼ Pick specific region'}
-      </button>
+      {/* Step 2: sub-cuisines — ONLY shown for the currently expanded primary */}
+      {expandedPrimary && SUB_CUISINE_MAP[expandedPrimary] && (
+        <div style={{
+          background:'rgba(255,69,0,0.03)',
+          border:'1px solid rgba(255,69,0,0.12)',
+          borderRadius:12,
+          padding:'12px 14px',
+          marginBottom:8,
+        }}>
+          <div style={{ fontSize:10, color:C.muted, marginBottom:10, letterSpacing:'1px', textTransform:'uppercase', fontWeight:600 }}>
+            {PRIMARY_CUISINES.find(p => p.id === expandedPrimary)?.label}
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {SUB_CUISINE_MAP[expandedPrimary].map(sub => {
+              const active   = selected.includes(sub.id);
+              const disabled = !active && totalSelected >= MAX_CUISINES;
+              return (
+                <button
+                  key={sub.id}
+                  onClick={() => !disabled && toggleSub(sub.id, expandedPrimary)}
+                  style={{
+                    padding:'5px 12px', borderRadius:20,
+                    border:'1.5px solid '+(active?C.jiff:'rgba(28,10,0,0.12)'),
+                    background:active?'rgba(255,69,0,0.07)':'white',
+                    color:active?C.jiff:(disabled?C.border:C.ink),
+                    fontSize:12, fontWeight:active?600:400,
+                    cursor:disabled?'default':'pointer',
+                    fontFamily:"'DM Sans',sans-serif",
+                    opacity:disabled?0.45:1,
+                    transition:'all 0.12s',
+                  }}>
+                  {sub.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      {showSecondary && (
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:8 }}>
-          {SECONDARY_CUISINES.map(opt => {
-            const active   = selected.includes(opt.id);
-            const disabled = !active && selected.length >= MAX;
-            return (
-              <button key={opt.id} onClick={() => !disabled && toggleSecondary(opt.id)}
-                style={{ padding:'5px 12px', borderRadius:20, border:'1.5px solid '+(active?C.jiff:'rgba(28,10,0,0.12)'), background:active?'rgba(255,69,0,0.07)':'rgba(28,10,0,0.02)', color:active?C.jiff:(disabled?C.border:C.muted), fontSize:11, fontWeight:active?600:400, cursor:disabled?'default':'pointer', fontFamily:"'DM Sans',sans-serif", opacity:disabled?0.45:1, transition:'all 0.12s' }}>
-                {opt.label}
-              </button>
-            );
-          })}
+      {/* Selection counter */}
+      {totalSelected > 0 && (
+        <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>
+          {totalSelected}{' of '}{MAX_CUISINES}{' selected'}
+          {totalSelected >= MAX_CUISINES && (
+            <span style={{ color:C.jiff, marginLeft:6 }}>{'— max reached'}</span>
+          )}
         </div>
       )}
     </div>
@@ -262,13 +342,13 @@ export default function Profile() {
     if (!profile) return;
     const ids = parseFoodTypeIds(profile.food_type);
     if (ids.length) setDiet(ids[0] || 'veg');
-    if (profile.spice_level)               setSpice(profile.spice_level);
-    if (profile.skill_level)               setStyle(profile.skill_level);
-    if (profile.active_goal)               setGoal(profile.active_goal);
-    if (profile.has_kids !== undefined)    setHasKids(!!profile.has_kids);
-    if (profile.allergies?.length)         setAllergies(profile.allergies.join(', '));
+    if (profile.spice_level)                setSpice(profile.spice_level);
+    if (profile.skill_level)                setStyle(profile.skill_level);
+    if (profile.active_goal)                setGoal(profile.active_goal);
+    if (profile.has_kids !== undefined)     setHasKids(!!profile.has_kids);
+    if (profile.allergies?.length)          setAllergies(profile.allergies.join(', '));
     if (profile.preferred_cuisines?.length) setCuisines(profile.preferred_cuisines);
-    if (profile.country)                   setRegion(profile.country);
+    if (profile.country)                    setRegion(profile.country);
   }, [profile]);
 
   useEffect(() => {
@@ -323,8 +403,6 @@ export default function Profile() {
         <span style={{ fontFamily:"'Fraunces',serif", fontSize:17, fontWeight:700, color:C.ink }}>{'Your Preferences'}</span>
         <div style={{ width:40 }} />
       </header>
-
-      {/* Stats strip */}
 
       <div style={{ maxWidth:480, margin:'0 auto', padding:'20px 16px' }}>
 
