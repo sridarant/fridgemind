@@ -3,26 +3,7 @@
 // Duration: ~800ms reveal then gentle pulse loop.
 // Used on route load, lazy-import suspense, and initial app load.
 
-const LOADER_ICON_PATH = `
-  M50 16
-  C42 16 35 21 35 27
-  C35 33 42 37.5 48.25 37.5
-  C47 38.2 46.5 39.5 46.25 40.8
-  C46 42 46 42 46 42
-  L46 69
-  L41.25 69
-  L54 85
-  L55 85
-  L53 78
-  L54.5 78
-  L50 69
-  L53.75 69
-  L53.75 42
-  C53.75 42 53.75 41 53.5 40.8
-  C53.25 39.5 52.75 38.2 51.75 37.5
-  C58 37.5 65 33 65 27
-  C65 21 58 16 50 16 Z
-`.trim();
+// Plate + Spark icon — same as JiffLogo (no path needed; rendered inline)
 
 const LOADER_STYLES = `
   @keyframes jiff-loader-in {
@@ -76,9 +57,11 @@ export default function JiffLoader({ size = 72 }) {
             viewBox="0 0 100 100"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
+            aria-label="Jiff"
           >
             <rect width="100" height="100" rx="22" fill="#FF4500"/>
-            <path d={LOADER_ICON_PATH} fill="white"/>
+            <circle cx="50" cy="55" r="28" stroke="white" strokeWidth="5" fill="none" opacity="0.9"/>
+            <polyline points="55,20 44,48 54,48 45,80" stroke="white" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
           </svg>
         </div>
         <div className="jiff-loader-wordmark">
