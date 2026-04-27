@@ -1,3 +1,10 @@
+## v1.23.00
+- Removed icon-based logo
+- Implemented "jiff" wordmark branding
+- Updated loader to JiffLoader
+- Revamped home page
+- Updated app icon (PWA)
+
 ## v1.22.6 — 2026-04-05
 
 ### Fix: Apostrophe syntax error

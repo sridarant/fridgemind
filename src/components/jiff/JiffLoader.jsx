@@ -1,71 +1,81 @@
-// src/components/jiff/JiffLoader.jsx
-// Splash/loading screen: centered icon with scale + fade + pulse animation.
-// Duration: ~800ms reveal then gentle pulse loop.
-// Used on route load, lazy-import suspense, and initial app load.
+// src/components/jiff/JiffLoader.jsx — v1.23.00
+// Brand-aligned loader: "jiff" wordmark centered, opacity pulse animation.
+// No SVG icon, no spinner. Wordmark only.
+//
+// Animation: opacity pulse 0.6 → 1 → 0.6, 700ms loop (Option A per spec)
+// Rotating microcopy: "thinking..." / "planning..." / "almost ready..."
 
-// Plate + Spark icon — same as JiffLogo (no path needed; rendered inline)
+import { useState, useEffect } from 'react';
 
-const LOADER_STYLES = `
-  @keyframes jiff-loader-in {
-    0%   { opacity: 0; transform: scale(0.78); }
-    60%  { opacity: 1; transform: scale(1.04); }
-    80%  { transform: scale(0.98); }
-    100% { opacity: 1; transform: scale(1); }
+const MESSAGES = [
+  'thinking...',
+  'planning...',
+  'almost ready...',
+];
+
+const LOADER_CSS = `
+  @keyframes jiff-wm-pulse {
+    0%,100% { opacity: 0.6; }
+    50%      { opacity: 1;   }
   }
-  @keyframes jiff-loader-pulse {
-    0%,100% { transform: scale(1);    opacity: 1; }
-    50%      { transform: scale(1.05); opacity: 0.88; }
+  .jiff-wm-pulse {
+    animation: jiff-wm-pulse 700ms ease-in-out infinite;
   }
-  .jiff-loader-root {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #FFFAF5;
-    z-index: 9999;
-  }
-  .jiff-loader-icon {
-    animation: jiff-loader-in 0.8s cubic-bezier(0.2,0,0.2,1) forwards,
-               jiff-loader-pulse 2s ease-in-out 0.8s infinite;
-    will-change: transform, opacity;
-    opacity: 0;
-  }
-  .jiff-loader-wordmark {
-    font-family: 'Fraunces', serif;
-    font-weight: 900;
-    font-size: 28px;
-    letter-spacing: -0.5px;
-    color: #1C0A00;
-    margin-top: 14px;
-    opacity: 0;
-    animation: jiff-loader-in 0.8s cubic-bezier(0.2,0,0.2,1) 0.15s forwards;
-  }
-  .jiff-loader-wordmark .jiff-j { color: #FF4500; }
 `;
 
-export default function JiffLoader({ size = 72 }) {
+export default function JiffLoader({ message }) {
+  const [msgIdx, setMsgIdx] = useState(0);
+
+  useEffect(() => {
+    if (message) return; // caller provided custom message — don't rotate
+    const t = setInterval(() => setMsgIdx(i => (i + 1) % MESSAGES.length), 1400);
+    return () => clearInterval(t);
+  }, [message]);
+
+  const displayMsg = message || MESSAGES[msgIdx];
+
   return (
     <>
-      <style>{LOADER_STYLES}</style>
-      <div className="jiff-loader-root" role="status" aria-label="Loading Jiff">
-        <div className="jiff-loader-icon">
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 100 100"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-label="Jiff"
-          >
-            <rect width="100" height="100" rx="22" fill="#FF4500"/>
-            <circle cx="50" cy="55" r="28" stroke="white" strokeWidth="5" fill="none" opacity="0.9"/>
-            <polyline points="55,20 44,48 54,48 45,80" stroke="white" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-          </svg>
+      <style>{LOADER_CSS}</style>
+      <div style={{
+        position:       'fixed',
+        inset:          0,
+        display:        'flex',
+        flexDirection:  'column',
+        alignItems:     'center',
+        justifyContent: 'center',
+        background:     '#FFFAF5',
+        zIndex:         9999,
+        fontFamily:     "'DM Sans', sans-serif",
+        gap:            16,
+      }}
+        role="status"
+        aria-label="Loading Jiff"
+      >
+        {/* Wordmark — pulsing */}
+        <div className="jiff-wm-pulse" style={{ display:'flex', alignItems:'center' }}>
+          <span style={{
+            fontFamily:    "'Fraunces', serif",
+            fontWeight:    900,
+            fontSize:      42,
+            letterSpacing: '-0.03em',
+            lineHeight:    1,
+            color:         '#1C0A00',
+          }}>
+            <span style={{ color: '#FF4500' }}>{'j'}</span>{'iff'}
+          </span>
         </div>
-        <div className="jiff-loader-wordmark">
-          <span className="jiff-j">j</span>iff
+
+        {/* Rotating microcopy */}
+        <div style={{
+          fontSize:   13,
+          color:      '#7C6A5E',
+          fontWeight: 300,
+          letterSpacing: '0.02em',
+          minHeight:  20,
+          transition: 'opacity 0.3s',
+        }}>
+          {displayMsg}
         </div>
       </div>
     </>
