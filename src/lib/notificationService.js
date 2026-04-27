@@ -81,8 +81,8 @@ function buildPayload(window, mealHistory = []) {
     return { title: 'Jiff ☀️', body: 'Ready to cook something?' };
   }
   if (window === 'dinner') {
-    if (hadLight) return { title: 'Jiff 🌙', body: 'Dinner time? This should work for today.' };
-    if (hadHeavy) return { title: 'Jiff 🌙', body: 'Something lighter for dinner tonight?' };
+    if (hadLight) return { title: 'Jiff 🌙', body: 'Something quick for this evening?' };
+    if (hadHeavy) return { title: 'Jiff 🌙', body: 'Something lighter this evening?' };
     return { title: 'Jiff 🌙', body: 'Ready to cook something?' };
   }
   return { title: 'Jiff 🍳', body: 'Ready to cook something?' };

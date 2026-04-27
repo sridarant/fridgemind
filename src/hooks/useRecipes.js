@@ -231,9 +231,24 @@ export function useRecipes({
       const surpriseCuisine = profile?.preferred_cuisines?.length
         ? profile.preferred_cuisines[Math.floor(Math.random() * profile.preferred_cuisines.length)]
         : 'any';
+      const effectiveDietSurprise = (() => {
+        if (!profile) return diet;
+        const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
+        return ft || diet;
+      })();
       const data = await generateRecipes({
         ingredients: pantry?.length ? pantry : (season?.items?.slice(0, 4) || ['rice', 'dal']),
-        time, diet, cuisine: surpriseCuisine, count, language: lang, units, surpriseMode: true,
+        time, diet: effectiveDietSurprise,
+        cuisine: surpriseCuisine || profile?.preferred_cuisines?.[0] || cuisine,
+        count, language: lang, units, surpriseMode: true,
+        tasteProfile: profile ? {
+          spice_level: profile.spice_level,
+          allergies: profile.allergies,
+          preferred_cuisines: profile.preferred_cuisines,
+          skill_level: profile.skill_level,
+          active_goal: profile.active_goal,
+          country: profile.country,
+        } : null,
       });
       if (data.meals?.length > 0) {
         setMeals(Array.isArray(data.meals) ? data.meals : []);

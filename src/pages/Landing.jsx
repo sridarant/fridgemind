@@ -172,7 +172,7 @@ export default function Landing() {
         {/* Bottom CTA */}
         <div style={{ textAlign:'center', marginTop:56 }}>
           <div style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(20px,3vw,28px)', fontWeight:700, color:C.ink, marginBottom:20, letterSpacing:'-0.5px' }}>
-            {"What's for dinner tonight?"}
+            {"What are you cooking today?"}
           </div>
           <PrimaryBtn large onClick={() => goApp()}>{'Let Jiff decide →'}</PrimaryBtn>
         </div>

@@ -20,7 +20,7 @@ import { useState, useEffect } from 'react';
 const WINDOWS = [
   { id:'breakfast', hourStart:7,  hourEnd:9,  label:'Ready for breakfast?',  sub:'Something quick before you start your day.',  emoji:'🌅' },
   { id:'lunch',     hourStart:12, hourEnd:14, label:'Lunch time — what\'s the plan?', sub:'Let\'s get you something good.',         emoji:'☀️' },
-  { id:'dinner',    hourStart:18, hourEnd:20, label:'Dinner time?',           sub:'Try something quick for tonight.',             emoji:'🌙' },
+  { id:'dinner',    hourStart:18, hourEnd:20, label:'Time to cook?',          sub:'Try something quick for this evening.',             emoji:'🌙' },
 ];
 
 const SENT_KEY = 'jiff-inapp-notif-sent';
