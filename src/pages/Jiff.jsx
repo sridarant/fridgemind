@@ -103,7 +103,8 @@ export default function Jiff() {
   });
 
   const {
-    didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
+    didYouCookNudge, continuityNudge, weekCookCount,
+    weeklyDigest, welcomeBack, challenge, milestone,
     upgradeNudge, setUpgradeNudge,
     confirmCooked, onNotYet, dismissNudge, recordGeneration, recordRating,
   } = useRetention({ mealHistory, ratings, user, isPremium });
