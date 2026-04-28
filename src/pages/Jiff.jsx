@@ -105,7 +105,7 @@ export default function Jiff() {
   const {
     didYouCookNudge, weeklyDigest, welcomeBack, challenge, milestone,
     upgradeNudge, setUpgradeNudge,
-    confirmCooked, dismissNudge, recordGeneration, recordRating,
+    confirmCooked, onNotYet, dismissNudge, recordGeneration, recordRating,
   } = useRetention({ mealHistory, ratings, user, isPremium });
 
   // ── Effects ────────────────────────────────────────────────────
@@ -360,7 +360,11 @@ export default function Jiff() {
             milestone={milestone}
             upgradeNudge={upgradeNudge}
             onDismissUpgrade={() => setUpgradeNudge(null)}
+            continuityNudge={continuityNudge}
+            weekCookCount={weekCookCount}
             onConfirmCooked={confirmCooked}
+            onNotYet={onNotYet}
+            onShowSomethingElse={() => { /* re-run recommendations */ }}
             onDismissNudge={dismissNudge}
             navJourneyCtx={navJourneyCtx}
             onSelectFridge={() => { setJourneyMode(false); setInputMode('fridge'); }}

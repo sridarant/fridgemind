@@ -300,6 +300,10 @@ export function JourneyTiles({
   onSelectFridge, onGenerateDirect, onLeftoverRescue, onWeatherGenerate,
   user,
   navJourneyCtx = null,
+  continuityNudge = null,
+  weekCookCount = 0,
+  onNotYet,
+  onShowSomethingElse,
 }) {
   const navigate = useNavigate();
   const [showMood,  setShowMood]  = useState(false);
@@ -397,7 +401,8 @@ export function JourneyTiles({
     if (h >= 5  && h < 11) return 'Ready for breakfast?';
     if (h >= 11 && h < 16) return 'Ready for lunch?';
     if (h >= 16 && h < 19) return 'Snack time?';
-    return 'Ready for dinner?';
+    if (h >= 19 && h < 23) return 'Ready for dinner?';
+    return 'Something to cook?'; // midnight – 5am
   };
 
   const isReturning    = !!(welcomeBack && welcomeBack.daysAway >= 3);
@@ -600,8 +605,13 @@ export function JourneyTiles({
       <RetentionNudges
         welcomeBack={welcomeBack} weeklyDigest={weeklyDigest}
         milestone={milestone} didYouCookNudge={didYouCookNudge}
+        continuityNudge={continuityNudge}
+        weekCookCount={weekCookCount}
         upgradeNudge={upgradeNudge} onDismissUpgrade={onDismissUpgrade}
-        onConfirmCooked={onConfirmCooked} onDismissNudge={onDismissNudge}
+        onConfirmCooked={onConfirmCooked}
+        onNotYet={onNotYet}
+        onShowSomethingElse={() => { onShowSomethingElse?.(); loadCards(); }}
+        onDismissNudge={onDismissNudge}
         lastFavCuisine={lastFavCuisine}
       />
 

@@ -16,6 +16,7 @@
 
 import { parseFoodTypeIds } from '../lib/dietary.js';
 import { getActiveEvent, getEventBoost, getMealContextLabel } from '../lib/eventIntelligence.js';
+import { getRecentSuccessBoostMap } from '../hooks/useRetention.js';
 import {
   getAllLearnedWeights,
   getRejectedMealNames,
@@ -269,6 +270,7 @@ function scoreMeal(meal, ctx) {
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
     continuityRecentCuisines, activeEvent, journeyTagBoosts,
+    successBoostMap = {},
   } = ctx;
 
   const nameLower       = meal.name.toLowerCase().trim();
@@ -363,6 +365,10 @@ function scoreMeal(meal, ctx) {
     else if (lIdx === 1) learnedScore = Math.min(1, learnedScore + 0.12);
   }
 
+  // Recent success boost — if user confirmed cooking this meal and liked it
+  const successBoost = successBoostMap[nameLower] || 0;
+  learnedScore = Math.min(1, learnedScore + successBoost);
+
   if (continuityRecentCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') {
     learnedScore = Math.max(0, learnedScore - 0.15);
   }
@@ -378,11 +384,11 @@ function scoreMeal(meal, ctx) {
   if (!cuisineHist.slice(-5).includes(mealCuisineNorm) && mealCuisineNorm !== 'any') varietyFactor = Math.min(1, varietyFactor + 0.15);
 
   const score =
-    (historyScore    * 0.35) +
+    (historyScore    * 0.30) +
     (preferenceScore * 0.25) +
     (contextScore    * 0.20) +
-    (learnedScore    * 0.15) +
-    (varietyFactor   * 0.05);
+    (learnedScore    * 0.13) +
+    (varietyFactor   * 0.12);
 
   return {
     meal, score,
@@ -513,6 +519,9 @@ export function getPersonalisedRecommendations({
     : behaviourData;
 
   const learnedCuisines   = getLearnedCuisinePreferences();
+
+  // Recent success boost — meals user confirmed cooking + liked get a score boost
+  const successBoostMap = (() => { try { return getRecentSuccessBoostMap(); } catch { return {}; } })();
   const learnedEffortPref = getLearnedEffortPreference();
   const learnedWeightsRaw = getAllLearnedWeights();
   const learnedWeights    = {};
@@ -548,6 +557,7 @@ export function getPersonalisedRecommendations({
     learnedWeights, learnedCuisines, learnedEffortPref,
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
     continuityRecentCuisines, activeEvent, journeyTagBoosts, journeyType,
+    successBoostMap,
   };
 
   const compatible = MEAL_CATALOGUE.filter(m => isDietaryCompatible(m, userDietIds));
