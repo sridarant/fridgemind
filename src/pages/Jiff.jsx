@@ -96,6 +96,7 @@ export default function Jiff() {
     time, diet, cuisine, mealType, defaultServings,
     lang, units, country,
     setCuisine, setMealType, setJourneyMode,
+    mealHistory,
   });
 
   const { notifications, unreadCount, markAllRead } = useNotifications({
@@ -117,8 +118,8 @@ export default function Jiff() {
   useEffect(() => {
     if (profile && !profileLoaded) {
       const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
-      if (ft === 'vegan') setDiet('vegan');
-      else if (ft === 'veg' || ft === 'eggetarian' || ft === 'jain') setDiet('vegetarian');
+      // Store raw food_type value — must match what the API expects ('veg','vegan','jain',etc.)
+      if (ft && ft !== 'none') setDiet(ft);
       if (profile.preferred_cuisines?.length) setCuisine(profile.preferred_cuisines[0]);
       if (profile.family_size > 4) setDefaultServings(6);
       else if (profile.family_size > 2) setDefaultServings(4);
@@ -140,7 +141,7 @@ export default function Jiff() {
 
   // Handle navigation-state generate context (e.g. from plan page)
   useEffect(() => {
-    if (genCtxNav && user) handleGenerateDirect(genCtxNav);
+    if (genCtxNav && user && profileLoaded) handleGenerateDirect(genCtxNav);
   }, []); // eslint-disable-line
 
   // Streak

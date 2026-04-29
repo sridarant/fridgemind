@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/common/PageHeader';
 import { useAuth }     from '../contexts/AuthContext';
-import { generateRecipes } from '../services/recipeService';
+import { generateMeal } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',
@@ -157,7 +157,7 @@ function ChefRecipeCard({ meal }) {
 
 export default function LittleChefs() {
   const navigate  = useNavigate();
-  const { pantry } = useAuth();
+  const { pantry, profile } = useAuth();
 
   const [age,   setAge]   = useState('7to10');
   const [skill, setSkill] = useState('can_help');
@@ -170,13 +170,12 @@ export default function LittleChefs() {
     const selectedAge   = AGE_GROUPS.find(a => a.id === age);
     const selectedSkill = SKILL_LEVELS.find(s => s.id === skill);
     try {
-      const data = await generateRecipes({
+      const meals = await generateMeal({
         ingredients: pantry || ['rice', 'dal', 'vegetables'],
-        diet:'veg', cuisine:'any', time:'30 min',
-        servings:2, count:3, kidsMode:true,
-        kidsPromptOverride:`You are a fun cooking teacher for children. Generate exactly 3 simple recipes for a child aged ${selectedAge?.label||'7-10 yrs'}, skill level: ${selectedSkill?.label||'can help'}. Age notes: ${selectedAge?.note||''}. Mark heat/knife steps with [ASK AN ADULT]. Use short encouraging steps. Return ONLY this JSON, no other text: {"meals":[{"name":"Name","time":"15 min","servings":2,"description":"Short fun description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":200,"protein":"5g","carbs":"30g","fat":"8g"}}]}`,
-      });
-      setMeals(Array.isArray(data.meals) ? data.meals : []);
+        time: '30 min', servings: 2, count: 3, kidsMode: true,
+        kidsPromptOverride: `You are a fun cooking teacher for children. Generate exactly 3 simple recipes for a child aged ${selectedAge?.label||'7-10 yrs'}, skill level: ${selectedSkill?.label||'can help'}. Age notes: ${selectedAge?.note||''}. Mark heat/knife steps with [ASK AN ADULT]. Use short encouraging steps. Return ONLY this JSON, no other text: {"meals":[{"name":"Name","time":"15 min","servings":2,"description":"Short fun description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":200,"protein":"5g","carbs":"30g","fat":"8g"}}]}`,
+      }, profile);
+      setMeals(meals);
       setView('results');
     } catch {
       setError('Could not load recipes. Please try again.');

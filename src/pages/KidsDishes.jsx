@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/common/PageHeader';
 import { useAuth }     from '../contexts/AuthContext';
 import { MealCard }    from '../components/meal/MealCard.jsx';
-import { generateRecipes } from '../services/recipeService';
+import { generateMeal } from '../services/recipeService';
+import { useAuth }   from '../contexts/AuthContext';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',
@@ -27,7 +28,7 @@ const OCCASIONS = [
 
 export default function KidsDishes() {
   const navigate = useNavigate();
-  const { pantry } = useAuth();
+  const { pantry, profile } = useAuth();
 
   const [age,      setAge]      = useState('6to10');
   const [occasion, setOccasion] = useState('everyday');
@@ -40,16 +41,15 @@ export default function KidsDishes() {
     const selectedAge = AGES.find(a => a.id === age);
     const selectedOcc = OCCASIONS.find(o => o.id === occasion);
     try {
-      const data = await generateRecipes({
-          ingredients: pantry || [],
-          diet:'veg',
-          cuisine:'kid-friendly',
-          time:'30 min', servings:2, count:4,
-          kidsMode:true,
-          kidsPromptOverride:`Generate exactly 4 kid-friendly recipes for ${selectedAge?.label||'7-10'} children. Occasion: ${selectedOcc?.label||'any'}. Rules: safe temps, appropriate textures, nutritious, fun names kids love. Return ONLY this JSON: {"meals":[{"name":"Fun Name","time":"20 min","servings":2,"description":"Yummy description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":250,"protein":"8g","carbs":"35g","fat":"10g"}}]}`,
-      });
-      
-      setMeals(Array.isArray(data.meals) ? data.meals : []);
+      const meals = await generateMeal({
+        ingredients: pantry || [],
+        cuisine: 'kid-friendly',
+        time: '30 min', servings: 2, count: 4,
+        kidsMode: true,
+        kidsPromptOverride: `Generate exactly 4 kid-friendly recipes for ${selectedAge?.label||'7-10'} children. Occasion: ${selectedOcc?.label||'any'}. Rules: safe temps, appropriate textures, nutritious, fun names kids love. Return ONLY this JSON: {"meals":[{"name":"Fun Name","time":"20 min","servings":2,"description":"Yummy description","ingredients":["1 cup item"],"method":["Step text"],"nutrition":{"calories":250,"protein":"8g","carbs":"35g","fat":"10g"}}]}`,
+      }, profile);
+
+      setMeals(meals);
       setView('results');
     } catch {
       setError('Could not load recipes. Please try again.');

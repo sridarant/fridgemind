@@ -2,11 +2,13 @@
 // Encapsulates all recipe generation state and handlers.
 // Jiff.jsx imports this hook — zero fetch() calls remain in the component.
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { generateRecipes } from '../services/recipeService';
 import { trackGeneration } from '../lib/analytics';
 import { saveHistory, fetchHistory, buildRatingsFromHistory, updateRating } from '../services/historyService';
 import { updateStreak, computeNextStreak } from '../services/userService';
+import { getRecentSuccessBoostMap } from './useRetention.js';
+import { normalizeResponse } from '../services/recipeService';
 
 const TILE_MSGS = {
   magic_moment: 'Your first personalised recipe is on its way…',
@@ -31,6 +33,7 @@ export function useRecipes({
   lang, units, country,
   setCuisine, setMealType,
   setJourneyMode,
+  mealHistory,
 }) {
   const [meals,          setMeals]          = useState([]);
   const [view,           setView]           = useState('input');
@@ -39,6 +42,49 @@ export function useRecipes({
   const [factIdx,        setFactIdx]        = useState(0);
   const [tileContext,    setTileContext]    = useState(null); // { type, label, emoji, color, bg }
   const [pantryNudge,    setPantryNudge]    = useState([]);
+
+  // Async guard — prevents overlapping generation calls
+  const isGenerating = useRef(false);
+
+  // ── SINGLE SOURCE OF TRUTH: shared param builder ───────────────
+  // Both handleSubmit and handleGenerateDirect must call this.
+  // Ensures web and mobile always produce identical API inputs for the same profile.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  function buildBaseParams(overrides) {
+    // 1. Diet — always derive from profile.food_type; never use stale local state
+    const effectiveDiet = (() => {
+      const ft = Array.isArray(profile?.food_type) ? profile.food_type[0] : profile?.food_type;
+      if (!ft || ft === 'none') return diet; // fallback to local state only when profile absent
+      // Pass raw food_type value — API understands 'veg','vegan','jain','eggetarian','non-veg','halal'
+      return ft;
+    })();
+
+    // 2. Cuisine — prefer profile.preferred_cuisines[0] when local state is still default 'any'
+    const effectiveCuisine = overrides.cuisine
+      || (cuisine !== 'any' ? cuisine : null)
+      || profile?.preferred_cuisines?.[0]
+      || 'any';
+
+    // 3. Full tasteProfile — identical fields in both paths
+    const tasteProfile = profile ? {
+      spice_level:        profile.spice_level,
+      allergies:          profile.allergies,
+      preferred_cuisines: profile.preferred_cuisines,
+      skill_level:        profile.skill_level,
+      active_goal:        profile.active_goal,
+      country:            profile.country,
+    } : null;
+
+    // 4. Retention signals — cook history and liked meals for personalisation
+    const successBoosts = (() => { try { return getRecentSuccessBoostMap(); } catch { return {}; } })();
+    const likedMealNames = Object.keys(successBoosts);
+    const recentMealHistory = Array.isArray(mealHistory) ? mealHistory.slice(0, 20) : [];
+    const lastCooked = recentMealHistory.find(h => h.cooked !== false)?.meal_name || null;
+
+    const base = { diet: effectiveDiet, cuisine: effectiveCuisine, tasteProfile, time: (overrides.time || time), mealType: (overrides.mealType || mealType), servings: (overrides.servings || defaultServings), language: lang, units, country, lastCooked, likedMealNames, recentMealHistory };
+    return Object.assign(base, overrides, { diet: (overrides.diet || effectiveDiet), cuisine: (overrides.cuisine || effectiveCuisine), tasteProfile: (overrides.tasteProfile || tasteProfile) });
+  }
+
   const [ratings,        setRatings]        = useState(() => {
     try { return JSON.parse(localStorage.getItem('jiff-ratings') || '{}'); } catch { return {}; }
   });
@@ -54,29 +100,27 @@ export function useRecipes({
     if (!ingredients.length) return;
     if (!user) { gateDismissCallback?.(); return; }
     if (!checkAccess('generation')) return;
+    if (isGenerating.current) return;
+    isGenerating.current = true;
 
     setView('loading'); setFactIdx(0);
     setLoadingMessage('Finding your perfect recipes...');
     try {
       const count = isPremium ? PAID_RECIPE_CAP : 1;
       const data  = await generateRecipes({
-        ingredients, time, diet, cuisine, mealType,
-        servings: defaultServings, count, language: lang, units,
-        tasteProfile: profile ? {
-          spice_level: profile.spice_level,
-          allergies:   profile.allergies,
-          preferred_cuisines: profile.preferred_cuisines,
-          skill_level: profile.skill_level,
-        } : null,
+        ...buildBaseParams({ mealType, cuisine }),
+        ingredients,
+        count,
       });
 
-      if (!data.meals?.length) {
-        setErrorMsg(data.error || 'Could not generate suggestions.');
+      const normalized = normalizeResponse(data);
+      if (!normalized.length) {
+        setErrorMsg(data?.error || 'Could not generate suggestions.');
         setView('error');
         return;
       }
 
-      setMeals(Array.isArray(data.meals) ? data.meals : []);
+      setMeals(normalized);
       setView('results');
       recordUsage();
       handleStreak(user.id);
@@ -94,6 +138,8 @@ export function useRecipes({
     } catch (err) {
       setErrorMsg('Connection error. Please try again.');
       setView('error');
+    } finally {
+      isGenerating.current = false;
     }
   }, [user, isPremium, PAID_RECIPE_CAP, checkAccess, recordUsage,
       time, diet, cuisine, mealType, defaultServings, lang, units,
@@ -153,6 +199,8 @@ export function useRecipes({
       : context.type === 'festival' ? 'festival'
       : context.type === 'leftover' ? 'leftover' : null;
     setTileContext(ctxType ? CTX_MAP[ctxType] : null);
+    if (isGenerating.current) return false;
+    isGenerating.current = true;
     setView('loading'); setFactIdx(0); setJourneyMode(false);
     try {
       // Leftover: always show 3-5 options split by effort; hosting: full-menu count
@@ -168,33 +216,17 @@ export function useRecipes({
         ? 'Split suggestions: first 2 under 15 min (label Quick Fix), rest as Creative Twist.'
         : null;
 
-      // Always derive diet from profile so web and mobile use the same preferences
-      const effectiveDiet = (() => {
-        if (!profile) return diet;
-        const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
-        if (!ft) return diet;
-        if (ft === 'veg' || ft === 'vegan' || ft === 'jain' || ft === 'eggetarian') return ft;
-        if (ft === 'non-veg' || ft === 'halal') return ft;
-        return diet;
-      })();
-
       const data  = await generateRecipes({
-        ingredients: tileIngredients, time,
-        diet: effectiveDiet,
-        cuisine: context.cuisine || (profile?.preferred_cuisines?.[0]) || cuisine,
-        mealType: context.mealType || mealType,
-        count, country, language: lang,
-        servings: context.servings || defaultServings,
-        dish: dishHint || context.dish || null,
+        ...buildBaseParams({
+          cuisine:   context.cuisine,
+          mealType:  context.mealType,
+          servings:  context.servings,
+          time,
+        }),
+        ingredients: tileIngredients,
+        count,
+        dish:        dishHint || context.dish || null,
         moodContext: context.moodContext || null,
-        tasteProfile: profile ? {
-          spice_level:       profile.spice_level,
-          allergies:         profile.allergies,
-          preferred_cuisines:profile.preferred_cuisines,
-          skill_level:       profile.skill_level,
-          active_goal:       profile.active_goal,
-          country:           profile.country,
-        } : null,
       });
 
       if (data.error) {
@@ -204,7 +236,7 @@ export function useRecipes({
         return false;
       }
 
-      const resultMeals = Array.isArray(data.meals) ? data.meals : data.meals?.meals || [];
+      const resultMeals = normalizeResponse(data);
       setMeals(resultMeals);
       handleStreak(user.id);
       saveHistory({ userId: user.id, meals: resultMeals, mealType, cuisine, servings: defaultServings, ingredients: tileIngredients });
@@ -216,6 +248,8 @@ export function useRecipes({
       setView('input');
       setJourneyMode(true);
       return false;
+    } finally {
+      isGenerating.current = false;
     }
   }, [user, isPremium, PAID_RECIPE_CAP, checkAccess,
       time, diet, cuisine, mealType, defaultServings, lang, country,
@@ -231,27 +265,16 @@ export function useRecipes({
       const surpriseCuisine = profile?.preferred_cuisines?.length
         ? profile.preferred_cuisines[Math.floor(Math.random() * profile.preferred_cuisines.length)]
         : 'any';
-      const effectiveDietSurprise = (() => {
-        if (!profile) return diet;
-        const ft = Array.isArray(profile.food_type) ? profile.food_type[0] : profile.food_type;
-        return ft || diet;
-      })();
+
       const data = await generateRecipes({
+        ...buildBaseParams({ cuisine: surpriseCuisine }),
         ingredients: pantry?.length ? pantry : (season?.items?.slice(0, 4) || ['rice', 'dal']),
-        time, diet: effectiveDietSurprise,
-        cuisine: surpriseCuisine || profile?.preferred_cuisines?.[0] || cuisine,
-        count, language: lang, units, surpriseMode: true,
-        tasteProfile: profile ? {
-          spice_level: profile.spice_level,
-          allergies: profile.allergies,
-          preferred_cuisines: profile.preferred_cuisines,
-          skill_level: profile.skill_level,
-          active_goal: profile.active_goal,
-          country: profile.country,
-        } : null,
+        count,
+        surpriseMode: true,
       });
-      if (data.meals?.length > 0) {
-        setMeals(Array.isArray(data.meals) ? data.meals : []);
+      const surpriseMeals = normalizeResponse(data);
+      if (surpriseMeals.length > 0) {
+        setMeals(surpriseMeals);
         setView('results');
         recordUsage();
       } else {

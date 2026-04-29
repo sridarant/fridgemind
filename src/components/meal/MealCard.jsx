@@ -174,6 +174,24 @@ function SH({ children, count, borderTop = true }) {
   );
 }
 
+
+// ── Shared share popup ────────────────────────────────────────────
+function SharePopup({ show, onClose, onCopy, copied, onWhatsApp }) {
+  if (!show) return null;
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:100 }}/>
+      <div style={{ position:'absolute', bottom:'calc(100% + 6px)', left:0, background:'white', border:'1px solid rgba(28,10,0,0.08)', borderRadius:12, padding:'8px', zIndex:101, minWidth:140, boxShadow:'0 8px 24px rgba(28,10,0,0.1)' }}>
+        <button onClick={onCopy} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:'#1C0A00', cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
+          <IconCopy /> {copied ? '✓ Copied!' : 'Copy recipe'}
+        </button>
+        <button onClick={onWhatsApp} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:'#25D366', cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
+          <span style={{ fontSize:15 }}>{'📱'}</span> {'WhatsApp'}
+        </button>
+      </div>
+    </>
+  );
+}
 // ── Main ───────────────────────────────────────────────────────────
 const MealCardInner = function MealCard({
   meal, isFav, onToggleFav,
@@ -341,20 +359,7 @@ const MealCardInner = function MealCard({
                       style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:'1px solid '+C.border, borderRadius:8, padding:'6px 12px', fontSize:12, color:C.ink, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
                       <IconShare /> {'Share'}
                     </button>
-                    {showShare && (
-                      <>
-                        <div onClick={() => setShowShare(false)} style={{ position:'fixed', inset:0, zIndex:100 }}/>
-                        <div style={{ position:'absolute', bottom:'calc(100% + 6px)', left:0, background:'white', border:'1px solid '+C.border, borderRadius:12, padding:'8px', zIndex:101, minWidth:140, boxShadow:'0 8px 24px rgba(28,10,0,0.1)' }}>
-                          <button onClick={handleCopy} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:C.ink, cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
-                            <IconCopy /> {copied ? '✓ Copied!' : 'Copy recipe'}
-                          </button>
-                          <button onClick={() => window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(buildShareText(meal, lang)), '_blank')}
-                            style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:'#25D366', cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
-                            <span style={{ fontSize:15 }}>{'📱'}</span> {'WhatsApp'}
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    <SharePopup show={showShare} onClose={() => setShowShare(false)} onCopy={handleCopy} copied={copied} onWhatsApp={() => window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(buildShareText(meal, lang)), '_blank')} />
                   </div>
                   <ScaleSelector servings={servings} baseServings={baseServings} onChange={setServings} />
                 </div>
@@ -368,12 +373,7 @@ const MealCardInner = function MealCard({
                   : <VideoButton recipeName={meal.name} compact />
                 }
 
-                {/* Quick info chips */}
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  {meal.time     && <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', padding:'4px 10px', borderRadius:20 }}>{'⏱ '}{meal.time}</span>}
-                  {ingredients.length > 0 && <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', padding:'4px 10px', borderRadius:20 }}>{ingredients.length}{' ingredients'}</span>}
-                  {steps.length > 0 && <span style={{ fontSize:11, color:C.muted, background:'rgba(28,10,0,0.05)', padding:'4px 10px', borderRadius:20 }}>{steps.length}{' steps'}</span>}
-                </div>
+
 
                 {/* CTA — sticky at bottom of right col */}
                 <div style={{ marginTop:'auto' }}>
@@ -422,20 +422,7 @@ const MealCardInner = function MealCard({
                       style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:'1px solid '+C.border, borderRadius:8, padding:'6px 12px', fontSize:12, color:C.ink, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
                       <IconShare /> {'Share'}
                     </button>
-                    {showShare && (
-                      <>
-                        <div onClick={() => setShowShare(false)} style={{ position:'fixed', inset:0, zIndex:100 }}/>
-                        <div style={{ position:'absolute', bottom:'calc(100% + 6px)', left:0, background:'white', border:'1px solid '+C.border, borderRadius:12, padding:'8px', zIndex:101, minWidth:140, boxShadow:'0 8px 24px rgba(28,10,0,0.1)' }}>
-                          <button onClick={handleCopy} style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:C.ink, cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
-                            <IconCopy /> {copied ? '✓ Copied!' : 'Copy recipe'}
-                          </button>
-                          <button onClick={() => window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(buildShareText(meal, lang)), '_blank')}
-                            style={{ display:'flex', alignItems:'center', gap:8, width:'100%', padding:'8px 10px', border:'none', background:'none', fontSize:12, color:'#25D366', cursor:'pointer', borderRadius:8, fontFamily:"'DM Sans',sans-serif" }}>
-                            <span style={{ fontSize:15 }}>{'📱'}</span> {'WhatsApp'}
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    <SharePopup show={showShare} onClose={() => setShowShare(false)} onCopy={handleCopy} copied={copied} onWhatsApp={() => window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(buildShareText(meal, lang)), '_blank')} />
                   </div>
                   <ScaleSelector servings={servings} baseServings={baseServings} onChange={setServings} />
                 </div>

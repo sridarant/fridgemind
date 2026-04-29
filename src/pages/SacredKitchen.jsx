@@ -9,7 +9,7 @@ import PageHeader from '../components/common/PageHeader';
 import { useAuth }    from '../contexts/AuthContext';
 import { useLocale }  from '../contexts/LocaleContext';
 import { usePremium } from '../contexts/PremiumContext';
-import { generateRecipes } from '../services/recipeService';
+import { generateMeal } from '../services/recipeService';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5', warm:'#FFF0E5',
@@ -99,12 +99,10 @@ Respond ONLY with valid JSON:
 }]}`;
 
     try {
-      const data = await generateRecipes({
-        ingredients: [], diet: dietContext, count, language: lang,
-        kidsMode: true, kidsPromptOverride: prompt,
-      });
-      const result = Array.isArray(data.meals) ? data.meals : Array.isArray(data) ? data : null;
-      if (result?.length) setMeals(result);
+      const result = await generateMeal({
+        count, kidsMode: true, kidsPromptOverride: prompt,
+      }, profile, { lang });
+      if (result.length) setMeals(result);
       else setError('Could not generate recipes. Please try again.');
     } catch { setError('Connection error. Please try again.'); }
     finally { setLoading(false); }

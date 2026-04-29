@@ -436,15 +436,7 @@ export function JourneyTiles({
     return 'SUGGESTED FOR YOU';
   })();
 
-  // Weekly cook count for header badge
-  const weekCookCount = (() => {
-    if (!Array.isArray(mealHistory)) return 0;
-    const weekAgo = Date.now() - 7 * 86400000;
-    return mealHistory.filter(h => {
-      const ts = new Date(h.generated_at || h.created_at || 0).getTime();
-      return ts > weekAgo && h.rating >= 3;
-    }).length;
-  })();
+  // weekCookCount comes from useRetention via prop (line 304) — no local duplicate
 
   // Weekly goal: cook 3 times this week (Part 10 §2)
   const weeklyGoalTarget = 3;
@@ -556,7 +548,7 @@ export function JourneyTiles({
   };
 
   return (
-    <div style={{ maxWidth:680, margin:'0 auto', padding:'14px 16px 100px', fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ maxWidth:680, margin:'0 auto', padding:'14px 16px 80px', fontFamily:"'DM Sans',sans-serif" }}>
 
       {/* §1 GREETING + streak / week badge */}
       <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
@@ -597,9 +589,6 @@ export function JourneyTiles({
       </div>
 
 
-
-      {/* §2 Continuity nudge — subtle, 1 line above primary */}
-      <ContinuityNudge mealHistory={mealHistory} streak={streak} />
 
       {/* §3 NUDGE */}
       <RetentionNudges

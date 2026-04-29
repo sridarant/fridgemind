@@ -107,13 +107,7 @@ export default function RetentionNudges({
         </div>
       )}
 
-      {/* Weekly cook count — shown whenever available and no higher-priority nudge */}
-      {!welcomeBack && !weeklyDigest && !milestone && !didYouCookNudge && !continuityNudge && weekCookCount > 0 && (
-        <div style={{ marginTop:10, padding:'8px 13px', borderRadius:11, background:'rgba(29,158,117,0.04)', border:'1px solid rgba(29,158,117,0.15)', fontSize:12, color:'#065F46', fontWeight:400 }}>
-          {"You've cooked "}<strong>{weekCookCount}{' meal'}{weekCookCount !== 1 ? 's' : ''}</strong>{' this week'}
-          {weekCookCount >= 3 ? ' — great streak! 🔥' : ' — keep it up!'}
-        </div>
-      )}
+
 
       {/* Upgrade nudge */}
       {upgradeNudge && (

@@ -81,7 +81,7 @@ const LOADING_MSGS = [
 
 export default function KidsLunchbox() {
   const navigate  = useNavigate();
-  const { user }  = useAuth();
+  const { user, profile } = useAuth();
 
   const [age,        setAge]        = useState('5to10');
   const [allergens,  setAllergens]  = useState([]);
@@ -115,10 +115,22 @@ Respond ONLY with valid JSON:
   "Friday":    {"emoji":"🍱","main":{"name":"...","note":"..."},"snack":{"name":"...","note":"..."},"drink":{"name":"...","note":"..."}}
 }`;
 
+      const profileDiet = (() => {
+        const ft = Array.isArray(profile?.food_type) ? profile.food_type[0] : profile?.food_type;
+        return ft && ft !== 'none' ? ft : 'any';
+      })();
       const data = await generateRecipes({
-        ingredients:[], diet:'veg', cuisine:'kid-friendly',
-        time:'30 min', servings:1, count:1,
-        kidsMode:true, kidsPromptOverride: prompt,
+        ingredients: [], diet: profileDiet, cuisine: 'kid-friendly',
+        time: '30 min', servings: 1, count: 1,
+        kidsMode: true, kidsPromptOverride: prompt,
+        tasteProfile: profile ? {
+          spice_level:        profile.spice_level,
+          allergies:          [...(profile.allergies || []), ...allergens],
+          preferred_cuisines: profile.preferred_cuisines,
+          skill_level:        profile.skill_level,
+          active_goal:        profile.active_goal,
+          country:            profile.country,
+        } : { allergies: allergens },
       });
       // Try to parse the plan from the response
       let parsed = null;
