@@ -7,7 +7,6 @@ import PageHeader from '../components/common/PageHeader';
 import { useAuth }     from '../contexts/AuthContext';
 import { MealCard }    from '../components/meal/MealCard.jsx';
 import { generateMeal } from '../services/recipeService';
-import { useAuth }   from '../contexts/AuthContext';
 
 const C = {
   jiff:'#FF4500', ink:'#1C0A00', cream:'#FFFAF5',

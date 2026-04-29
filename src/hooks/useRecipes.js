@@ -3,12 +3,11 @@
 // Jiff.jsx imports this hook — zero fetch() calls remain in the component.
 
 import { useState, useCallback, useRef } from 'react';
-import { generateRecipes } from '../services/recipeService';
+import { generateRecipes, normalizeResponse } from '../services/recipeService';
 import { trackGeneration } from '../lib/analytics';
 import { saveHistory, fetchHistory, buildRatingsFromHistory, updateRating } from '../services/historyService';
 import { updateStreak, computeNextStreak } from '../services/userService';
 import { getRecentSuccessBoostMap } from './useRetention.js';
-import { normalizeResponse } from '../services/recipeService';
 
 const TILE_MSGS = {
   magic_moment: 'Your first personalised recipe is on its way…',
