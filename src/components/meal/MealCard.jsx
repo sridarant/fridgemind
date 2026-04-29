@@ -174,7 +174,6 @@ function SH({ children, count, borderTop = true }) {
   );
 }
 
-
 // ── Shared share popup ────────────────────────────────────────────
 function SharePopup({ show, onClose, onCopy, copied, onWhatsApp }) {
   if (!show) return null;
@@ -321,6 +320,7 @@ const MealCardInner = function MealCard({
           {meal.time     && <span>{'⏱ '}{meal.time}</span>}
           {meal.servings && <span>{'👥 '}{meal.servings}</span>}
           {meal.diet     && <span style={{ color:C.green }}>{'🌿 '}{meal.diet}</span>}
+          {ingredients.length > 0 && <span>{'🥘 '}{ingredients.length}{' ingr'}</span>}
         </div>
         <StarRating value={rating||0} onChange={r => onRate?.(r)} />
       </div>
@@ -373,7 +373,12 @@ const MealCardInner = function MealCard({
                   : <VideoButton recipeName={meal.name} compact />
                 }
 
-
+                {/* Description — fills space between video and CTA */}
+                {meal.description && (
+                  <div style={{ fontSize:12, color:C.muted, lineHeight:1.6, fontWeight:300, flex:1 }}>
+                    {meal.description}
+                  </div>
+                )}
 
                 {/* CTA — sticky at bottom of right col */}
                 <div style={{ marginTop:'auto' }}>
