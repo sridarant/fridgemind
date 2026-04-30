@@ -94,7 +94,18 @@ export default async function handler(req, res) {
     const validation = await validateApiKey(apiKey, process.env.REACT_APP_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     if (!validation.ok) return res.status(validation.status || 401).json({ error: validation.error });
 
-    const { ingredients=[], time='30 min', diet='none', cuisine='any', mealType='any', servings=2, count=3, language='en', units='metric', kidsMode=false, kidsPromptOverride=null, tasteProfile=null, familyMembers=[], moodContext=null, weatherContext=null, dish=null } = req.body;
+    const body = (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) ? req.body : {};
+    const {
+      ingredients = [], time = '30 min', diet = 'none', cuisine = 'any',
+      mealType = 'any', servings = 2, count = 3, language = 'en',
+      units = 'metric', kidsMode = false, kidsPromptOverride = null,
+      tasteProfile = null, familyMembers = [], moodContext = null,
+      weatherContext = null, dish = null,
+      lastCooked = null, likedMealNames = [],
+    } = body;
+    const safeIngredients = Array.isArray(ingredients)
+      ? ingredients.filter(i => typeof i === 'string' && i.trim().length > 0)
+      : [];
     const maxCount = Math.min(count, validation.record?.tier === 'pro' ? 5 : 3);
     const cuisineLabel = (!cuisine || cuisine === 'any') ? null : cuisine;
     // ── Kids mode prompt override — checked BEFORE ingredients requirement ──
@@ -124,7 +135,7 @@ const dishLine    = dish           ? `Feature this dish: ${dish}.` : '';
 const familyLine  = familyMembers?.length > 0 ? `Family: ${familyMembers.map(m=>m.name||m).join(', ')}.` : '';
 
 const prompt = `Creative chef. Suggest ${maxCount} ${mealType!=='any'?mealType+' ':' '}meals.
-Ingredients: ${(ingredients || []).filter(i => typeof i === 'string').join(', ')}.
+Ingredients: ${safeIngredients.join(', ')}.
 ${time} prep. Diet: ${dietLabel}. ${cuisineLabel?'Cuisine: '+cuisineLabel+'.':''} Servings: ${servings}. ${units==='imperial'?'Imperial.':'Metric.'} ${moodLine} ${weatherLine} ${dishLine} ${familyLine} ${langName!=='English'?'Language: '+langName+'.':''}
 JSON only — ${maxCount} objects:
 [{"name":"..","emoji":"..","time":"..","servings":${servings},"diet":"..","description":"..","ingredients":["qty unit item"],"steps":["step text"],"calories":"..","protein":"..","carbs":"..","fat":".."}]`;
@@ -331,7 +342,7 @@ JSON only — ${maxCount} objects:
 
     const prompt = `You are a creative, practical chef with deep knowledge of world cuisines.
 
-Available ingredients: ${(ingredients || []).filter(i => typeof i === 'string').join(', ')}.
+Available ingredients: ${safeIngredients.join(', ')}.
 Time available: ${time}.
 Dietary preference: ${effectiveDiet}. ${eggRule}
 Meal type: ${mealTypeRule}

@@ -115,7 +115,7 @@ export default function Landing() {
             emoji="👨‍👩‍👧"
             label="Guests tonight"
             sub="A menu that impresses"
-            onClick={() => goApp({ generateContext:{ hosting:true, servings:6, mealType:'dinner' } })}
+            onClick={() => goApp({ generateContext:{ hosting:true, servings:6 } })}
           />
           <EntryCard
             emoji="🥦"
@@ -131,7 +131,7 @@ export default function Landing() {
         <div style={{ maxWidth:720, margin:'0 auto' }}>
           <div style={{ fontSize:11, letterSpacing:'2px', textTransform:'uppercase', color:C.muted, fontWeight:600, textAlign:'center', marginBottom:12 }}>{'How it works'}</div>
           <h2 style={{ fontFamily:"'Fraunces',serif", fontSize:'clamp(26px,4vw,40px)', fontWeight:900, color:C.ink, textAlign:'center', marginBottom:48, letterSpacing:'-1px', lineHeight:1.1 }}>
-            {'Three steps to dinner'}
+            {'Decide what to cook. Instantly.'}
           </h2>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:20 }}>
             {[

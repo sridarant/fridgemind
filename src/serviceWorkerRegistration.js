@@ -1,30 +1,8 @@
-export function registerSW() {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((reg) => {
-          console.log('Jiff SW registered:', reg.scope);
-          setInterval(() => reg.update(), 60 * 1000);
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // Force reload to get the new version
-                window.location.reload();
-              }
-            });
-          });
-        })
-        .catch((err) => console.error('SW registration failed:', err));
-    });
-  }
-}
-
+// serviceWorkerRegistration.js — SW registration disabled.
+// Kept for backward compat with any stale imports.
+export function registerSW()   {} // no-op
 export function unregisterSW() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then((reg) => reg.unregister())
-      .catch((err) => console.error(err.message));
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   }
 }
