@@ -11,7 +11,9 @@ const safeJson = async (res) => { try { const d = await res.json(); return Array
 export default async function handler(req, res) {
   const url    = process.env.REACT_APP_SUPABASE_URL;
   const key    = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const action = req.query.action || req.body?.action;
+  // Guard: ensure req.body is an object before reading properties
+  const safeBody = (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) ? req.body : {};
+  const action = req.query.action || safeBody.action;
   const h      = { 'Content-Type':'application/json', 'apikey':key||'', 'Authorization':`Bearer ${key||''}` };
 
   // ── PUBLIC: stats (no auth required) ──────────────────────────────
@@ -73,7 +75,7 @@ export default async function handler(req, res) {
     const mh = { ...h, 'Prefer': 'return=minimal' };
 
     if (req.method === 'POST') {
-      const { userId, meals, mealType, cuisine, servings, ingredients } = req.body;
+      const { userId, meals, mealType, cuisine, servings, ingredients } = safeBody;
       if (!userId || !meals?.length) return res.status(400).json({ error: 'Missing userId or meals.' });
       const rows = meals.map(meal => ({
         user_id: userId, meal, meal_type: mealType||'any', cuisine: cuisine||'any',
@@ -86,6 +88,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       const userId = req.query.userId;
+      const { userId } = safeBody;
       if (!userId) return res.status(400).json({ error: 'Missing userId.' });
       const r = await fetch(`${url}/rest/v1/meal_history?user_id=eq.${userId}&order=generated_at.desc&limit=30`, { method:'GET', headers: h });
       if (!r.ok) return res.status(500).json({ error: 'Failed to fetch history.' });
@@ -93,14 +96,14 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
-      const { id, userId } = req.body;
+      const { id, userId } = safeBody;
       if (!id || !userId) return res.status(400).json({ error: 'Missing id or userId.' });
       await fetch(`${url}/rest/v1/meal_history?id=eq.${id}&user_id=eq.${userId}`, { method:'DELETE', headers: mh });
       return res.status(200).json({ ok: true });
     }
     // ── PATCH — update rating on a meal by name ──────────────────
     if (req.method === 'PATCH') {
-      const { userId, mealName, rating } = req.body;
+      const { userId, mealName, rating } = safeBody;
       if (!userId || !mealName || !rating) return res.status(400).json({ error: 'Missing fields.' });
       // Find the most recent entry for this meal name by this user
       const findR = await fetch(
