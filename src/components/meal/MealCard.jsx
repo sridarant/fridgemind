@@ -22,6 +22,7 @@ import { buildShareText }   from '../../lib/sharing.js';
 import { StepWithTimer }    from './StepTimer.jsx';
 import { GroceryPanel }     from './GroceryPanel.jsx';
 import { VideoButton }      from './VideoButton.jsx';
+import IngredientSummary    from './IngredientSummary.jsx';
 
 const C = {
   jiff:'#FF4500', ember:'#CC3700', ink:'#1C0A00', cream:'#FFFAF5',
@@ -200,7 +201,8 @@ const MealCardInner = function MealCard({
   const { units } = useLocale();
   const isDesktop = useIsDesktop();
 
-  const [expanded,     setExpanded]     = useState(false);
+  const [expanded,          setExpanded]          = useState(false);
+  const [showIngredientCheck, setShowIngredientCheck] = useState(false);
   const [showAllIngr,  setShowAllIngr]  = useState(false);
   const [showAllSteps, setShowAllSteps] = useState(false);
   const [groceryOpen,  setGroceryOpen]  = useState(false);
@@ -348,6 +350,15 @@ const MealCardInner = function MealCard({
 
               {/* LEFT: ingredients + method */}
               <div style={{ padding:'16px 20px 16px 16px', borderRight:'1px solid '+C.border, overflowY:'auto' }}>
+                {showIngredientCheck && (
+                  <IngredientSummary
+                    ingredients={ingredients}
+                    pantry={pantry}
+                    scale={scale}
+                    units={units}
+                    onDismiss={() => setShowIngredientCheck(false)}
+                  />
+                )}
                 {IngrBlock}
                 {MethodBlock}
                 {GroceryBlock}
@@ -408,6 +419,18 @@ const MealCardInner = function MealCard({
 
             {expanded && (
               <div style={{ padding:'0 12px 12px' }}>
+
+              {/* ── Ingredient check — shown immediately after "Cook this" tap ── */}
+              {showIngredientCheck && (
+                <IngredientSummary
+                  ingredients={ingredients}
+                  pantry={pantry}
+                  scale={scale}
+                  units={units}
+                  onDismiss={() => setShowIngredientCheck(false)}
+                />
+              )}
+
                 {/* Video */}
                 <div style={{ marginBottom:14 }}>
                   {meal.videoId

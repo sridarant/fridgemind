@@ -4,10 +4,17 @@
 // All journeys call getPersonalisedRecommendations(context) via buildJourneyContext().
 // No UI-level filtering. No duplicate logic per entry.
 //
-// Scoring:
-//   score = (historyMatch * 0.35) + (preferenceMatch * 0.25) +
-//           (contextMatch * 0.20) + (learnedBehaviour * 0.15) +
-//           (varietyFactor * 0.05)
+// Brain v2.1 Scoring (6 named components):
+//
+//   score = preferenceScore  * 0.35   // cuisine fit + goal + history + journey tags
+//         + timeScore        * 0.20   // meal type, effort, time-of-day
+//         + successScore     * 0.15   // liked meals, learned behaviour
+//         + varietyScore     * 0.15   // penalise repetition, reward novelty
+//         + feasibilityScore * 0.10   // ingredient availability (pantry vs recipe)
+//         + continuityScore  * 0.05   // tag-similarity to recently cooked
+//
+// "any" cuisine meals get a fixed penalty (-0.10 from preferenceScore)
+// Cuisine lock-in: same cuisine × 2 in session → preferenceScore × 0.40
 //
 // Primary dominance:  primaryScore *= 1.2
 // Time pressure:      boost ≤15 min meals when flag active
@@ -15,6 +22,7 @@
 // Repetition control: same meal blocked 3 sessions; same cuisine capped 2 consecutive
 
 import { parseFoodTypeIds } from '../lib/dietary.js';
+import { buildGroceryList } from '../lib/grocery.js';
 import { getActiveEvent, getEventBoost, getMealContextLabel } from '../lib/eventIntelligence.js';
 import { getRecentSuccessBoostMap } from '../hooks/useRetention.js';
 import {
@@ -261,7 +269,9 @@ function capCuisine(id) {
   return id.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
-// ── Score a single meal ───────────────────────────────────────────
+// ── Brain v2.1: Score a single meal ─────────────────────────────
+// Six named, independent components. Each returns a value in [0, 1].
+// Hard exclusions return null early (meal is dropped from candidates).
 function scoreMeal(meal, ctx) {
   const {
     userDietIds, userCuisines, userGoal, userSkill,
@@ -271,127 +281,194 @@ function scoreMeal(meal, ctx) {
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
     continuityRecentCuisines, activeEvent, journeyTagBoosts,
     successBoostMap = {},
+    lastCookedName  = null,
+    pantryItems     = [],
   } = ctx;
 
   const nameLower       = meal.name.toLowerCase().trim();
   const mealCuisineNorm = normC(meal.cuisine);
 
-  // Hard exclusions
-  if (rejectedSet.has(nameLower)) return null;
+  // ── Hard exclusions (drop before scoring) ───────────────────────
+  if (rejectedSet.has(nameLower))                                     return null;
   if (forceShift && forceShiftExcludedCuisines.has(mealCuisineNorm)) return null;
   if (forceShift && forceShiftExcludeHeavy && meal.tags.includes('heavy')) return null;
-  if (timePressureFlag && meal.effortMins > 30) return null;
+  if (timePressureFlag && meal.effortMins > 30)                       return null;
   if (targetMealType === 'breakfast' && !meal.mealType.includes('breakfast')) return null;
 
-  // ── 1. History match (weight 0.35) ────────────────────────────
-  let historyScore    = 0;
-  let historyHighRate = 0;
-  let historyWhyKey   = null;
+  // ── 1. preferenceScore (weight 0.35) ──────────────────────────
+  // Cuisine fit, user goal, journey context, learned cuisine, event boosts.
+  const allCuisines  = [...new Set([...userCuisines.map(normC), ...learnedCuisines.map(normC)])];
+  const prefIdx      = allCuisines.indexOf(mealCuisineNorm);
 
+  let preferenceScore = 0;
+
+  // Cuisine match — higher rank = bigger boost
+  if      (prefIdx === 0)        preferenceScore += 0.70;
+  else if (prefIdx === 1)        preferenceScore += 0.42;
+  else if (prefIdx >= 2)         preferenceScore += 0.18;
+  else if (meal.cuisine === 'any') preferenceScore += 0.02; // v2.1: "any" cuisine penalty (was 0.12)
+
+  // History boost — cuisine rated highly in past
+  let historyWhyKey   = null;
+  let historyHighRate = 0;
   (mealHistory || []).slice(0, 30).forEach(h => {
     const hCuisine = normC(h.cuisine);
     const rating   = (ratings && (ratings[h.meal_name] || ratings[h.meal?.name])) || h.rating || 0;
     if (hCuisine === mealCuisineNorm) {
-      const boost = rating >= 4 ? 0.55 : rating >= 3 ? 0.28 : 0.1;
-      historyScore = Math.min(1, historyScore + boost);
+      preferenceScore += rating >= 4 ? 0.18 : rating >= 3 ? 0.09 : 0.03;
+      preferenceScore  = Math.min(1, preferenceScore);
       if (rating >= 4) { historyWhyKey = 'liked_cuisine'; historyHighRate = Math.max(historyHighRate, rating); }
     }
   });
 
-  // ── 2. Preference match (weight 0.25) ─────────────────────────
-  const allCuisines   = [...new Set([...userCuisines.map(normC), ...learnedCuisines.map(normC)])];
-  const prefIdx       = allCuisines.indexOf(mealCuisineNorm);
-  let preferenceScore = 0;
+  // Goal signals
+  if (userGoal === 'eat_healthier'  && (meal.tags.includes('healthy') || meal.tags.includes('light'))) preferenceScore += 0.22;
+  if (userGoal === 'cook_faster'    && meal.effortMins <= 15)  preferenceScore += 0.30;
+  else if (userGoal === 'cook_faster' && meal.effortMins <= 20) preferenceScore += 0.15;
+  if (userGoal === 'reduce_waste'   && meal.tags.includes('leftover')) preferenceScore += 0.28;
+  if (userGoal === 'try_new_things' && !allCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') preferenceScore += 0.28;
 
-  if (prefIdx === 0)      preferenceScore += 0.75;
-  else if (prefIdx === 1) preferenceScore += 0.45;
-  else if (prefIdx >= 2)  preferenceScore += 0.20;
-  else if (meal.cuisine === 'any') preferenceScore += 0.12;
+  // Skill match
+  if (userSkill === 'beginner' && meal.effortMins <= 20) preferenceScore += 0.08;
+  if (userSkill === 'advanced' && meal.effortMins >= 30) preferenceScore += 0.08;
 
-  if (userGoal === 'eat_healthier' && (meal.tags.includes('healthy') || meal.tags.includes('light'))) preferenceScore += 0.30;
-  if (userGoal === 'cook_faster'   && meal.effortMins <= 15) preferenceScore += 0.40;
-  else if (userGoal === 'cook_faster' && meal.effortMins <= 20) preferenceScore += 0.20;
-  if (userGoal === 'reduce_waste'  && meal.tags.includes('leftover')) preferenceScore += 0.35;
-  if (userGoal === 'try_new_things' && !allCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') preferenceScore += 0.35;
-  if (userSkill === 'beginner' && meal.effortMins <= 20) preferenceScore += 0.10;
-  if (userSkill === 'advanced' && meal.effortMins >= 30) preferenceScore += 0.10;
-
-  // Journey tag boosts — each matching tag adds a small boost
-  if (journeyTagBoosts && journeyTagBoosts.length) {
+  // Journey tag boosts
+  if (journeyTagBoosts?.length) {
     const matchCount = journeyTagBoosts.filter(t => meal.tags.includes(t)).length;
-    if (matchCount > 0) preferenceScore += Math.min(0.40, matchCount * 0.12);
+    if (matchCount > 0) preferenceScore += Math.min(0.36, matchCount * 0.10);
   }
 
-  // Event boost (festival/sports)
+  // Event boost
   preferenceScore += getEventBoost(meal, activeEvent);
 
   preferenceScore = Math.min(1, preferenceScore);
 
-  // ── 3. Context match (weight 0.20) ────────────────────────────
-  let contextScore = 0;
-  if (meal.mealType.includes(targetMealType)) contextScore += 0.60;
-
-  if (effortBias === 'quick') {
-    if (meal.effortMins <= 15)      contextScore += 0.30;
-    else if (meal.effortMins <= 20) contextScore += 0.15;
-    else if (meal.effortMins > 30)  contextScore -= 0.15;
-  } else if (effortBias === 'moderate') {
-    if (meal.effortMins <= 25)      contextScore += 0.20;
-  } else {
-    contextScore += 0.10;
+  // Cuisine lock-in penalty (v2.1: same cuisine × 2 in session → × 0.40)
+  const cuisineHistNow = getSessionCuisineHistory();
+  const recentTwo      = cuisineHistNow.slice(-2);
+  if (recentTwo.length === 2 && recentTwo.every(c => normC(c) === mealCuisineNorm) && mealCuisineNorm !== 'any') {
+    preferenceScore *= 0.40;
   }
 
-  if (timePressureFlag && meal.effortMins <= 15) contextScore += 0.20;
+  // ── 2. timeScore (weight 0.20) ────────────────────────────────
+  // Meal type fit, effort vs time pressure, time-of-day signals.
+  let timeScore = 0;
 
-  const h = new Date().getHours();
-  if (h >= 19 && h < 23 && meal.tags.includes('light'))  contextScore += 0.10;
-  if (h >= 5  && h < 9  && meal.tags.includes('quick'))  contextScore += 0.10;
+  if (meal.mealType.includes(targetMealType))   timeScore += 0.55;
 
-  contextScore = Math.min(1, Math.max(0, contextScore));
+  if (effortBias === 'quick') {
+    if   (meal.effortMins <= 15)    timeScore += 0.30;
+    } else if (meal.effortMins <= 20) { timeScore += 0.15;
+    } else if (meal.effortMins > 30)  { timeScore -= 0.15; }
+  } else if (effortBias === 'moderate') {
+    if (meal.effortMins <= 25)      timeScore += 0.18;
+  } else {
+    timeScore += 0.08;
+  }
 
-  // ── 4. Learned behaviour (weight 0.15) ────────────────────────
-  let learnedScore = 0;
+  if (timePressureFlag && meal.effortMins <= 15)  timeScore += 0.18;
+
+  const hNow = new Date().getHours();
+  if (hNow >= 19 && hNow < 23 && meal.tags.includes('light')) timeScore += 0.08;
+  if (hNow >= 5  && hNow < 9  && meal.tags.includes('quick')) timeScore += 0.08;
+
+  timeScore = Math.min(1, Math.max(0, timeScore));
+
+  // ── 3. successScore (weight 0.15) ─────────────────────────────
+  // Learned meal weights from ratings + successBoostMap (confirmed cooks + likes).
   const learnedW   = learnedWeights[meal.id] || 0;
-  learnedScore     = (learnedW + 1) / 2;
+  let successScore = (learnedW + 1) / 2;
 
-  if (learnedEffortPref === 'quick'    && meal.effortMins <= 15) learnedScore = Math.min(1, learnedScore + 0.30);
-  if (learnedEffortPref === 'moderate' && meal.effortMins <= 25 && meal.effortMins > 15) learnedScore = Math.min(1, learnedScore + 0.20);
-  if (learnedEffortPref === 'involved' && meal.effortMins > 25) learnedScore = Math.min(1, learnedScore + 0.20);
+  if (learnedEffortPref === 'quick'    && meal.effortMins <= 15)                       successScore += 0.25;
+  if (learnedEffortPref === 'moderate' && meal.effortMins <= 25 && meal.effortMins > 15) successScore += 0.18;
+  if (learnedEffortPref === 'involved' && meal.effortMins > 25)                        successScore += 0.18;
 
   if (learnedCuisines.length > 0) {
     const lnorm = learnedCuisines.map(normC);
     const lIdx  = lnorm.indexOf(mealCuisineNorm);
-    if (lIdx === 0)      learnedScore = Math.min(1, learnedScore + 0.25);
-    else if (lIdx === 1) learnedScore = Math.min(1, learnedScore + 0.12);
+    if (lIdx === 0)      successScore += 0.22;
+    else if (lIdx === 1) successScore += 0.10;
   }
 
-  // Recent success boost — if user confirmed cooking this meal and liked it
-  const successBoost = successBoostMap[nameLower] || 0;
-  learnedScore = Math.min(1, learnedScore + successBoost);
+  successScore += (successBoostMap[nameLower] || 0);
+  successScore  = Math.min(1, successScore);
 
-  if (continuityRecentCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any') {
-    learnedScore = Math.max(0, learnedScore - 0.15);
-  }
-
-  // ── 5. Variety factor (weight 0.05) ───────────────────────────
-  let varietyFactor = 1.0;
-  if (recentlyShownSet.has(nameLower))      varietyFactor = 0.02;
-  else if (recentHistorySet.has(nameLower)) varietyFactor = 0.25;
+  // ── 4. varietyScore (weight 0.15) ─────────────────────────────
+  // Penalise recently shown/cooked meals; reward unseen cuisines.
+  let varietyScore = 1.0;
+  if      (recentlyShownSet.has(nameLower))    varietyScore = 0.02;
+  else if (recentHistorySet.has(nameLower))    varietyScore = 0.22;
 
   const cuisineHist = getSessionCuisineHistory();
-  const lastTwo     = cuisineHist.slice(-2);
-  if (lastTwo.length === 2 && lastTwo.every(c => c === mealCuisineNorm)) varietyFactor = Math.min(varietyFactor, 0.15);
-  if (!cuisineHist.slice(-5).includes(mealCuisineNorm) && mealCuisineNorm !== 'any') varietyFactor = Math.min(1, varietyFactor + 0.15);
+  const lastTwoC    = cuisineHist.slice(-2);
+  if (lastTwoC.length === 2 && lastTwoC.every(c => normC(c) === mealCuisineNorm) && mealCuisineNorm !== 'any')
+    varietyScore = Math.min(varietyScore, 0.15);
+  if (!cuisineHist.slice(-5).includes(mealCuisineNorm) && mealCuisineNorm !== 'any')
+    varietyScore = Math.min(1, varietyScore + 0.18);
 
+  // Continuity penalty from 7-day history (avoid overdoing same cuisine family)
+  if (continuityRecentCuisines.includes(mealCuisineNorm) && meal.cuisine !== 'any')
+    varietyScore = Math.max(0, varietyScore - 0.12);
+
+  // ── 5. feasibilityScore (weight 0.10) — NEW ───────────────────
+  // Penalise meals where the user likely lacks key ingredients.
+  // Uses the same buildGroceryList as IngredientSummary.
+  // MUST_HAVE tags are a proxy for "key ingredients" — heavy/indulgent meals
+  // tend to need speciality items; light/quick meals tend to use staples.
+  let feasibilityScore = 1.0;
+
+  if (pantryItems && pantryItems.length > 0 && Array.isArray(meal.mustHave)) {
+    // If catalogue meal has explicit mustHave list, use it
+    const { need } = buildGroceryList(meal.mustHave, pantryItems);
+    const missingRatio = need.length / Math.max(1, meal.mustHave.length);
+    feasibilityScore = Math.max(0.1, 1 - missingRatio);
+  } else {
+    // Proxy: heavy/special meals require harder-to-find ingredients
+    // Quick/light/everyday meals are assumed feasible with a basic pantry
+    if (meal.tags.includes('heavy') || meal.tags.includes('indulgent') || meal.tags.includes('special')) {
+      feasibilityScore = 0.65; // some uncertainty about ingredient availability
+    } else if (meal.tags.includes('quick') || meal.tags.includes('everyday') || meal.tags.includes('safe')) {
+      feasibilityScore = 0.95; // very likely achievable with basic pantry
+    }
+    // Default for unlabelled meals: 0.80 (neutral)
+    else feasibilityScore = 0.80;
+  }
+
+  // ── 6. continuityScore (weight 0.05) — NEW ────────────────────
+  // v2.1: tag-similarity to recently cooked meals (not same-cuisine boost).
+  // Rewards meals that feel like a "natural next" based on shared food properties.
+  let continuityScore = 0.5; // neutral baseline
+
+  if (lastCookedName && lastCookedName !== nameLower) {
+    const lastEntry = MEAL_CATALOGUE.find(m => m.name.toLowerCase() === lastCookedName);
+    if (lastEntry) {
+      // Count shared tags between lastCooked and this candidate
+      const sharedTags = meal.tags.filter(t => lastEntry.tags.includes(t)).length;
+      const totalTags  = new Set([...meal.tags, ...lastEntry.tags]).size;
+      // Jaccard similarity
+      const similarity = totalTags > 0 ? sharedTags / totalTags : 0;
+      // High similarity (same vibe) = slight boost. Very high = too repetitive = slight reduce.
+      if      (similarity >= 0.5)  continuityScore = 0.70; // natural continuation
+      else if (similarity >= 0.25) continuityScore = 0.60; // somewhat related
+      else if (similarity <= 0.1)  continuityScore = 0.35; // very different — mild variety push
+      else                         continuityScore = 0.50;
+    }
+  }
+
+  // ── Final score ───────────────────────────────────────────────
   const score =
-    (historyScore    * 0.30) +
-    (preferenceScore * 0.25) +
-    (contextScore    * 0.20) +
-    (learnedScore    * 0.13) +
-    (varietyFactor   * 0.12);
+    (preferenceScore  * 0.35) +
+    (timeScore        * 0.20) +
+    (successScore     * 0.15) +
+    (varietyScore     * 0.15) +
+    (feasibilityScore * 0.10) +
+    (continuityScore  * 0.05);
 
   return {
     meal, score,
+    // Scoring components — returned for debugging + why-text generation
+    _components:  { preferenceScore, timeScore, successScore, varietyScore, feasibilityScore, continuityScore },
+    // Legacy why-text fields (used by buildWhyParts)
     _historyWhyKey: historyWhyKey, _historyHighRate: historyHighRate,
     _prefIdx: prefIdx, _goal: userGoal, _targetMealType: targetMealType,
     _effortBias: effortBias, _learnedW: learnedW,
@@ -550,6 +627,15 @@ export function getPersonalisedRecommendations({
   const journeyTagBoosts = (journeyContext && journeyContext.journeyTagBoosts) || [];
   const journeyType      = (journeyContext && journeyContext.journeyType) || 'default';
 
+  // Brain v2: lastCooked comes from jiff-cook-history (most recent cooked=true entry)
+  const lastCookedName = (() => {
+    try {
+      const hist = JSON.parse(localStorage.getItem('jiff-cook-history') || '[]');
+      const entry = hist.find(r => r.cooked === true);
+      return entry ? (entry.mealName || '').toLowerCase().trim() : null;
+    } catch { return null; }
+  })();
+
   const ctx = {
     userDietIds, userCuisines, userGoal, userSkill,
     ratings, mealHistory, recentHistorySet, recentlyShownSet, rejectedSet,
@@ -558,6 +644,8 @@ export function getPersonalisedRecommendations({
     forceShift, forceShiftExcludedCuisines, forceShiftExcludeHeavy,
     continuityRecentCuisines, activeEvent, journeyTagBoosts, journeyType,
     successBoostMap,
+    lastCookedName,
+    pantryItems: (() => { try { return JSON.parse(localStorage.getItem('jiff-pantry') || '[]'); } catch { return []; } })(),
   };
 
   const compatible = MEAL_CATALOGUE.filter(m => isDietaryCompatible(m, userDietIds));
