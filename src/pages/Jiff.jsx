@@ -19,6 +19,7 @@ import SmartGreeting    from '../components/SmartGreeting';
 import { JourneyTiles } from '../components/common/JourneyTiles.jsx';
 import AuthGate         from '../components/jiff/AuthGate';
 import JiffHeader       from '../components/jiff/JiffHeader';
+import JiffLoader       from '../components/jiff/JiffLoader';
 import FridgeCard       from '../components/jiff/FridgeCard';
 import LoadingView      from '../components/jiff/LoadingView';
 import ResultsView      from '../components/jiff/ResultsView';
@@ -131,13 +132,9 @@ export default function Jiff() {
     if (user && !trial && !isPremium) startTrial(user.id);
   }, [user, trial, isPremium, startTrial]);
 
-  // Onboarding redirect — fires once, only when profile loaded and not done
-  useEffect(() => {
-    if (user && profile && view === 'input') {
-      const done = profile.onboarding_done || localStorage.getItem('jiff-onboarding-done') === '1';
-      if (!done) navigate('/onboarding');
-    }
-  }, [user, profile]); // eslint-disable-line
+  // Preference nudge — replaces onboarding redirect
+  // Non-blocking: shown inline via JourneyTiles nudge, never navigates away
+  const showPrefNudge = !!(user && profile && !profile.spice_level && !localStorage.getItem('jiff-pref-nudge-dismissed'));
 
   // Handle navigation-state generate context (e.g. from plan page)
   useEffect(() => {
@@ -194,6 +191,9 @@ export default function Jiff() {
     // Return to decision screen, not the fridge card
     setJourneyMode(true); setTileContext(null);
   };
+
+  // ── Loading guard — prevents flash of wrong UI ────────────────
+  if (authLoading) return <JiffLoader />;
 
   const showSignInGate = !authLoading && !user && !gateDismissed;
 
@@ -364,6 +364,7 @@ export default function Jiff() {
             onDismissUpgrade={() => setUpgradeNudge(null)}
             continuityNudge={continuityNudge}
             weekCookCount={weekCookCount}
+            showPrefNudge={showPrefNudge}
             onConfirmCooked={confirmCooked}
             onNotYet={onNotYet}
             onShowSomethingElse={() => { /* re-run recommendations */ }}

@@ -19,7 +19,6 @@ import Jiff     from './pages/Jiff';
 
 const Discover    = lazy(() => import('./pages/Discover'));
 const Favs        = lazy(() => import('./pages/Favs'));
-const Onboarding  = lazy(() => import('./pages/Onboarding'));
 const Planner     = lazy(() => import('./pages/Planner'));
 const Profile     = lazy(() => import('./pages/Profile'));
 const Pricing     = lazy(() => import('./pages/Pricing'));
@@ -57,7 +56,6 @@ function AppShell() {
           <Route path="/app"                 element={<Jiff />} />
           <Route path="/discover"            element={<Discover />} />
           <Route path="/favs"                element={<Favs />} />
-          <Route path="/onboarding"          element={<Onboarding />} />
           <Route path="/planner"             element={<Planner />} />
           <Route path="/profile"             element={<Profile />} />
           <Route path="/pricing"             element={<Pricing />} />

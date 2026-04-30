@@ -302,6 +302,7 @@ export function JourneyTiles({
   navJourneyCtx = null,
   continuityNudge = null,
   weekCookCount = 0,
+  showPrefNudge = false,
   onNotYet,
   onShowSomethingElse,
 }) {
@@ -591,6 +592,19 @@ export function JourneyTiles({
 
 
       {/* §3 NUDGE */}
+      {/* Preference nudge — replaces onboarding, non-blocking */}
+      {showPrefNudge && (
+        <div style={{ marginTop:8, padding:'9px 13px', borderRadius:11, background:'rgba(255,69,0,0.05)', border:'1px solid rgba(255,69,0,0.18)', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:16, flexShrink:0 }}>{'🎯'}</span>
+          <div style={{ flex:1, fontSize:12, color:'#CC3700', lineHeight:1.5 }}>
+            {'Help Jiff get better — '}
+            <a href="/profile" style={{ color:'#FF4500', fontWeight:600, textDecoration:'underline' }}>{'update your preferences'}</a>
+          </div>
+          <button onClick={() => { try { localStorage.setItem('jiff-pref-nudge-dismissed','1'); } catch {} window.location.reload(); }}
+            style={{ background:'none', border:'none', cursor:'pointer', fontSize:14, color:'rgba(28,10,0,0.35)', padding:'0 2px', flexShrink:0 }}>{'×'}</button>
+        </div>
+      )}
+
       <RetentionNudges
         welcomeBack={welcomeBack} weeklyDigest={weeklyDigest}
         milestone={milestone} didYouCookNudge={didYouCookNudge}

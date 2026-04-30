@@ -28,11 +28,20 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!supabase) { setAuthLoading(false); setFavourites(loadLocalFavs()); return; }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) loadUserData(session.user);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) { console.warn('[Jiff] session error:', error.message); }
+      // Guard: reject sessions with impossible future expiry (clock skew / corrupted token)
+      const exp = session?.expires_at;
+      const validSession = session && exp && (exp * 1000) > Date.now() - 60000;
+      const u = validSession ? session.user : null;
+      setUser(u);
+      if (u) loadUserData(u);
       else setFavourites(loadLocalFavs());
       setAuthLoading(false);
+    }).catch(() => {
+      // Network or parse failure — fail open (guest mode)
+      setAuthLoading(false);
+      setFavourites(loadLocalFavs());
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
