@@ -357,9 +357,9 @@ function scoreMeal(meal, ctx) {
   if (meal.mealType.includes(targetMealType))   timeScore += 0.55;
 
   if (effortBias === 'quick') {
-    if   (meal.effortMins <= 15)    timeScore += 0.30;
-    } else if (meal.effortMins <= 20) { timeScore += 0.15;
-    } else if (meal.effortMins > 30)  { timeScore -= 0.15; }
+    if      (meal.effortMins <= 15)  timeScore += 0.30;
+    else if (meal.effortMins <= 20)  timeScore += 0.15;
+    else if (meal.effortMins > 30)   timeScore -= 0.15;
   } else if (effortBias === 'moderate') {
     if (meal.effortMins <= 25)      timeScore += 0.18;
   } else {
