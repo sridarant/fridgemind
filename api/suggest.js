@@ -82,6 +82,15 @@ async function validateApiKey(apiKey, supabaseUrl, serviceKey) {
 }
 
 export default async function handler(req, res) {
+  try {
+    return await _suggestHandler(req, res);
+  } catch (err) {
+    console.error('[suggest] Fatal unhandled error:', err?.message || err);
+    return res.status(500).json({ error: 'Internal server error', meals: [] });
+  }
+}
+
+async function _suggestHandler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const isPublicV1 = req.query.v === '1';
