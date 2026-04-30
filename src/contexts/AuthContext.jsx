@@ -28,25 +28,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!supabase) { setAuthLoading(false); setFavourites(loadLocalFavs()); return; }
 
-    // Step 2: OAuth redirect handler — must run before getSession
-    // When detectSessionInUrl:false, Supabase won't auto-exchange ?code= from Google redirect.
-    // We do it manually so the session is created before getSession() reads it.
-    const handleOAuthRedirect = async () => {
-      const url = window.location.href;
-      if (url.includes('code=')) {
-        const { data, error: oauthErr } = await supabase.auth.exchangeCodeForSession(url);
-        if (oauthErr) {
-          console.error('[Jiff] OAuth exchange error:', oauthErr.message);
-        } else if (data?.session) {
-          console.log('[Jiff] OAuth session established');
-        }
-        // Clean the code from URL regardless of result
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-    };
-
-    handleOAuthRedirect().then(() => {
-
+    // detectSessionInUrl:true — Supabase auto-handles hash-based OAuth (#access_token=...).
+    // No manual redirect handler needed.
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) { console.warn('[Jiff] session error:', error.message); }
       // Guard: reject sessions with impossible future expiry (clock skew / corrupted token)
@@ -68,7 +51,7 @@ export function AuthProvider({ children }) {
       setFavourites(loadLocalFavs());
     });
 
-    }); // end handleOAuthRedirect().then
+
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
